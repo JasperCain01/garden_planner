@@ -1,0 +1,11 @@
+{
+  // The engine is framework-free and browser-agnostic: no DOM lib on purpose,
+  // so a UI dependency can't sneak in unnoticed. It is consumed as TypeScript
+  // source (see package.json "exports"), so we type-check only — the app's
+  // bundler compiles it. Hence noEmit.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src"]
+}

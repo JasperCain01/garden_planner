@@ -8,7 +8,7 @@ illustrations and live warnings.
 
 **Scope: edible plants only** (vegetables, herbs, fruit). This is a deliberate
 choice, not a limitation to apologise for — it makes the app's headline
-features *work reliably* rather than approximately. The reasoning is spelled out
+features _work reliably_ rather than approximately. The reasoning is spelled out
 in section 2. Ornamentals are a possible later expansion, noted where relevant.
 
 This document covers three things at a broad-strokes level: **what the app does
@@ -19,8 +19,8 @@ and **what architecture is needed**. No implementation detail yet.
 
 ## 1. What the app does
 
-The core loop is: *describe your plot → get suitable plants → arrange them → get
-validated feedback.*
+The core loop is: _describe your plot → get suitable plants → arrange them → get
+validated feedback._
 
 1. **Define the plot.** The user enters dimensions (or draws a shape), an
    overall light level (full sun / partial shade / full shade, ideally with
@@ -35,7 +35,7 @@ validated feedback.*
    computes how many fit (the "how many onions can I fit?" question).
 4. **Validate continuously.** The app raises warnings when something won't
    thrive: wrong light level, too closely spaced, wrong season to sow, a known
-   antagonist planted nearby, or an incompatible climate. It also *suggests*
+   antagonist planted nearby, or an incompatible climate. It also _suggests_
    companion plants for what's already placed.
 5. **Represent each plant clearly.** Each plant is shown as a simple, consistent
    illustration (see the imagery section) so the plot reads at a glance. For a
@@ -46,7 +46,7 @@ validated feedback.*
 
 - **Spacing / density.** Given a plant's recommended spacing (in-row and
   between-row, or a "plants per m²" figure) and the available area, compute a
-  realistic count. This needs to respect the *shape* of the placed region, not
+  realistic count. This needs to respect the _shape_ of the placed region, not
   just total area, and ideally offer square vs. offset (hexagonal) packing.
 - **Suitability scoring.** A per-plant score combining light match, hardiness
   vs. the location's climate, soil match, and season. This is what powers both
@@ -58,7 +58,7 @@ validated feedback.*
 
 This is the make-or-break question, so it's worth being precise. **No single
 open source has everything**, but merging a few complementary sources gives full
-coverage — and narrowing to edibles turns the *weakest* part of the dataset
+coverage — and narrowing to edibles turns the _weakest_ part of the dataset
 (spacing) into one of the strongest. Here's the landscape as it stands.
 
 ### Why edibles-only is the right scope
@@ -88,16 +88,16 @@ edible/useful-plant focused).
 
 ### Growing-requirement data (light, soil, hardiness, uses)
 
-| Source | Strengths | Watch-outs |
-|---|---|---|
-| **Plants For A Future (PFAF)** | ~7,400 **temperate plants that grow in the UK**, edible/useful-plant focused — a direct fit for both the "default Britain" and edibles-only scope. Habitat, shade tolerance, soil, edibility/uses. Downloadable as CSV / Excel / SQLite. | Licensed CC BY-NC-SA — **non-commercial + share-alike + attribution**. |
-| **Permapeople** | Active, maintained REST API. Light requirement (sun/part/shade), water needs, growth characteristics. | Permaculture/food focus; check current API terms and rate limits. |
-| **OpenFarm** | Open growing guides: seed spacing & depth, watering, sun/shade, companions. Data is CC BY-SA and the dump is still on GitHub. | The **live service has shut down** — treat it as a static seed dataset, not a live API. |
-| **Trefle** | Open botanical REST API: min temperature, root depth, fertility. | Historically **unreliable / has gone offline**; there's a self-hostable dump. Don't build on the hosted API as a hard dependency. |
-| **USDA PLANTS** | Public domain. Growth habit, native ranges. | US-centric — useful for taxonomy/growth habit, less so for UK season timing. |
-| **GBIF taxonomic backbone** | Not requirements data, but the **canonical name resolver** — the key to merging all the above without duplicating "onion" three ways. | Use it as the join key, not a content source. |
+| Source                         | Strengths                                                                                                                                                                                                                                | Watch-outs                                                                                                                        |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Plants For A Future (PFAF)** | ~7,400 **temperate plants that grow in the UK**, edible/useful-plant focused — a direct fit for both the "default Britain" and edibles-only scope. Habitat, shade tolerance, soil, edibility/uses. Downloadable as CSV / Excel / SQLite. | Licensed CC BY-NC-SA — **non-commercial + share-alike + attribution**.                                                            |
+| **Permapeople**                | Active, maintained REST API. Light requirement (sun/part/shade), water needs, growth characteristics.                                                                                                                                    | Permaculture/food focus; check current API terms and rate limits.                                                                 |
+| **OpenFarm**                   | Open growing guides: seed spacing & depth, watering, sun/shade, companions. Data is CC BY-SA and the dump is still on GitHub.                                                                                                            | The **live service has shut down** — treat it as a static seed dataset, not a live API.                                           |
+| **Trefle**                     | Open botanical REST API: min temperature, root depth, fertility.                                                                                                                                                                         | Historically **unreliable / has gone offline**; there's a self-hostable dump. Don't build on the hosted API as a hard dependency. |
+| **USDA PLANTS**                | Public domain. Growth habit, native ranges.                                                                                                                                                                                              | US-centric — useful for taxonomy/growth habit, less so for UK season timing.                                                      |
+| **GBIF taxonomic backbone**    | Not requirements data, but the **canonical name resolver** — the key to merging all the above without duplicating "onion" three ways.                                                                                                    | Use it as the join key, not a content source.                                                                                     |
 
-**Verdict:** for edibles, growing-requirement data is *comfortably sufficient*.
+**Verdict:** for edibles, growing-requirement data is _comfortably sufficient_.
 PFAF covers the British default well; Permapeople + the OpenFarm dump round out
 vegetables and give a first pass at spacing; the RHS / square-foot charts supply
 authoritative spacing to verify against; GBIF ties them together by scientific
@@ -106,7 +106,7 @@ name.
 ### A note on what "spacing data" actually is
 
 The reason spacing is called out as a gap in general planners is that it isn't a
-single number — it depends on the *growing method*:
+single number — it depends on the _growing method_:
 
 - **Row growing** gives two numbers: in-row spacing and between-row spacing.
 - **Intensive / square-foot / raised-bed** growing ignores rows and gives a
@@ -114,9 +114,9 @@ single number — it depends on the *growing method*:
 
 Onions are the classic example: ~8 cm on all sides in a bed, but 4 cm in-row ×
 30 cm between rows in a traditional plot — same plant, different densities. A
-database that stores *one* spacing number is silently choosing a method. The
+database that stores _one_ spacing number is silently choosing a method. The
 schema should therefore store spacing **as a method-aware structure** (in-row,
-between-row, *and* an intensive per-m²/per-square figure), and the calculator
+between-row, _and_ an intensive per-m²/per-square figure), and the calculator
 should let the user pick which growing style they're planning for. For edibles,
 all three numbers are well-documented; this is tractable precisely because the
 scope is bounded.
@@ -133,7 +133,7 @@ scope is bounded.
 
 ### Imagery — solved by using illustrations, not photos
 
-The original plan assumed curated seasonal *photographs*, which is a hard,
+The original plan assumed curated seasonal _photographs_, which is a hard,
 open-ended content problem (photos are rarely tagged by growth stage, and much
 open imagery is non-commercial-licensed). For a vegetable plot this is
 over-engineering: aesthetic realism doesn't matter here — **identification and
@@ -143,7 +143,7 @@ So the approach is **a small library of simple, consistent illustrations / icons
 — one per crop, flat vector art (SVG), a few kilobytes each:
 
 - **Own the assets outright.** Illustrations we create (or commission, or take
-  from a permissively-licensed icon set) carry *no* third-party licensing
+  from a permissively-licensed icon set) carry _no_ third-party licensing
   strings, which removes the imagery half of the licensing problem entirely and
   keeps the commercial-use door open.
 - **Tiny and fast.** SVG icons are a few KB, scale crisply at any zoom on the
@@ -181,8 +181,8 @@ bounded, one-time tasks:
 2. **A simple illustration per crop** (SVG icon set) plus **curation of
    companion data** into an evidence-tagged form.
 
-Everything else can be ingested. The work is *integration and curation*, not
-*data acquisition from scratch* — and both remaining tasks are finite because
+Everything else can be ingested. The work is _integration and curation_, not
+_data acquisition from scratch_ — and both remaining tasks are finite because
 the scope is bounded.
 
 ---
@@ -192,7 +192,7 @@ the scope is bounded.
 > **Update — hosting drives a static, client-side architecture.** The target is
 > free static hosting (GitHub Pages) plus full offline use. That rules out a
 > runtime backend or database server. The layers below still describe the
-> *logical* pieces, but in the built system they collapse as follows: the
+> _logical_ pieces, but in the built system they collapse as follows: the
 > "Backend API" and "Postgres" become a **build-time ETL that emits a static
 > dataset bundled into the app**; the engine runs **client-side in the browser**;
 > the location service ships as **static data**. See
@@ -238,7 +238,7 @@ pipeline** to build — one fewer moving part than the original design.
 - **Curated plant database.** The heart of the project. One normalized schema
   (light, method-aware spacing, hardiness, soil, season, edible category,
   companion/antagonist links, icon reference) populated from the sources above.
-  Scientific name (via GBIF) is the join key. This is a *build-time* asset — it
+  Scientific name (via GBIF) is the join key. This is a _build-time_ asset — it
   doesn't need to hit third-party APIs at runtime.
 - **Offline ETL pipeline.** Separate from the running app: pulls each source,
   maps it into the schema, reconciles duplicates, flags conflicts for review.
@@ -284,19 +284,19 @@ terms. Two clean options:
 
 - **Non-commercial, share-alike** (simplest): use PFAF freely, license the app
   and dataset to match. Fine for an open, community project.
-- **Commercial-friendly**: restrict the ingested *facts* to permissively-licensed
+- **Commercial-friendly**: restrict the ingested _facts_ to permissively-licensed
   or public-domain sources (USDA is public domain; individual growing facts like
   spacing numbers generally aren't copyrightable, though a compiled database can
   be) and keep PFAF out of the redistributed data. More work, keeps options open.
 
-Either way, this is now the *only* licensing decision that touches source
+Either way, this is now the _only_ licensing decision that touches source
 selection — worth settling before the ETL work begins.
 
 ---
 
 ## Open questions to resolve next
 
-- Commercial vs. non-commercial licensing of the *dataset* (the only remaining
+- Commercial vs. non-commercial licensing of the _dataset_ (the only remaining
   source-selection constraint now imagery is self-owned).
 - Depth of the "light level" model: one value per plot, or per-area shade
   mapping (the latter is much more powerful but more UI work).

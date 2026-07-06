@@ -1,0 +1,10 @@
+{
+  // The ETL runs under Node (build time only), so it gets Node types and no DOM.
+  // Type-check only for now; the pipeline is developed in Phase 1.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["src"]
+}

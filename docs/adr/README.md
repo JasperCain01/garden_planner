@@ -1,0 +1,25 @@
+# Architecture Decision Records (ADRs)
+
+An ADR is a short note capturing a decision that a newcomer might otherwise
+question: what we chose, why, what we considered, and what it costs us. They keep
+the _reasoning_ next to the code so the project stays understandable as it grows.
+
+## Format
+
+Each ADR is a file named `NNNN-short-title.md` with these sections:
+
+- **Status** — Accepted / Superseded / Proposed.
+- **Context** — the situation and forces at play.
+- **Decision** — what we're doing.
+- **Alternatives considered** — the roads not taken, and why.
+- **Consequences** — the trade-offs we accept.
+
+Add a new ADR whenever you make a non-obvious choice (see `CONTRIBUTING.md`).
+Never rewrite history: if a decision changes, add a new ADR that supersedes the
+old one and mark the old one `Superseded`.
+
+## Index
+
+- [0001 — Tech stack: TypeScript + Vite monorepo](./0001-tech-stack.md)
+- [0002 — UI framework: React](./0002-ui-framework-react.md)
+- [0003 — Static, client-side architecture](./0003-static-client-side-architecture.md)

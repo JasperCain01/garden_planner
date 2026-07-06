@@ -1,8 +1,8 @@
 # Garden / Allotment Planner — Build Workplan
 
 This is the staged build plan for the edibles-only garden planner described in
-[`DESIGN.md`](./DESIGN.md). Read `DESIGN.md` first — it explains *what* we're
-building and *why*. This document covers *how* and *in what order*.
+[`DESIGN.md`](./DESIGN.md). Read `DESIGN.md` first — it explains _what_ we're
+building and _why_. This document covers _how_ and _in what order_.
 
 The plan is deliberately broken into **small, self-contained stages**. Each
 stage is scoped so that a fresh session (with no memory of previous ones) can
@@ -28,14 +28,14 @@ This has three hard consequences that every stage must respect:
    as a **static data artifact** (a bundled JSON file, or a SQLite file loaded
    in-browser via `sql.js`/WASM), generated at build time.
 2. **The ETL / data pipeline is a developer tool, not part of the app.** It runs
-   on a contributor's machine, pulls from external sources *once*, and commits
+   on a contributor's machine, pulls from external sources _once_, and commits
    the resulting static artifact. The deployed app never calls PFAF, GBIF, etc.
    This is also what makes the app work offline and insulates it from those
    sources going down.
 3. **All "services" from the original design collapse into client-side modules
    or static data.** The suitability/spacing engine is browser-side TypeScript.
    The location/climate "service" ships as a static lookup table (UK default),
-   with *optional* online geocoding as a progressive enhancement that degrades
+   with _optional_ online geocoding as a progressive enhancement that degrades
    gracefully when offline.
 
 ```
@@ -55,8 +55,8 @@ Because a core goal is that **others can clone and understand this easily**,
 these are not optional niceties:
 
 - **Comment code clearly.** Every non-trivial function gets a docstring saying
-  what it does and why it exists. Favour comments that explain *intent and
-  reasoning* ("onions use intensive spacing here because…") over comments that
+  what it does and why it exists. Favour comments that explain _intent and
+  reasoning_ ("onions use intensive spacing here because…") over comments that
   restate the code.
 - **Explain design choices where they aren't obvious.** When a stage makes a
   decision a newcomer might question (a library choice, an algorithm, a data
@@ -82,11 +82,11 @@ non-obvious decision has an ADR; and relevant docs are updated. Run the repo's
 
 Each stage suggests a model tier. The philosophy:
 
-| Tier | Use for |
-|---|---|
-| **Opus** | Architecture-defining work, tricky algorithms, ambiguous/cross-cutting decisions. The keystone stages where a wrong call is expensive to unwind. |
-| **Sonnet** | The bulk of feature work: well-scoped app logic, UI components, deployment config, most ETL adapters, docs. Strong default once the shape is set. |
-| **Haiku** | Mechanical, tightly-specified work with an obvious shape: boilerplate, wiring, repetitive transforms following an established pattern. |
+| Tier                    | Use for                                                                                                                                                                                                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Opus**                | Architecture-defining work, tricky algorithms, ambiguous/cross-cutting decisions. The keystone stages where a wrong call is expensive to unwind.                                                                                                                                                |
+| **Sonnet**              | The bulk of feature work: well-scoped app logic, UI components, deployment config, most ETL adapters, docs. Strong default once the shape is set.                                                                                                                                               |
+| **Haiku**               | Mechanical, tightly-specified work with an obvious shape: boilerplate, wiring, repetitive transforms following an established pattern.                                                                                                                                                          |
 | **Local (qwen3-coder)** | Same profile as Haiku — mechanical, machine-checkable work — but chosen when you want zero-cost, private, offline-friendly iteration. Good for schema-validated data transforms and test-fixture generation where correctness is easy to verify automatically. Avoid for ambiguous design work. |
 
 Where two tiers are reasonable, both are listed with a note.
@@ -99,7 +99,7 @@ Ratified (Stage 0.1 records these as ADRs):
 - **React** as the UI framework. Chosen over Svelte because the app's polish is
   concentrated in a drag-and-drop canvas, where React's interaction ecosystem is
   the most mature and best-documented — which lowers the effort to reach an
-  engaging UI *and* keeps the project easy to clone and contribute to (larger
+  engaging UI _and_ keeps the project easy to clone and contribute to (larger
   pool). The trade-off (larger bundle than Svelte) is minor for a
   cached-after-first-load PWA.
 - **dnd-kit** for accessible, fluid drag-and-drop (also supplies the
@@ -121,7 +121,7 @@ PFAF's terms, with attribution recorded in a `NOTICE`/provenance file.
 ## 1. Verification & validation strategy (design this deliberately)
 
 Validation is a first-class concern, not an afterthought — especially because
-the app makes *horticultural claims* ("this many onions fit", "these are
+the app makes _horticultural claims_ ("this many onions fit", "these are
 companions") that users will act on. There are four distinct layers, each owned
 by different stages.
 
@@ -137,7 +137,7 @@ by different stages.
 - **Provenance & cross-checking.** The hand-verified spacing table (Stage 1.3)
   requires each figure to be checked against **at least two authoritative
   sources**, with the sources recorded per row. This is human verification, but
-  the *record* of it is committed and reviewable.
+  the _record_ of it is committed and reviewable.
 
 ### 1.2 Engine validation (correctness of the logic)
 
@@ -157,7 +157,7 @@ by different stages.
 - **End-to-end tests (Playwright)** for the core journeys: define a plot → see a
   ranked palette → drag a plant in → see a count → trigger and clear a warning.
 - **Offline test.** An E2E run that loads the app, goes offline, and confirms it
-  still functions — this is a *requirement*, so it gets an explicit test.
+  still functions — this is a _requirement_, so it gets an explicit test.
 - **PWA / performance audit.** A Lighthouse check in CI for installability and
   offline readiness.
 
@@ -178,26 +178,28 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 ### Phase 0 — Foundations
 
 #### Stage 0.1 — Repository scaffolding & tooling
+
 - **Goal:** A green, empty-but-runnable project skeleton others can clone and
   build in one command.
 - **Depends on:** nothing.
 - **Deliverables:** Chosen stack wired up (see §0.5); workspace layout
   (`/app` frontend, `/engine` framework-free logic, `/etl` build-time pipeline,
   `/data` committed artifacts, `/docs` + `/docs/adr`); lint + format + typecheck
-  + test runner configured; CI workflow (lint/typecheck/test/build); `README`
-  skeleton; `LICENSE` for code (MIT or GPL; dataset licence is CC BY-NC-SA,
-  finalized with attribution in Stage 1.5 per PFAF terms); `CONTRIBUTING.md`;
-  ADRs recording the stack and framework choices (§0.5).
+  - test runner configured; CI workflow (lint/typecheck/test/build); `README`
+    skeleton; `LICENSE` for code (MIT or GPL; dataset licence is CC BY-NC-SA,
+    finalized with attribution in Stage 1.5 per PFAF terms); `CONTRIBUTING.md`;
+    ADRs recording the stack and framework choices (§0.5).
 - **Model:** **Sonnet.** Well-understood setup work; some judgement on structure.
 - **Verification:** `npm install && npm run build && npm test` succeeds from a
   clean clone; CI passes on the first push.
 
 #### Stage 0.2 — Data schema definition ⭐ keystone
+
 - **Goal:** The canonical plant-record schema everything else is built on.
 - **Depends on:** 0.1.
 - **Deliverables:** TypeScript types + JSON Schema (and/or zod) for a plant
   record: identity (common name, scientific name, GBIF id), edible category,
-  light requirement, **method-aware spacing** (in-row, between-row, *and*
+  light requirement, **method-aware spacing** (in-row, between-row, _and_
   intensive per-m²/per-square — see `DESIGN.md`), hardiness, soil, sowing/harvest
   seasons, companion & antagonist links, icon reference, and per-field
   provenance. ADR explaining the schema shape, especially the method-aware
@@ -210,6 +212,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 ### Phase 1 — Data pipeline
 
 #### Stage 1.1 — ETL scaffolding & name resolution
+
 - **Goal:** The build-time pipeline skeleton and a GBIF-based scientific-name
   resolver that becomes the join key across sources.
 - **Depends on:** 0.2.
@@ -221,9 +224,10 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   ids; cache means a second run needs no network.
 
 #### Stage 1.2 — Source adapters (PFAF, OpenFarm dump, Permapeople)
+
 - **Goal:** Import each external source and map it into the Stage-0.2 schema.
-- **Depends on:** 1.1. *(Can be split into one sub-stage per source — each is a
-  clean fresh-session unit once the first establishes the pattern.)*
+- **Depends on:** 1.1. _(Can be split into one sub-stage per source — each is a
+  clean fresh-session unit once the first establishes the pattern.)_
 - **Deliverables:** One adapter per source, each emitting schema-shaped records
   with provenance tags; downloaded source data cached in-repo for offline builds.
 - **Model:** **Sonnet** for the first adapter (establishes the pattern);
@@ -233,6 +237,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   fixtures confirm known crops map correctly.
 
 #### Stage 1.3 — Hand-verified spacing table ⭐ data-critical
+
 - **Goal:** The authoritative method-aware spacing figures for the starter set of
   common British edibles — the number the density calculator lives or dies by.
 - **Depends on:** 0.2.
@@ -246,6 +251,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   sanity bounds pass; a reviewer signs off the provenance.
 
 #### Stage 1.4 — Companion-planting data (evidence-tagged)
+
 - **Goal:** Companion/antagonist relationships stored with an honesty tag.
 - **Depends on:** 0.2, and the plant set from 1.2/1.3 for referential integrity.
 - **Deliverables:** Relationship data where each pairing carries an **evidence
@@ -256,6 +262,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   present on every relationship; schema validates.
 
 #### Stage 1.5 — Dataset build, merge & validation ⭐ keystone
+
 - **Goal:** Combine all sources into the single static artifact the app ships,
   reconciling conflicts, and enforce all data-validation rules.
 - **Depends on:** 1.2, 1.3, 1.4.
@@ -271,11 +278,12 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   this); passes on the real data; artifact loads and validates.
 
 #### Stage 1.6 — Location & climate static data
+
 - **Goal:** Offline-capable climate context, defaulting to Britain.
 - **Depends on:** 0.2.
 - **Deliverables:** A static lookup shipping frost dates / hardiness / season
   timing for the UK default (and a small extensible set of regions); an
-  interface the engine consumes; *optional* online geocoding as graceful
+  interface the engine consumes; _optional_ online geocoding as graceful
   progressive enhancement.
 - **Model:** **Sonnet.**
 - **Verification:** UK default resolves fully offline; optional geocoding
@@ -284,21 +292,23 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 ### Phase 2 — Engine (framework-free, browser-side)
 
 #### Stage 2.1 — Suitability scoring engine ⭐ keystone
+
 - **Goal:** The "brain" — score any plant against a plot's conditions.
 - **Depends on:** 0.2, and sample data (1.5) to test against.
 - **Deliverables:** Pure, framework-free functions scoring light match, hardiness
   vs. location climate, soil, and season into a ranked suitability result; the
-  reasoning behind each score exposed so the UI can explain *why*.
+  reasoning behind each score exposed so the UI can explain _why_.
 - **Model:** **Opus.** Core domain logic; the scoring model is a design decision
   with lasting consequences.
 - **Verification:** Golden-case unit tests (documented worked examples); edge
   cases (no matching plants, all-shade plot) covered.
 
 #### Stage 2.2 — Spacing / density calculator ⭐ algorithmic
+
 - **Goal:** "How many onions fit?" — shape-aware, method-aware counts.
 - **Depends on:** 0.2, 2.1 conventions.
 - **Deliverables:** Functions computing plant counts from method-aware spacing
-  and a plot *region* (respecting shape, not just area), offering square vs.
+  and a plot _region_ (respecting shape, not just area), offering square vs.
   offset (hexagonal) packing; clear docs on the geometry.
 - **Model:** **Opus.** The packing geometry is the most algorithmically subtle
   piece in the app.
@@ -306,6 +316,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   tests** (monotonicity, area upper bound); zero/degenerate-region cases.
 
 #### Stage 2.3 — Warnings & companion-suggestion engine
+
 - **Goal:** Turn engine outputs into actionable warnings and suggestions.
 - **Depends on:** 2.1, 2.2, 1.4.
 - **Deliverables:** Rules producing warnings (wrong light, overcrowding, wrong
@@ -319,6 +330,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 ### Phase 3 — Frontend MVP
 
 #### Stage 3.1 — App shell, state & routing
+
 - **Goal:** The static SPA skeleton the features hang off.
 - **Depends on:** 0.1.
 - **Deliverables:** App shell, state management, routing configured for a
@@ -328,6 +340,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   builds correctly under the Pages base path.
 
 #### Stage 3.2 — Plot definition UI
+
 - **Goal:** Let the user describe their plot.
 - **Depends on:** 3.1, 1.6.
 - **Deliverables:** Inputs for dimensions (and/or draw a shape), light level
@@ -338,15 +351,17 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   the engine accepts.
 
 #### Stage 3.3 — Plant palette (filtered & ranked)
+
 - **Goal:** Show the user suitable edibles for their plot.
 - **Depends on:** 3.2, 2.1.
 - **Deliverables:** A searchable, filterable palette driven by suitability
-  scores, showing *why* a plant is/isn't recommended.
+  scores, showing _why_ a plant is/isn't recommended.
 - **Model:** **Sonnet.**
 - **Verification:** Component tests; E2E: defining a shady plot surfaces
   shade-tolerant crops and demotes sun-lovers.
 
 #### Stage 3.4 — Drag-and-drop plot canvas ⭐ signature feature
+
 - **Goal:** The core interaction — arrange plants on the plot.
 - **Depends on:** 3.3, 2.2.
 - **Deliverables:** A canvas representation of the plot; drag plants from the
@@ -359,6 +374,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   matching the engine's golden cases.
 
 #### Stage 3.5 — Warnings overlay & companion suggestions UI
+
 - **Goal:** Surface the engine's warnings and suggestions in context.
 - **Depends on:** 3.4, 2.3.
 - **Deliverables:** Non-intrusive warning indicators on the canvas with
@@ -370,6 +386,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 ### Phase 4 — Content & assets
 
 #### Stage 4.1 — SVG crop icon set
+
 - **Goal:** A small, consistent, self-owned illustration per crop.
 - **Depends on:** the crop list from Phase 1.
 - **Deliverables:** Flat SVG icons (a few KB each) in one coherent style,
@@ -382,6 +399,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   total icon payload stays within an agreed size budget (checked in CI).
 
 #### Stage 4.2 — Wire icons into palette & canvas
+
 - **Goal:** Replace placeholder graphics with the real icon set.
 - **Depends on:** 4.1, 3.3, 3.4.
 - **Deliverables:** Icons rendered in palette and on the canvas, resolved via the
@@ -394,6 +412,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 ### Phase 5 — Offline & deployment
 
 #### Stage 5.1 — PWA / offline support
+
 - **Goal:** Make the app installable and fully functional offline.
 - **Depends on:** a working MVP (through Phase 3, ideally 4).
 - **Deliverables:** Service worker caching app shell + dataset + icons; web app
@@ -403,6 +422,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   passes in CI.
 
 #### Stage 5.2 — GitHub Pages deployment
+
 - **Goal:** A hosted, always-current working version.
 - **Depends on:** 3.x (a deployable app), ideally 5.1.
 - **Deliverables:** A GitHub Actions workflow building the static site and
@@ -416,6 +436,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 ### Phase 6 — Community readiness & polish
 
 #### Stage 6.1 — Documentation pass ⭐ (directly serves "easy to clone")
+
 - **Goal:** Make the project genuinely easy for others to clone, run, understand,
   and extend.
 - **Depends on:** a substantially working app.
@@ -430,6 +451,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   clone to running app and to adding a plant using only the docs.
 
 #### Stage 6.2 — Accessibility & responsive polish
+
 - **Goal:** Usable on a phone in the garden and by assistive tech.
 - **Depends on:** Phase 3.
 - **Deliverables:** Keyboard-operable drag-drop alternative, colour-contrast and
@@ -439,6 +461,7 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   walkthrough of the core journey.
 
 #### Stage 6.3 — Final validation & coverage pass
+
 - **Goal:** Confirm the whole system holds together before calling it v1.
 - **Depends on:** everything.
 - **Deliverables:** Fill test-coverage gaps on engine and data; a full E2E
@@ -469,11 +492,11 @@ against sample data before the full dataset is built.
 
 ## 4. Model-tier summary
 
-| Tier | Stages |
-|---|---|
-| **Opus** (keystone / algorithmic) | 0.2, 1.5, 2.1, 2.2 (+ optionally 3.4, 6.3) |
-| **Sonnet** (bulk of the build) | 0.1, 1.1, 1.2 (first adapter), 1.3, 1.4, 1.6, 2.3, 3.1–3.5, 4.1, 5.1, 5.2, 6.1, 6.2 |
-| **Haiku / local qwen3-coder** (mechanical) | 1.2 (later adapters), 4.2, parts of 4.1 & 5.2 |
+| Tier                                       | Stages                                                                              |
+| ------------------------------------------ | ----------------------------------------------------------------------------------- |
+| **Opus** (keystone / algorithmic)          | 0.2, 1.5, 2.1, 2.2 (+ optionally 3.4, 6.3)                                          |
+| **Sonnet** (bulk of the build)             | 0.1, 1.1, 1.2 (first adapter), 1.3, 1.4, 1.6, 2.3, 3.1–3.5, 4.1, 5.1, 5.2, 6.1, 6.2 |
+| **Haiku / local qwen3-coder** (mechanical) | 1.2 (later adapters), 4.2, parts of 4.1 & 5.2                                       |
 
 Rule of thumb: **Opus where a wrong decision is expensive to unwind; Sonnet for
 well-scoped feature work; Haiku/local for mechanical work against a settled

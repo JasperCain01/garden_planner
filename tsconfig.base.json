@@ -1,0 +1,25 @@
+{
+  // Shared TypeScript settings inherited by every workspace. Individual
+  // workspaces override `lib`, `jsx`, and emit options as needed.
+  // Kept strict on purpose: this is a community project meant to be forked and
+  // learned from, and strictness catches whole classes of bugs at author time.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true
+  }
+}

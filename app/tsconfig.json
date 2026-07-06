@@ -1,0 +1,13 @@
+{
+  // The app runs in the browser and uses JSX, so it adds the DOM libs and the
+  // React JSX transform on top of the shared base config. Vite compiles the
+  // actual output, so TypeScript is used only for type-checking (noEmit).
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "noEmit": true
+  },
+  "include": ["src", "e2e", "vite.config.ts", "playwright.config.ts"]
+}

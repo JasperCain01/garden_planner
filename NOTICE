@@ -1,0 +1,34 @@
+Garden Planner — attribution and licensing notice
+==================================================
+
+CODE
+----
+All source code in this repository is licensed under the MIT License (see
+/LICENSE).
+
+DATASET
+-------
+The plant dataset shipped under /data is licensed under Creative Commons
+Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0).
+
+Reason: the dataset is derived in part from Plants For A Future (PFAF), which is
+distributed under CC BY-NC-SA and requires derivative datasets to adopt the same
+terms. This project is non-commercial by design, so this is not a constraint in
+practice — it is recorded here for clarity and to keep attribution honest.
+
+Data sources (full per-record provenance is captured in the dataset itself and
+finalized in Workplan Stage 1.5):
+
+  - Plants For A Future (PFAF)          https://pfaf.org/         CC BY-NC-SA
+  - Permapeople                         https://permapeople.org/
+  - OpenFarm (static dump)              https://github.com/openfarmcc/OpenFarm  CC BY-SA
+  - GBIF taxonomic backbone             https://www.gbif.org/     (name resolution)
+  - USDA PLANTS                         (public domain)
+  - Hand-verified spacing table         (RHS / square-foot / extension guides)
+
+ILLUSTRATIONS
+-------------
+Crop illustrations under the app's icon set are self-owned / permissively
+licensed and carry no third-party restrictions (see DESIGN.md and Stage 4.1).
+
+If you add a new data source, record its licence here and in /data/README.md.
