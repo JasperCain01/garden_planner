@@ -189,6 +189,16 @@ the scope is bounded.
 
 ## 3. Architecture (broad strokes)
 
+> **Update — hosting drives a static, client-side architecture.** The target is
+> free static hosting (GitHub Pages) plus full offline use. That rules out a
+> runtime backend or database server. The layers below still describe the
+> *logical* pieces, but in the built system they collapse as follows: the
+> "Backend API" and "Postgres" become a **build-time ETL that emits a static
+> dataset bundled into the app**; the engine runs **client-side in the browser**;
+> the location service ships as **static data**. See
+> [`WORKPLAN.md`](./WORKPLAN.md) §0.1 for the reconciled build-time-vs-run-time
+> split. Read the diagram below as logical roles, not deployed servers.
+
 Five layers, kept deliberately loose at this stage.
 
 ```
