@@ -93,13 +93,28 @@ Where two tiers are reasonable, both are listed with a note.
 
 ### 0.5 Recommended stack (proposed in Stage 0.1, ADR-worthy)
 
-Suggested, to be ratified in Stage 0.1: **TypeScript + Vite** (fast static
-builds, first-class GitHub Pages support), a lightweight UI framework
-(**React** or **Svelte** — Svelte gives smaller offline bundles; React has the
-larger contributor pool — decide via ADR), **Vitest** for unit tests,
-**Playwright** for end-to-end (already available in this environment),
-**zod + JSON Schema** for data validation, and a **service worker** (via
-`vite-plugin-pwa`) for offline. The ETL is a separate Node/TypeScript workspace.
+Ratified (Stage 0.1 records these as ADRs):
+
+- **TypeScript + Vite** — fast static builds with first-class GitHub Pages support.
+- **React** as the UI framework. Chosen over Svelte because the app's polish is
+  concentrated in a drag-and-drop canvas, where React's interaction ecosystem is
+  the most mature and best-documented — which lowers the effort to reach an
+  engaging UI *and* keeps the project easy to clone and contribute to (larger
+  pool). The trade-off (larger bundle than Svelte) is minor for a
+  cached-after-first-load PWA.
+- **dnd-kit** for accessible, fluid drag-and-drop (also supplies the
+  keyboard-accessible drag alternative Stage 6.2 needs).
+- **react-konva** (or Pixi) for performant 2D canvas rendering of the plot.
+- **Framer Motion (Motion)** for physics-based micro-interaction animation.
+- **Vitest** for unit tests, **Playwright** for end-to-end (already available in
+  this environment), **zod + JSON Schema** for data validation, and a
+  **service worker** (via `vite-plugin-pwa`) for offline.
+
+The ETL is a separate Node/TypeScript workspace.
+
+**Licensing (confirmed): non-commercial.** Code under a permissive/copyleft OSS
+licence (MIT or GPL); the shipped **dataset** under **CC BY-NC-SA** to honour
+PFAF's terms, with attribution recorded in a `NOTICE`/provenance file.
 
 ---
 
@@ -170,9 +185,9 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   (`/app` frontend, `/engine` framework-free logic, `/etl` build-time pipeline,
   `/data` committed artifacts, `/docs` + `/docs/adr`); lint + format + typecheck
   + test runner configured; CI workflow (lint/typecheck/test/build); `README`
-  skeleton; `LICENSE` decision (code under a permissive/copyleft OSS licence;
-  dataset licence deferred to Stage 1.5 per PFAF terms); `CONTRIBUTING.md`;
-  ADR-0001 recording the stack choice.
+  skeleton; `LICENSE` for code (MIT or GPL; dataset licence is CC BY-NC-SA,
+  finalized with attribution in Stage 1.5 per PFAF terms); `CONTRIBUTING.md`;
+  ADRs recording the stack and framework choices (§0.5).
 - **Model:** **Sonnet.** Well-understood setup work; some judgement on structure.
 - **Verification:** `npm install && npm run build && npm test` succeeds from a
   clean clone; CI passes on the first push.
