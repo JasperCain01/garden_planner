@@ -23,6 +23,14 @@ Everything below follows from that.
 - **`packages/etl`** runs only on a contributor's machine. It pulls from PFAF,
   Permapeople, the OpenFarm dump, GBIF, etc., and writes the static dataset. The
   deployed app never calls those sources — which is what makes it offline-safe.
+  As of Stage 1.1 (`packages/etl/README.md`, [`adr/0005`](./adr/0005-gbif-name-resolver.md))
+  it has a runnable pipeline shell, a documented `SourceAdapter` extension
+  point that Stage 1.2's PFAF/OpenFarm/Permapeople adapters implement, and a
+  GBIF scientific-name resolver that fills the schema's `gbifId` — the join
+  key the eventual merge step (Stage 1.5) reconciles records by. The resolver
+  is offline-first: its answers are cached to a committed JSON file
+  (`packages/etl/cache/`), so a second run — and CI, and an offline
+  contributor — needs no network for a name it has already resolved.
 - **`/data`** is that committed static artifact: the plant "database" as a file
   the browser loads directly. No database server exists at runtime.
 - **`packages/engine`** is pure, framework-free logic (suitability scoring,
@@ -44,9 +52,10 @@ boundaries rather than by discipline alone. See `adr/0003`.
 
 ## Where to look next
 
-| Topic                                                | File                            |
-| ---------------------------------------------------- | ------------------------------- |
-| Concept, data-source assessment, licensing rationale | [`DESIGN.md`](../DESIGN.md)     |
-| Staged build plan, per-stage models, verification    | [`WORKPLAN.md`](../WORKPLAN.md) |
-| Specific decisions and their alternatives            | [`adr/`](./adr/)                |
-| The plant-record schema (types + validation)         | `packages/engine/src/schema/`   |
+| Topic                                                  | File                            |
+| ------------------------------------------------------ | ------------------------------- |
+| Concept, data-source assessment, licensing rationale   | [`DESIGN.md`](../DESIGN.md)     |
+| Staged build plan, per-stage models, verification      | [`WORKPLAN.md`](../WORKPLAN.md) |
+| Specific decisions and their alternatives              | [`adr/`](./adr/)                |
+| The plant-record schema (types + validation)           | `packages/engine/src/schema/`   |
+| The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`        |

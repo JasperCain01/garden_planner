@@ -24,3 +24,4 @@ old one and mark the old one `Superseded`.
 - [0002 — UI framework: React](./0002-ui-framework-react.md)
 - [0003 — Static, client-side architecture](./0003-static-client-side-architecture.md)
 - [0004 — Plant-record schema (zod source of truth; method-aware spacing)](./0004-plant-schema.md)
+- [0005 — GBIF name resolver: join key, offline cache, and the "add a source" extension point](./0005-gbif-name-resolver.md)
