@@ -27,7 +27,11 @@ Everything below follows from that.
   the browser loads directly. No database server exists at runtime.
 - **`packages/engine`** is pure, framework-free logic (suitability scoring,
   spacing/density, warnings). It runs in the browser but has no UI dependency, so
-  it is unit-testable in isolation.
+  it is unit-testable in isolation. It also hosts the **canonical plant-record
+  schema** (`packages/engine/src/schema/`, Stage 0.2): zod is the single source of
+  truth and the TypeScript types are `z.infer`-derived from it, so the ETL, the
+  engine, and the UI all validate and type against one shape. See
+  [`adr/0004`](./adr/0004-plant-schema.md), especially the method-aware spacing.
 - **`app`** is the React + Vite front-end — the only thing deployed. It loads the
   dataset, calls the engine, and renders the drag-and-drop UI.
 
@@ -45,3 +49,4 @@ boundaries rather than by discipline alone. See `adr/0003`.
 | Concept, data-source assessment, licensing rationale | [`DESIGN.md`](../DESIGN.md)     |
 | Staged build plan, per-stage models, verification    | [`WORKPLAN.md`](../WORKPLAN.md) |
 | Specific decisions and their alternatives            | [`adr/`](./adr/)                |
+| The plant-record schema (types + validation)         | `packages/engine/src/schema/`   |

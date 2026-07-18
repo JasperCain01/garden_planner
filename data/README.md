@@ -9,7 +9,11 @@ a _build output_ of the `packages/etl` pipeline, committed to the repo so that:
 ## Status
 
 Empty for now — the dataset is produced starting in Workplan **Phase 1**
-(Stages 1.1–1.6). The schema it must conform to is defined in **Stage 0.2**.
+(Stages 1.1–1.6). The schema every record here must conform to is defined in
+**Stage 0.2** and lives in `packages/engine/src/schema/` (zod is the source of
+truth; see [`/docs/adr/0004-plant-schema.md`](../docs/adr/0004-plant-schema.md)).
+The ETL will call the schema's `validatePlant()` as its hard-fail gate (Stage
+1.5), so no malformed record ever lands here.
 
 ## How it will work
 

@@ -23,3 +23,4 @@ old one and mark the old one `Superseded`.
 - [0001 — Tech stack: TypeScript + Vite monorepo](./0001-tech-stack.md)
 - [0002 — UI framework: React](./0002-ui-framework-react.md)
 - [0003 — Static, client-side architecture](./0003-static-client-side-architecture.md)
+- [0004 — Plant-record schema (zod source of truth; method-aware spacing)](./0004-plant-schema.md)

@@ -6,9 +6,15 @@
  * Phase 2). The real suitability-scoring and spacing/density logic arrives in
  * Stages 2.1–2.3.
  *
- * For now the package exposes a single marker so the app shell can prove the
- * cross-workspace wiring type-checks and bundles end-to-end.
+ * Stage 0.2 adds the **canonical plant-record schema** — the shape every later
+ * stage builds on. It is re-exported here as the package's public surface.
  */
+
+/**
+ * The plant-record schema, inferred types, and validators (Stage 0.2). zod is the
+ * single source of truth; see `schema/plant.ts`.
+ */
+export * from './schema';
 
 /** Marker the app shell reads to confirm the engine package is wired in. */
 export const ENGINE_READY = true;
