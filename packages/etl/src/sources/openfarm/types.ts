@@ -57,6 +57,13 @@ export function assertOpenFarmCropArray(value: unknown): OpenFarmCropRaw[] {
   return value.map((entry, index) => assertOpenFarmCrop(entry, index));
 }
 
+/**
+ * Check a single array entry against the `OpenFarmCropRaw` shape (every
+ * field's type, and the nested `source` block), throwing with the entry's
+ * index if anything doesn't match. Split out from
+ * {@link assertOpenFarmCropArray} so a shape mismatch reports *which* record
+ * is bad, not just that the array as a whole is suspect.
+ */
 function assertOpenFarmCrop(value: unknown, index: number): OpenFarmCropRaw {
   const isStringOrUndefined = (v: unknown): v is string | undefined =>
     v === undefined || typeof v === 'string';

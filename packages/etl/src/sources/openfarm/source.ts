@@ -10,7 +10,8 @@
  * checks). Records it can't map (unknown category, missing spacing/light/
  * binomial data) are left out here rather than handed to the pipeline's name
  * resolver for a GBIF lookup that could never produce a shippable record —
- * see {@link countSkipped} for inspecting what got left out and why.
+ * see `createOpenFarmSource`'s returned `getSkipped()` for inspecting what
+ * got left out and why.
  */
 
 import { fileURLToPath } from 'node:url';
@@ -35,10 +36,12 @@ export interface CreateOpenFarmSourceOptions {
 }
 
 /**
- * Records `fetchRecords()` left out, most recently computed. Exposed for
- * logging/diagnostics (and tests) without changing the `SourceAdapter`
- * contract, which has no room for a "records we chose not to return" channel.
- * Reset on every `fetchRecords()` call.
+ * Build the OpenFarm `SourceAdapter`. Returns a `SourceAdapter` extended with
+ * `getSkipped()` — the records `fetchRecords()` most recently left out, and
+ * why. Exposed as an extra method (not part of the `SourceAdapter` contract
+ * itself, which has no room for a "records we chose not to return" channel)
+ * so callers can log/diagnose without the pipeline needing to know about it.
+ * `getSkipped()` is reset on every `fetchRecords()` call.
  */
 export function createOpenFarmSource(options: CreateOpenFarmSourceOptions = {}): SourceAdapter & {
   /** Why each left-out record was left out, from the most recent `fetchRecords()` call. */

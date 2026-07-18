@@ -35,7 +35,13 @@ export interface OpenFarmSkip {
 export interface OpenFarmMapped {
   /** A schema-valid `Plant`, `gbifId` still `null` pending resolution. */
   readonly plant: Plant;
-  /** The name to resolve against GBIF — see {@link pickResolveName}. */
+  /**
+   * The name to resolve against GBIF — the record's own scientific (binomial)
+   * name, since a mappable record always has one (see the "no binomial"
+   * skip check below). A taxonomic query is far less ambiguous than one on a
+   * common name, unlike Stage 1.1's demo list, which only ever had common
+   * names to work with.
+   */
   readonly resolveName: string;
 }
 
@@ -71,21 +77,6 @@ function mapSun(sun: string | undefined): LightRequirement | undefined {
   }
 }
 
-/**
- * Pick the name to resolve against GBIF, preferring the scientific name when
- * the source gives one — a taxonomic match on a binomial is far less
- * ambiguous than one on a common name (unlike Stage 1.1's demo list, which
- * only ever had common names to work with). Some records list several
- * binomials comma-separated for a species complex (e.g. amaranth); GBIF
- * resolves one taxon per query, so this takes the first and leaves the rest
- * unused — a documented simplification, not a data-loss bug, since the
- * `scientificName` field mapped below also only keeps that first name.
- */
-function pickResolveName(raw: OpenFarmCropRaw): string {
-  const binomial = raw.binomialName?.split(',')[0]?.trim();
-  return binomial && binomial.length > 0 ? binomial : raw.name;
-}
-
 /** Reformat OpenFarm's `YYYYMMDD` capture date into ISO-8601 (`YYYY-MM-DD`). */
 function formatCapturedDate(captured: string): string | undefined {
   const match = /^(\d{4})(\d{2})(\d{2})$/.exec(captured);
@@ -114,6 +105,11 @@ export function mapOpenFarmCrop(raw: OpenFarmCropRaw): OpenFarmMapOutcome {
     return skip(`sun value ${JSON.stringify(raw.sun)} does not map to a light requirement`);
   }
 
+  // Some records list several binomials comma-separated for a species
+  // complex (e.g. amaranth); GBIF resolves one taxon per query, so this
+  // takes the first and leaves the rest unused for both `scientificName`
+  // and the GBIF query below — a documented simplification, not a data-loss
+  // bug (see the ADR).
   const binomial = raw.binomialName?.split(',')[0]?.trim();
   if (!binomial) {
     return skip('no binomial (scientific) name to seed the Plant record with');
@@ -163,5 +159,5 @@ export function mapOpenFarmCrop(raw: OpenFarmCropRaw): OpenFarmMapOutcome {
     },
   });
 
-  return { skipped: false, plant, resolveName: pickResolveName(raw) };
+  return { skipped: false, plant, resolveName: binomial };
 }
