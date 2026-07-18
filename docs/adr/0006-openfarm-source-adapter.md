@@ -205,6 +205,81 @@ fourth outcome category.
   `categories.ts`) or Stage 1.4's companion-data work never needs a second
   network fetch to get at records this adapter doesn't map today.
 
+## Addendum: PFAF, Permapeople, and substitute sources — blocked, not built
+
+Stage 1.2 as scoped in `WORKPLAN.md` names three sources (PFAF, OpenFarm,
+Permapeople); this ADR covers OpenFarm. A later session in the same stage
+investigated PFAF and Permapeople directly, hit hard access blockers on both,
+searched for a freely-accessible substitute, and — on finding a promising
+candidate had provenance red flags — stopped rather than ship data nobody
+could vouch for. Recorded here so the next session doesn't repeat the same
+research from scratch.
+
+**PFAF.** `DESIGN.md` §2 describes it as "downloadable as CSV / Excel /
+SQLite," which understates the real situation: the live site's per-plant
+search is free, but the bulk database download is **paywalled** — PFAF's own
+shop lists it at $30 (student) to $150 (commercial edition). There is no free
+bulk download to fetch-once-and-cache the way `DESIGN.md` assumed. `pfaf.org`
+is also network-blocked in this sandbox regardless (same egress policy that
+blocks `api.gbif.org`), so even the free single-plant search couldn't be
+scripted here. **Unblocking this needs a human to purchase a licence** (or a
+future session with different network access, which still wouldn't remove
+the paywall).
+
+**Permapeople.** The API (`permapeople.org/knowledgebase/api-docs/`) is free
+to use but requires per-request header authentication
+(`x-permapeople-key-id` / `x-permapeople-key-secret`) obtained via account
+signup — credentials this session has no way to self-provision, and
+`permapeople.org` is also network-blocked here. Data itself is CC BY-SA 4.0,
+which is fine. **Unblocking this needs a human to sign up and hand over an
+API key.**
+
+**USDA PLANTS**, floated as a free/public-domain substitute (it's public
+domain, per `DESIGN.md`), turned out to be reachable by neither `plants.usda.gov`
+nor `data.nal.usda.gov` nor GBIF's own hosted mirror of it
+(`gbif.org`/`ipt.gbif.org` are blocked the same way `api.gbif.org` is) —
+this one is a pure sandbox-network blocker, not a licensing one. Worth a
+retry from a session with GBIF-class network access, since GBIF hosts a
+Darwin Core Archive of this exact dataset per `www.gbif.org/dataset/705922f7-5ba5-49ab-a75d-722e3090e690`.
+
+**Other candidates found and rejected:**
+
+- [`heydenberk/gardening-data`](https://github.com/heydenberk/gardening-data) —
+  a small (39-species), well-structured, GitHub-hosted JSON dataset explicitly
+  built for a garden-planning app, with exactly the fields this schema wants
+  (spacing, sun, hardiness zone, edible parts). **Rejected for now: no
+  `LICENSE` file and no license statement anywhere in the README.** A public
+  GitHub repo without a stated licence is default all-rights-reserved —
+  visible and forkable, but not something this project can legally ingest
+  into a CC-licensed dataset without asking the author directly. Worth
+  revisiting if someone gets explicit permission.
+- [`bripatch/plant-variety-database`](https://github.com/bripatch/plant-variety-database) —
+  a 1,972-variety CSV dataset, explicitly CC BY 4.0, that on the surface looks
+  ideal (sun/spacing/hardiness/soil fields, per-variety source citations,
+  claims of "no AI-generated plant facts"). **Rejected on provenance
+  grounds, not licensing.** Red flags: a brand-new GitHub account with this
+  as its only repository; a README with the polish and structure of an
+  AI-authored data-product pitch (day-one cross-posting to Kaggle and Hugging
+  Face, a "why this dataset exists" marketing pitch, ML/IoT "use cases"); and
+  a claimed source website (`plants.windrivergreens.com`) that is itself
+  unreachable from this sandbox and otherwise unverifiable. The per-variety
+  breeder citations (Johnny's Selected Seeds URLs) look individually
+  plausible on inspection, but with `johnnyseeds.com` and `fdc.nal.usda.gov`
+  both also network-blocked here, nothing in the dataset could actually be
+  checked against its cited sources. Given the project's standing rule
+  against shipping unverified horticultural facts (`WORKPLAN.md` §1), the
+  right call was to not ingest data whose authenticity can't be checked, not
+  to trust a confident-sounding README. If a future session **can** reach
+  `johnnyseeds.com`/`ncsu.edu`/`fdc.nal.usda.gov`, spot-checking a random
+  sample of `data/sources.csv` rows against the real pages would settle this
+  either way before building against it.
+
+None of this blocks Stage 1.3+ (the spacing table, engine, frontend all
+depend on 0.2/1.1, not on 1.2 being fully populated) — it only means the
+`/data` merge in Stage 1.5 will, for now, have OpenFarm as its only real
+source until a human unblocks PFAF/Permapeople or a future session gets
+USDA/GBIF network access.
+
 ## Consequences
 
 - `NOTICE` is corrected: OpenFarm's licence there was recorded as CC BY-SA

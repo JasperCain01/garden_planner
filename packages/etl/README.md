@@ -29,9 +29,19 @@ What exists today:
   `starterNamesSource` (`src/pipeline/starter-source.ts`, kept as a reference
   implementation of the interface but no longer the default).
 
-Not yet built (arrives in later Phase 1 stages): PFAF and Permapeople
-adapters (rest of 1.2), the hand-verified spacing table (1.3), companion data
-(1.4), and the merge/validate/emit step that actually writes to `/data` (1.5).
+Not yet built (arrives in later Phase 1 stages): the hand-verified spacing
+table (1.3), companion data (1.4), and the merge/validate/emit step that
+actually writes to `/data` (1.5).
+
+**PFAF and Permapeople adapters (the rest of 1.2) are blocked, not skipped.**
+PFAF's bulk database is paywalled ($30–150, no free bulk download exists);
+Permapeople's API needs a signed-up account's API key. A substitute source
+(USDA PLANTS) turned out to be unreachable from this sandbox, and the one
+freely-licensed alternative found (`bripatch/plant-variety-database`) has
+provenance red flags serious enough not to trust without independent
+verification. Full detail, including exactly what would unblock each one, is
+in [`docs/adr/0006`](../../docs/adr/0006-openfarm-source-adapter.md)'s
+addendum — read that before re-researching this from scratch.
 
 ## Running it
 
