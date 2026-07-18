@@ -158,6 +158,17 @@ describe('createGbifResolver', () => {
     expect(outcome).toEqual({ status: 'unresolved', query: 'not-a-real-plant', fromCache: false });
   });
 
+  it('treats a match with an id but no name text as unresolved, rather than caching the raw query as a fake scientific name', async () => {
+    const transport = stubTransport({
+      onion: { usageKey: 1000001, matchType: 'EXACT', confidence: 98 }, // no canonicalName/scientificName
+    });
+    const resolver = createGbifResolver({ transport });
+
+    const outcome = await resolver.resolve('onion');
+
+    expect(outcome).toEqual({ status: 'unresolved', query: 'onion', fromCache: false });
+  });
+
   it('treats a low-confidence fuzzy match as unresolved rather than trusting a weak guess', async () => {
     const transport = stubTransport({
       vague: { usageKey: 999, canonicalName: 'Something spp.', matchType: 'FUZZY', confidence: 40 },

@@ -1,32 +1,24 @@
 /**
  * The pipeline shell (WORKPLAN.md Stage 1.1).
  *
- * Sequences the build-time ETL: gather names to resolve (from registered
- * source adapters, once Stage 1.2 adds them — see `pipeline/source.ts`) and
- * resolve every one against GBIF (`resolve/gbif-resolver.ts`), logging
- * progress as it goes. Mapping raw records into `Plant`s, reconciling
- * duplicates, and validating the result are later stages (1.2–1.5); this
- * shell only proves the sequencing and the resolution step work end to end.
+ * Sequences the build-time ETL: gather names to resolve from every registered
+ * source adapter (`pipeline/source.ts`) and resolve every one against GBIF
+ * (`resolve/gbif-resolver.ts`), logging progress as it goes. Mapping raw
+ * records into `Plant`s, reconciling duplicates, and validating the result
+ * are later stages (1.2–1.5); this shell only proves the sequencing and the
+ * resolution step work end to end. Deliberately agnostic to *which* sources
+ * are registered, or whether zero are — see `pipeline/starter-source.ts` and
+ * `src/index.ts` for how the demo/starter source is plugged in today.
  */
 
 import type { GbifResolver, ResolveOutcome } from '../resolve/gbif-resolver.ts';
 import type { SourceAdapter } from './source.ts';
 
-/**
- * A small starter list of common edible names to resolve when no source
- * adapters are registered yet (true until Stage 1.2 lands). This lets
- * `npm run start -w @garden-planner/etl` exercise the real resolve-and-cache
- * step today, rather than the pipeline being a no-op until 1.2 exists. Once
- * adapters are registered, their records supply the names instead — see
- * {@link gatherNames}.
- */
-export const STARTER_NAMES: readonly string[] = ['onion', 'lettuce', 'carrot', 'potato', 'tomato'];
-
 /** A minimal logger interface so tests can capture output instead of printing it. */
 export type PipelineLogger = (message: string) => void;
 
 export interface PipelineOptions {
-  /** Registered source adapters. Empty until Stage 1.2 (see `pipeline/source.ts`). */
+  /** Registered source adapters. Empty by default (see module doc above). */
   sources?: SourceAdapter[];
   /** The resolver to use for name resolution. Required — see `createGbifResolver`. */
   resolver: GbifResolver;
@@ -35,7 +27,7 @@ export interface PipelineOptions {
 }
 
 export interface PipelineResult {
-  /** How many source adapters ran (0 until Stage 1.2). */
+  /** How many source adapters ran. */
   sourceCount: number;
   /** Every name-resolution outcome, in the order they were resolved. */
   outcomes: ResolveOutcome[];
@@ -48,19 +40,8 @@ export interface PipelineResult {
   };
 }
 
-/**
- * Collect the names to resolve: one per record from every registered source,
- * falling back to {@link STARTER_NAMES} when no sources are registered so the
- * pipeline has something real to do before Stage 1.2 exists.
- */
+/** Collect the names to resolve: one per record from every registered source. */
 async function gatherNames(sources: SourceAdapter[], log: PipelineLogger): Promise<string[]> {
-  if (sources.length === 0) {
-    log(
-      `No source adapters registered yet (Stage 1.2) — using ${STARTER_NAMES.length} starter names.`,
-    );
-    return [...STARTER_NAMES];
-  }
-
   const names: string[] = [];
   for (const source of sources) {
     log(`Fetching records from source "${source.id}" (${source.label})…`);
@@ -71,6 +52,13 @@ async function gatherNames(sources: SourceAdapter[], log: PipelineLogger): Promi
   return names;
 }
 
+/**
+ * Tally resolved/unresolved/error/from-cache counts for the end-of-run log
+ * line. `fromCache` only makes sense for `resolved`/`unresolved` outcomes —
+ * an `error` outcome is, by construction, never a cache entry (see
+ * `gbif-resolver.ts`) — so it's excluded from that count rather than treated
+ * as `false`.
+ */
 function summarize(outcomes: ResolveOutcome[]): PipelineResult['summary'] {
   const summary = { resolved: 0, unresolved: 0, error: 0, fromCache: 0 };
   for (const outcome of outcomes) {
@@ -93,6 +81,9 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
   const log = options.log ?? console.log;
 
   log('garden-planner ETL pipeline starting…');
+  if (sources.length === 0) {
+    log('No source adapters registered — nothing to resolve.');
+  }
   const names = await gatherNames(sources, log);
 
   log(`Resolving ${names.length} name(s) against GBIF…`);

@@ -44,6 +44,44 @@ const GBIF_MATCH_URL = 'https://api.gbif.org/v1/species/match';
 /** How long to wait for GBIF before treating the call as a transport failure. */
 const REQUEST_TIMEOUT_MS = 8000;
 
+const MATCH_TYPES = ['EXACT', 'FUZZY', 'HIGHERRANK', 'NONE'] as const;
+
+/**
+ * Check the JSON body actually looks like a `GbifMatchResponse` before
+ * trusting it, rather than blindly casting it with `as`. GBIF is an external
+ * API outside our control; a shape it doesn't document (an error envelope, a
+ * future field-type change) must surface as a transport failure — retried
+ * next run — rather than silently caching corrupted data (e.g. a `gbifId`
+ * that isn't really a number) that only fails much later, confusingly, when
+ * something tries to validate a `Plant` against it.
+ */
+function assertGbifMatchResponse(value: unknown, name: string): GbifMatchResponse {
+  const isNumberOrUndefined = (v: unknown): v is number | undefined =>
+    v === undefined || typeof v === 'number';
+  const isStringOrUndefined = (v: unknown): v is string | undefined =>
+    v === undefined || typeof v === 'string';
+
+  if (typeof value !== 'object' || value === null) {
+    throw new Error(`GBIF species/match returned a non-object response for "${name}"`);
+  }
+  const body = value as Record<string, unknown>;
+  const shapeIsValid =
+    isNumberOrUndefined(body.usageKey) &&
+    isNumberOrUndefined(body.acceptedUsageKey) &&
+    isNumberOrUndefined(body.confidence) &&
+    isStringOrUndefined(body.scientificName) &&
+    isStringOrUndefined(body.canonicalName) &&
+    (body.matchType === undefined ||
+      MATCH_TYPES.includes(body.matchType as (typeof MATCH_TYPES)[number]));
+
+  if (!shapeIsValid) {
+    throw new Error(
+      `GBIF species/match returned an unexpected response shape for "${name}": ${JSON.stringify(value)}`,
+    );
+  }
+  return body as GbifMatchResponse;
+}
+
 /**
  * The real transport, backed by the platform `fetch`. Kept tiny on purpose —
  * all the interesting logic (caching, synonym resolution, confidence
@@ -65,7 +103,7 @@ export function createFetchGbifTransport(fetchImpl: typeof fetch = fetch): GbifT
         );
       }
 
-      return (await response.json()) as GbifMatchResponse;
+      return assertGbifMatchResponse(await response.json(), name);
     },
   };
 }

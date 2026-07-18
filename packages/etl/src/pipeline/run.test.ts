@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { runPipeline, STARTER_NAMES } from './run';
-import type { GbifResolver, ResolveOutcome } from '../resolve/gbif-resolver';
-import type { SourceAdapter } from './source';
+import { runPipeline } from './run.ts';
+import type { GbifResolver, ResolveOutcome } from '../resolve/gbif-resolver.ts';
+import type { SourceAdapter } from './source.ts';
 
 /** A fake resolver whose `resolveMany` just echoes back canned outcomes, keyed by name. */
 function fakeResolver(outcomesByName: Record<string, ResolveOutcome>): GbifResolver {
@@ -14,32 +14,28 @@ function fakeResolver(outcomesByName: Record<string, ResolveOutcome>): GbifResol
   };
 }
 
+/** A fixture source adapter yielding one `SourceRecord` per given name. */
+function fixtureSource(id: string, names: string[]): SourceAdapter {
+  return {
+    id,
+    label: `Fixture: ${id}`,
+    fetchRecords: vi.fn(async () => names.map((name) => ({ name, raw: null }))),
+  };
+}
+
 describe('runPipeline', () => {
-  it('falls back to the starter names when no source adapters are registered', async () => {
-    const outcomesByName = Object.fromEntries(
-      STARTER_NAMES.map((name) => [
-        name,
-        { status: 'unresolved', query: name, fromCache: false } as ResolveOutcome,
-      ]),
-    );
-    const resolver = fakeResolver(outcomesByName);
+  it('resolves nothing and reports zero sources when none are registered', async () => {
+    const resolver = fakeResolver({});
 
     const result = await runPipeline({ resolver, log: () => {} });
 
     expect(result.sourceCount).toBe(0);
-    expect(resolver.resolveMany).toHaveBeenCalledWith(STARTER_NAMES);
-    expect(result.outcomes).toHaveLength(STARTER_NAMES.length);
+    expect(result.outcomes).toEqual([]);
+    expect(resolver.resolveMany).toHaveBeenCalledWith([]);
   });
 
-  it('resolves names gathered from registered source adapters instead of the starter list', async () => {
-    const source: SourceAdapter = {
-      id: 'fixture-source',
-      label: 'Fixture Source',
-      fetchRecords: vi.fn(async () => [
-        { name: 'kale', raw: {} },
-        { name: 'chard', raw: {} },
-      ]),
-    };
+  it('resolves names gathered from every registered source adapter', async () => {
+    const source = fixtureSource('fixture-source', ['kale', 'chard']);
     const resolver = fakeResolver({
       kale: {
         status: 'resolved',
@@ -61,7 +57,22 @@ describe('runPipeline', () => {
     expect(result.summary).toEqual({ resolved: 1, unresolved: 1, error: 0, fromCache: 0 });
   });
 
+  it('gathers names from multiple registered sources in order', async () => {
+    const sourceA = fixtureSource('a', ['onion']);
+    const sourceB = fixtureSource('b', ['lettuce']);
+    const resolver = fakeResolver({
+      onion: { status: 'unresolved', query: 'onion', fromCache: false },
+      lettuce: { status: 'unresolved', query: 'lettuce', fromCache: false },
+    });
+
+    const result = await runPipeline({ sources: [sourceA, sourceB], resolver, log: () => {} });
+
+    expect(resolver.resolveMany).toHaveBeenCalledWith(['onion', 'lettuce']);
+    expect(result.sourceCount).toBe(2);
+  });
+
   it('summarizes resolved, unresolved, error, and cache-hit counts', async () => {
+    const names = ['onion', 'lettuce', 'carrot', 'potato', 'tomato'];
     const resolver = fakeResolver({
       onion: {
         status: 'resolved',
@@ -86,23 +97,23 @@ describe('runPipeline', () => {
       tomato: { status: 'unresolved', query: 'tomato', fromCache: true },
     });
 
-    const result = await runPipeline({ resolver, log: () => {} });
+    const result = await runPipeline({
+      sources: [fixtureSource('fixture', names)],
+      resolver,
+      log: () => {},
+    });
 
     expect(result.summary).toEqual({ resolved: 2, unresolved: 2, error: 1, fromCache: 2 });
   });
 
   it('logs progress instead of throwing when everything is provided a working logger', async () => {
-    const resolver = fakeResolver(
-      Object.fromEntries(
-        STARTER_NAMES.map((name) => [
-          name,
-          { status: 'unresolved', query: name, fromCache: false } as ResolveOutcome,
-        ]),
-      ),
-    );
+    const source = fixtureSource('fixture', ['onion']);
+    const resolver = fakeResolver({
+      onion: { status: 'unresolved', query: 'onion', fromCache: false },
+    });
     const messages: string[] = [];
 
-    await runPipeline({ resolver, log: (message) => messages.push(message) });
+    await runPipeline({ sources: [source], resolver, log: (message) => messages.push(message) });
 
     expect(messages.some((line) => line.includes('starting'))).toBe(true);
     expect(messages.some((line) => line.includes('Done:'))).toBe(true);

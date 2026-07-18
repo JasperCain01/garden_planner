@@ -15,18 +15,18 @@
 
 import type { GbifTransport } from './gbif-transport.ts';
 import { createFetchGbifTransport } from './gbif-transport.ts';
-import type { CacheEntry, NameCache } from './gbif-cache.ts';
+import type { CacheEntry, CachedResolution, NameCache } from './gbif-cache.ts';
 import { normalizeQuery } from './gbif-cache.ts';
 
-/** A confident resolution: GBIF matched the name to a usable taxon. */
-export interface ResolvedOutcome {
+/**
+ * A confident resolution: GBIF matched the name to a usable taxon. Extends
+ * the cache entry shape directly (rather than re-declaring `gbifId`/
+ * `scientificName`/`matchType`/`confidence`) so the two can't drift apart.
+ */
+export interface ResolvedOutcome extends Omit<CachedResolution, 'status'> {
   readonly status: 'resolved';
   /** The name as originally queried (before normalization). */
   readonly query: string;
-  readonly gbifId: number;
-  readonly scientificName: string;
-  readonly matchType: string;
-  readonly confidence: number;
   /** Whether this answer came from the cache (no network call was made). */
   readonly fromCache: boolean;
 }
@@ -96,7 +96,7 @@ export function createGbifResolver(options: GbifResolverOptions = {}): GbifResol
 
   function toResolvedOutcome(
     query: string,
-    entry: CachedResolutionFields,
+    entry: Omit<CachedResolution, 'status'>,
     fromCache: boolean,
   ): ResolvedOutcome {
     return { status: 'resolved', query, fromCache, ...entry };
@@ -122,11 +122,18 @@ export function createGbifResolver(options: GbifResolverOptions = {}): GbifResol
 
     const gbifId = response.acceptedUsageKey ?? response.usageKey;
     const confidence = response.confidence ?? 0;
+    // GBIF can, in principle, return a matched id with no name text at all.
+    // Trusting the raw query string as a stand-in "scientific name" would
+    // silently cache a common name (e.g. "onion") as if GBIF had vouched for
+    // it — so a match with no name string is treated as unresolved rather
+    // than guessed at.
+    const scientificName = response.canonicalName ?? response.scientificName;
     const isUsableMatch =
       response.matchType !== undefined &&
       response.matchType !== 'NONE' &&
       response.matchType !== 'HIGHERRANK' &&
       gbifId !== undefined &&
+      scientificName !== undefined &&
       confidence >= minConfidence;
 
     if (!isUsableMatch) {
@@ -135,8 +142,7 @@ export function createGbifResolver(options: GbifResolverOptions = {}): GbifResol
       return { status: 'unresolved', query: name, fromCache: false };
     }
 
-    const scientificName = response.canonicalName ?? response.scientificName ?? name;
-    const entry: CacheEntry = {
+    const entry: CachedResolution = {
       status: 'resolved',
       gbifId,
       scientificName,
@@ -161,6 +167,3 @@ export function createGbifResolver(options: GbifResolverOptions = {}): GbifResol
     getCache: () => ({ ...cache }),
   };
 }
-
-/** The fields a resolved cache entry and a resolved outcome share. */
-type CachedResolutionFields = Omit<Extract<CacheEntry, { status: 'resolved' }>, 'status'>;

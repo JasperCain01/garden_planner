@@ -98,10 +98,23 @@ adapters implement. `pipeline/run.ts`'s `runPipeline` takes a `sources: []`
 array, fetches records from each, extracts the name to resolve from every
 record, and resolves the whole batch. Adding a source is: write a module
 implementing `SourceAdapter`, add it to the array passed to `runPipeline` —
-nothing in the pipeline's sequencing changes. Until Stage 1.2 exists, the
-pipeline falls back to a small `STARTER_NAMES` list (onion, lettuce, carrot,
-potato, tomato) so `npm run start -w @garden-planner/etl` is a real,
-observable action today rather than a no-op waiting for 1.2.
+nothing in the pipeline's sequencing changes, including the "zero sources
+registered" case, which `runPipeline` reports plainly (0 names, 0 outcomes)
+rather than silently substituting something else.
+
+Until Stage 1.2 exists there's nothing to register, so `src/index.ts`
+registers `pipeline/starter-source.ts`'s `starterNamesSource` — a small demo
+`SourceAdapter` over a fixed name list (onion, lettuce, carrot, potato,
+tomato) — so `npm run start -w @garden-planner/etl` is a real, observable
+action today rather than a no-op waiting for 1.2. This demo fallback
+deliberately lives at the call site (`index.ts`), not inside `runPipeline`
+itself: an early version put the "no sources → use a starter list" branch
+directly in the pipeline orchestrator, which meant a genuine misconfiguration
+in a future run (e.g. Stage 1.2's adapter registry failing to populate) would
+be indistinguishable from "intentionally running the Stage 1.1 demo" — both
+would silently resolve five hardcoded crops. Moving the fallback to the
+composition root keeps `runPipeline` honest about "zero sources" while still
+giving Stage 1.1 something real to run.
 
 ## Alternatives considered
 
@@ -149,6 +162,24 @@ observable action today rather than a no-op waiting for 1.2.
   _query_, not necessarily a freshly-fetched accepted-name string when the
   match was a synonym (see §1) — a documented simplification, not a bug, that
   Stage 1.2/1.5 should be aware of if it ever surfaces a mismatch.
+- **The transport validates the response shape before trusting it.**
+  `createFetchGbifTransport` doesn't just `as`-cast the parsed JSON — it
+  checks that `usageKey`/`confidence`/etc. actually have the types the
+  resolver assumes, and throws (a retryable `error` outcome, not a cached
+  one) otherwise. GBIF is an external API outside our control; treating a
+  shape mismatch as a transport failure means a future API change surfaces
+  as a loud, retried error rather than a `gbifId` silently poisoned with the
+  wrong type. The same reasoning applies one level up: if GBIF returns a
+  usable id and `matchType` but no name text at all (both `canonicalName` and
+  `scientificName` absent — legal per the response type, if unlikely in
+  practice), the resolver treats that as `unresolved` rather than caching the
+  raw query string as a stand-in scientific name.
+- **`main()` only rewrites the cache file when it actually changed.**
+  Because a cache hit never mutates an existing entry (only a genuine miss
+  adds one), comparing the entry count before and after a run is enough to
+  detect "nothing new was learned" — cheaper than a deep-equality check and
+  avoids a spurious write (and possible reformatting diff) on the committed
+  cache file for a run that resolved everything from cache.
 - `packages/etl/src/resolve/apply-resolution.ts` bridges a resolution back
   into a `Plant` via `@garden-planner/engine`'s own `validatePlant`, so filling
   `gbifId` is proven schema-valid rather than merely plausible — and the etl

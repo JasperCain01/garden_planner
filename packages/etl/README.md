@@ -19,8 +19,10 @@ What exists today:
   nullable `gbifId` — the join key later sources are reconciled by.
 - **The "add a source" extension point** (`src/pipeline/source.ts`) — the
   `SourceAdapter` interface Stage 1.2's PFAF/OpenFarm/Permapeople adapters
-  will implement. No real adapters exist yet; the pipeline runs a small
-  built-in starter name list until they do.
+  will implement. No real adapters exist yet; `src/index.ts` registers a
+  small demo `SourceAdapter` (`src/pipeline/starter-source.ts`) until they
+  do — the pipeline orchestrator itself (`run.ts`) doesn't know or care that
+  it's a demo, which is the point of the extension point.
 
 Not yet built (arrives in later Phase 1 stages): real source adapters (1.2),
 the hand-verified spacing table (1.3), companion data (1.4), and the
@@ -34,9 +36,11 @@ npm run start -w @garden-planner/etl
 
 This loads the committed GBIF cache (`cache/gbif-name-cache.json`), resolves
 every name it doesn't already have a cached answer for (currently the starter
-list — `onion`, `lettuce`, `carrot`, `potato`, `tomato` — since no source
-adapters are registered yet), logs each outcome, and writes any newly-learned
-resolutions back to the cache file. Commit that file if it changed.
+list — `onion`, `lettuce`, `carrot`, `potato`, `tomato` — via the demo
+`starterNamesSource`, since no real source adapters are registered yet), logs
+each outcome, and writes any newly-learned resolutions back to the cache file
+— but only if something new was actually learned, so a run where every name
+was already cached leaves the file untouched. Commit the file if it changed.
 
 `npm run typecheck -w @garden-planner/etl` and `npm run test -w
 @garden-planner/etl` work the same as any other workspace; `npm run build -w
@@ -88,7 +92,9 @@ export const pfafAdapter: SourceAdapter = {
 };
 ```
 
-Then pass it in: `runPipeline({ sources: [pfafAdapter], resolver })`. Mapping
+Then register it in `src/index.ts`'s `main()` (replacing or joining
+`[starterNamesSource]` in the `sources` it passes to `runPipeline`) — or pass
+it directly: `runPipeline({ sources: [pfafAdapter], resolver })`. Mapping
 `SourceRecord.raw` into a `Plant` (and any source-specific caching) is the
 adapter's own concern — the pipeline only orchestrates and resolves names.
 
@@ -97,10 +103,12 @@ adapter's own concern — the pipeline only orchestrates and resolves names.
 ```
 src/
   index.ts               CLI entry point: loads the cache, runs the pipeline,
-                          saves the cache. Executed by `npm run start`.
+                          saves the cache if anything new was learned.
+                          Executed by `npm run start`.
   pipeline/
     source.ts             SourceAdapter — the "add a source" extension point.
     run.ts                Orchestration: gather names → resolve → log → summarize.
+    starter-source.ts     Demo SourceAdapter used until Stage 1.2's real ones exist.
   resolve/
     gbif-transport.ts      The network boundary (injectable; real fetch impl).
     gbif-cache.ts           Load/save the committed JSON cache.
