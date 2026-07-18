@@ -14,7 +14,7 @@
  * The plant-record schema, inferred types, and validators (Stage 0.2). zod is the
  * single source of truth; see `schema/plant.ts`.
  */
-export * from './schema';
+export * from './schema/index.ts';
 
 /** Marker the app shell reads to confirm the engine package is wired in. */
 export const ENGINE_READY = true;

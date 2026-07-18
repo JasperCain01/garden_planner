@@ -7,10 +7,13 @@
  * dataset committed under `/data`. The **deployed app never runs this code** —
  * that separation is what keeps the app offline-safe (see docs/adr/0003).
  *
- * Stage 1.1 (this file) adds the runnable pipeline shell and the GBIF
- * name-resolution step; see `docs/adr/0005-gbif-name-resolver.md`. Source
- * adapters (PFAF, OpenFarm, Permapeople) and the merge/validation gate arrive
- * in Stages 1.2–1.5.
+ * Stage 1.1 added the runnable pipeline shell and the GBIF name-resolution
+ * step (`docs/adr/0005-gbif-name-resolver.md`). Stage 1.2 adds the first real
+ * source adapter, OpenFarm (`docs/adr/0006-openfarm-source-adapter.md`) —
+ * registered below in place of Stage 1.1's `starterNamesSource` demo, which
+ * was always a stand-in "until Stage 1.2 registers real ones" (see
+ * `pipeline/starter-source.ts`). PFAF and Permapeople, and the merge/
+ * validation gate that actually writes `/data`, arrive in Stages 1.2–1.5.
  */
 
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -20,7 +23,7 @@ import { loadCache, saveCache } from './resolve/gbif-cache.ts';
 import { runPipeline } from './pipeline/run.ts';
 import type { PipelineResult } from './pipeline/run.ts';
 import type { SourceAdapter } from './pipeline/source.ts';
-import { starterNamesSource } from './pipeline/starter-source.ts';
+import { openfarmSource } from './sources/openfarm/source.ts';
 
 /**
  * The committed GBIF name-resolution cache. Lives in `packages/etl/cache`,
@@ -34,9 +37,9 @@ export interface MainOptions {
   /** Where the committed cache lives. Defaults to `CACHE_PATH`; tests override with a temp path. */
   cachePath?: string;
   /**
-   * Source adapters to run. Defaults to the Stage 1.1 starter demo source
-   * until Stage 1.2 registers real ones — this is the one place that
-   * decision is made; `runPipeline` itself stays agnostic to it.
+   * Source adapters to run. Defaults to the Stage 1.2 OpenFarm adapter — this
+   * is the one place that decision is made; `runPipeline` itself stays
+   * agnostic to which sources are registered (`pipeline/source.ts`).
    */
   sources?: SourceAdapter[];
   /** Injectable GBIF transport. Defaults to the real fetch-backed client; tests inject a stub. */
@@ -45,7 +48,7 @@ export interface MainOptions {
 
 /**
  * Run the full pipeline once: load the cache, resolve names (from `sources`,
- * defaulting to the starter demo list), and persist any newly-learned
+ * defaulting to the OpenFarm adapter), and persist any newly-learned
  * resolutions back to the cache file — but only if resolving actually taught
  * the resolver something new. An unchanged cache is never rewritten: every
  * cache hit is served from the loaded cache without modifying it, so if the
@@ -54,7 +57,7 @@ export interface MainOptions {
  */
 export async function main(options: MainOptions = {}): Promise<PipelineResult> {
   const cachePath = options.cachePath ?? CACHE_PATH;
-  const sources = options.sources ?? [starterNamesSource];
+  const sources = options.sources ?? [openfarmSource];
 
   const cache = loadCache(cachePath);
   const resolver = createGbifResolver({ cache, transport: options.transport });

@@ -21,16 +21,20 @@ Everything below follows from that.
 ```
 
 - **`packages/etl`** runs only on a contributor's machine. It pulls from PFAF,
-  Permapeople, the OpenFarm dump, GBIF, etc., and writes the static dataset. The
-  deployed app never calls those sources — which is what makes it offline-safe.
-  As of Stage 1.1 (`packages/etl/README.md`, [`adr/0005`](./adr/0005-gbif-name-resolver.md))
+  Permapeople, the OpenFarm crops rescue dataset, GBIF, etc., and writes the
+  static dataset. The deployed app never calls those sources — which is what
+  makes it offline-safe. As of Stage 1.1
+  (`packages/etl/README.md`, [`adr/0005`](./adr/0005-gbif-name-resolver.md))
   it has a runnable pipeline shell, a documented `SourceAdapter` extension
-  point that Stage 1.2's PFAF/OpenFarm/Permapeople adapters implement, and a
-  GBIF scientific-name resolver that fills the schema's `gbifId` — the join
-  key the eventual merge step (Stage 1.5) reconciles records by. The resolver
-  is offline-first: its answers are cached to a committed JSON file
-  (`packages/etl/cache/`), so a second run — and CI, and an offline
-  contributor — needs no network for a name it has already resolved.
+  point, and a GBIF scientific-name resolver that fills the schema's
+  `gbifId` — the join key the eventual merge step (Stage 1.5) reconciles
+  records by. The resolver is offline-first: its answers are cached to a
+  committed JSON file (`packages/etl/cache/`), so a second run — and CI, and
+  an offline contributor — needs no network for a name it has already
+  resolved. Stage 1.2 ([`adr/0006`](./adr/0006-openfarm-source-adapter.md))
+  adds the first real `SourceAdapter` — OpenFarm, via a community-rescued
+  dump since no official one was ever published — establishing the
+  raw-shape/cache/mapper/adapter pattern PFAF and Permapeople follow next.
 - **`/data`** is that committed static artifact: the plant "database" as a file
   the browser loads directly. No database server exists at runtime.
 - **`packages/engine`** is pure, framework-free logic (suitability scoring,

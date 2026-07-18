@@ -7,4 +7,4 @@
  * here are all `z.infer`-derived (see `plant.ts`).
  */
 
-export * from './plant';
+export * from './plant.ts';

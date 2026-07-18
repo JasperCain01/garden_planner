@@ -105,33 +105,30 @@ describe('etl entry point', () => {
       expect(loadCache(cachePath)).toEqual(before);
     });
 
-    it('defaults to the starter demo source when none is provided', async () => {
-      const transport = stubTransport({
-        onion: { usageKey: 1, matchType: 'EXACT', confidence: 90, canonicalName: 'Allium cepa' },
-        lettuce: {
-          usageKey: 2,
-          matchType: 'EXACT',
-          confidence: 90,
-          canonicalName: 'Lactuca sativa',
-        },
-        carrot: { usageKey: 3, matchType: 'EXACT', confidence: 90, canonicalName: 'Daucus carota' },
-        potato: {
-          usageKey: 4,
-          matchType: 'EXACT',
-          confidence: 90,
-          canonicalName: 'Solanum tuberosum',
-        },
-        tomato: {
-          usageKey: 5,
-          matchType: 'EXACT',
-          confidence: 90,
-          canonicalName: 'Solanum lycopersicum',
-        },
-      });
+    it('defaults to the OpenFarm adapter (Stage 1.2) when no sources are provided', async () => {
+      // A catch-all transport: every OpenFarm record this adapter maps carries
+      // a binomial name to resolve, and this suite only cares that *some*
+      // real, non-trivial batch of them went through — not the exact count,
+      // which would make this test brittle against `categories.ts` growing.
+      const transport: GbifTransport = {
+        matchName: vi.fn(async (name: string) => ({
+          usageKey: name.length, // any stable-ish number; the value isn't asserted on
+          matchType: 'EXACT' as const,
+          confidence: 95,
+          canonicalName: name,
+        })),
+      };
 
       const result = await main({ cachePath, transport });
 
-      expect(result.summary.resolved).toBe(5);
+      expect(result.sourceCount).toBe(1);
+      // The real committed OpenFarm cache maps well over a hundred crops
+      // (see `sources/openfarm/categories.ts`) — asserting "a lot, and zero
+      // errors" proves the default source is real and offline-readable
+      // without hard-coding a count that would drift as curation grows.
+      expect(result.summary.resolved).toBeGreaterThan(100);
+      expect(result.summary.error).toBe(0);
+      expect(result.summary.unresolved).toBe(0);
     });
   });
 });

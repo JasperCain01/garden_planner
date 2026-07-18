@@ -3,6 +3,12 @@
   // so a UI dependency can't sneak in unnoticed. It is consumed as TypeScript
   // source (see package.json "exports"), so we type-check only — the app's
   // bundler compiles it. Hence noEmit.
+  //
+  // Internal relative imports use explicit `.ts` extensions (see `src/index.ts`,
+  // `src/schema/index.ts`) so this package also resolves correctly when loaded
+  // directly by Node's ESM loader — as `@garden-planner/etl` does via
+  // `node --experimental-strip-types` — not just via a bundler. See
+  // `tsconfig.base.json`'s `allowImportingTsExtensions` comment.
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true

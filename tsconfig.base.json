@@ -20,6 +20,17 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "declaration": true,
-    "sourceMap": true
+    "sourceMap": true,
+    // Every workspace here type-checks with `noEmit` (Vite or a bundler does
+    // the actual compiling), which is what makes this flag legal. It's needed
+    // because `packages/engine` and `packages/etl` write relative imports with
+    // explicit `.ts` extensions (`./schema/index.ts`, not `./schema`) — required
+    // for `@garden-planner/etl` to run as plain source via Node's ESM loader
+    // (`node --experimental-strip-types`, see `packages/etl/README.md`), which
+    // — unlike a bundler — doesn't resolve extension-less specifiers. Any
+    // workspace whose files get type-checked as part of another project's
+    // compile (e.g. `app` type-checking `@garden-planner/engine`'s sources
+    // transitively) needs this too, hence setting it here rather than per-package.
+    "allowImportingTsExtensions": true
   }
 }

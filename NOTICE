@@ -21,7 +21,9 @@ finalized in Workplan Stage 1.5):
 
   - Plants For A Future (PFAF)          https://pfaf.org/         CC BY-NC-SA
   - Permapeople                         https://permapeople.org/
-  - OpenFarm (static dump)              https://github.com/openfarmcc/OpenFarm  CC BY-SA
+  - OpenFarm crops rescue (community    https://github.com/thefullnacho/openfarm-crops-rescue  CC0-1.0
+    Wayback Machine recovery — see docs/adr/0006; OpenFarm's own live API
+    and repository never published a data dump before shutting down in 2025)
   - GBIF taxonomic backbone             https://www.gbif.org/     (name resolution)
   - USDA PLANTS                         (public domain)
   - Hand-verified spacing table         (RHS / square-foot / extension guides)

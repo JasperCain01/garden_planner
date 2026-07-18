@@ -7,9 +7,12 @@ schema (`@garden-planner/engine`), reconcile duplicates, validate everything,
 and write the static dataset committed to `/data`. This package is
 framework-free (no React/DOM), like `@garden-planner/engine`.
 
-Full design reasoning: [`docs/adr/0005-gbif-name-resolver.md`](../../docs/adr/0005-gbif-name-resolver.md).
+Full design reasoning: [`docs/adr/0005-gbif-name-resolver.md`](../../docs/adr/0005-gbif-name-resolver.md)
+(pipeline shell + GBIF resolver) and
+[`docs/adr/0006-openfarm-source-adapter.md`](../../docs/adr/0006-openfarm-source-adapter.md)
+(the first source adapter).
 
-## Status (Stage 1.1)
+## Status (Stage 1.2)
 
 What exists today:
 
@@ -18,15 +21,17 @@ What exists today:
 - **A GBIF scientific-name resolver** (`src/resolve/`) that fills the schema's
   nullable `gbifId` — the join key later sources are reconciled by.
 - **The "add a source" extension point** (`src/pipeline/source.ts`) — the
-  `SourceAdapter` interface Stage 1.2's PFAF/OpenFarm/Permapeople adapters
-  will implement. No real adapters exist yet; `src/index.ts` registers a
-  small demo `SourceAdapter` (`src/pipeline/starter-source.ts`) until they
-  do — the pipeline orchestrator itself (`run.ts`) doesn't know or care that
-  it's a demo, which is the point of the extension point.
+  `SourceAdapter` interface every source implements.
+- **The first real source adapter: OpenFarm** (`src/sources/openfarm/`), a
+  community-rescued dump (see the ADR for why — OpenFarm's own dump never
+  existed) mapped into the Stage 0.2 `Plant` schema, GBIF-resolved via the
+  resolver above. `src/index.ts` registers it in place of Stage 1.1's demo
+  `starterNamesSource` (`src/pipeline/starter-source.ts`, kept as a reference
+  implementation of the interface but no longer the default).
 
-Not yet built (arrives in later Phase 1 stages): real source adapters (1.2),
-the hand-verified spacing table (1.3), companion data (1.4), and the
-merge/validate/emit step that actually writes to `/data` (1.5).
+Not yet built (arrives in later Phase 1 stages): PFAF and Permapeople
+adapters (rest of 1.2), the hand-verified spacing table (1.3), companion data
+(1.4), and the merge/validate/emit step that actually writes to `/data` (1.5).
 
 ## Running it
 
@@ -35,12 +40,13 @@ npm run start -w @garden-planner/etl
 ```
 
 This loads the committed GBIF cache (`cache/gbif-name-cache.json`), resolves
-every name it doesn't already have a cached answer for (currently the starter
-list — `onion`, `lettuce`, `carrot`, `potato`, `tomato` — via the demo
-`starterNamesSource`, since no real source adapters are registered yet), logs
-each outcome, and writes any newly-learned resolutions back to the cache file
-— but only if something new was actually learned, so a run where every name
-was already cached leaves the file untouched. Commit the file if it changed.
+every name it doesn't already have a cached answer for (the OpenFarm
+adapter's ~160 mappable crops — see `src/sources/openfarm/categories.ts` —
+via the committed `cache/openfarm-crops.json`, no network needed to read the
+source data itself), logs each outcome, and writes any newly-learned
+resolutions back to the GBIF cache file — but only if something new was
+actually learned, so a run where every name was already cached leaves the
+file untouched. Commit the file if it changed.
 
 `npm run typecheck -w @garden-planner/etl` and `npm run test -w
 @garden-planner/etl` work the same as any other workspace; `npm run build -w
@@ -63,40 +69,59 @@ exercised in this session — only its offline/cached path (which is what the
 unit tests cover). A contributor with GBIF access can run `npm run start -w
 @garden-planner/etl` to populate it for real.
 
+## Offline-first: the OpenFarm source cache
+
+`cache/openfarm-crops.json` is a different kind of cache: a **committed
+snapshot of the whole source** (340 records, community-rescued — see
+[`docs/adr/0006`](../../docs/adr/0006-openfarm-source-adapter.md)), not a
+per-query index like the GBIF cache above. `src/sources/openfarm/cache.ts#loadOpenFarmCache`
+reads it directly; nothing in the normal pipeline run re-fetches it. A
+maintainer can refresh it from the network with
+`cache.ts#refreshOpenFarmCache`, backed by the injectable transport in
+`src/sources/openfarm/transport.ts` (unit tests inject a stub, exactly like
+`resolve/gbif-transport.ts`).
+
 ## Toolchain notes
 
 - The `start` script runs source directly via `node --experimental-strip-types`
   (no separate build step). Unlike a bundler, Node's ESM resolver requires
   **explicit `.ts` extensions on relative imports** — that's why files in this
   package write `import { x } from './y.ts'` rather than `'./y'`. See
-  `tsconfig.json` for the matching `allowImportingTsExtensions` flag.
+  `tsconfig.base.json` (repo root) for the shared `allowImportingTsExtensions`
+  flag this — and `@garden-planner/engine`'s own internal imports — relies on.
 - Everything else (strict TS, `verbatimModuleSyntax`, pinned Vite/Vitest,
   Node ≥ 20, ESM) follows the repo-wide conventions in `WORKPLAN.md` §0.5.
 
-## Adding a source (Stage 1.2 and beyond)
+## Adding a source (PFAF, Permapeople, and beyond)
 
-Implement `SourceAdapter` from `src/pipeline/source.ts`:
+`src/sources/openfarm/` is the reference implementation — see
+[`docs/adr/0006`](../../docs/adr/0006-openfarm-source-adapter.md) for the
+full reasoning behind its shape. The pattern it establishes:
 
-```ts
-import type { SourceAdapter } from '../pipeline/source.ts';
+1. **A raw type + shape guard** (`types.ts`) for the source's own data shape,
+   validated before trusting it — the same discipline `resolve/gbif-transport.ts`
+   applies to GBIF responses.
+2. **An offline-first cache** (`cache.ts` + `transport.ts`): read the
+   committed snapshot by default; isolate the one place that would re-fetch
+   it over the network behind an injectable interface, so tests never touch
+   the network.
+3. **A pure mapper** (`map.ts`) from the raw shape into the Stage 0.2 `Plant`
+   schema — populate only fields the source actually provides, and **skip
+   with a stated reason** (never guess, never silently drop) any record
+   missing something the schema requires. Leave `gbifId: null`; that's the
+   resolver's job.
+4. **A `SourceAdapter`** (`source.ts`) implementing `src/pipeline/source.ts`,
+   returning only the records step 3 can actually map.
+5. **(Optional) a build-plants helper** (`build-plants.ts`) tying the mapper
+   to a `GbifResolver` via `resolve/apply-resolution.ts#applyGbifResolution`,
+   producing finished, `validatePlant`-passing `Plant`s for Stage 1.5 to
+   later consume — proven by tests, not wired into the CLI (see the ADR for
+   why the generic pipeline stays agnostic to this).
 
-export const pfafAdapter: SourceAdapter = {
-  id: 'pfaf',
-  label: 'Plants For A Future',
-  async fetchRecords() {
-    // fetch/parse the source's own data, return one SourceRecord per plant
-    // with `name` set to whatever this source calls it — the pipeline
-    // resolves that name against GBIF for you.
-    return [];
-  },
-};
-```
-
-Then register it in `src/index.ts`'s `main()` (replacing or joining
-`[starterNamesSource]` in the `sources` it passes to `runPipeline`) — or pass
-it directly: `runPipeline({ sources: [pfafAdapter], resolver })`. Mapping
-`SourceRecord.raw` into a `Plant` (and any source-specific caching) is the
-adapter's own concern — the pipeline only orchestrates and resolves names.
+Register the adapter in `src/index.ts`'s `main()` (joining or replacing the
+`sources` passed to `runPipeline`) — or pass it directly:
+`runPipeline({ sources: [pfafAdapter], resolver })`. Nothing in
+`pipeline/run.ts` needs to change; that's the point of the extension point.
 
 ## Module map
 
@@ -108,12 +133,17 @@ src/
   pipeline/
     source.ts             SourceAdapter — the "add a source" extension point.
     run.ts                Orchestration: gather names → resolve → log → summarize.
-    starter-source.ts     Demo SourceAdapter used until Stage 1.2's real ones exist.
+    starter-source.ts     Demo SourceAdapter from Stage 1.1 (interface reference only).
   resolve/
     gbif-transport.ts      The network boundary (injectable; real fetch impl).
     gbif-cache.ts           Load/save the committed JSON cache.
     gbif-resolver.ts         Offline-first resolve logic (cache → transport).
     apply-resolution.ts      Fills a Plant's gbifId via @garden-planner/engine.
+  sources/
+    openfarm/               The first real source adapter (Stage 1.2). See
+                             docs/adr/0006 and this file's "Adding a source"
+                             section above for the module-by-module pattern.
 cache/
   gbif-name-cache.json    The committed, offline-first name-resolution cache.
+  openfarm-crops.json     The committed OpenFarm rescue-dump snapshot (340 records).
 ```
