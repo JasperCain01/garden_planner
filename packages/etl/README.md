@@ -12,7 +12,7 @@ Full design reasoning: [`docs/adr/0005-gbif-name-resolver.md`](../../docs/adr/00
 [`docs/adr/0006-openfarm-source-adapter.md`](../../docs/adr/0006-openfarm-source-adapter.md)
 (the first source adapter).
 
-## Status (Stage 1.3)
+## Status (Stage 1.4)
 
 What exists today:
 
@@ -35,9 +35,15 @@ What exists today:
   per growing method. This is **original curation, not a source adapter** — see
   the section below and
   [`docs/adr/0007`](../../docs/adr/0007-hand-verified-spacing.md).
+- **Companion-planting data: Stage 1.4** (`src/companions/`), evidence-tagged
+  (`well-supported`/`traditional`) companion and antagonist relationships: 8
+  hand-curated, cited relationships plus 78 mechanically derived from
+  OpenFarm's own `companions` field. Also **not a source adapter** — see the
+  section below and
+  [`docs/adr/0008`](../../docs/adr/0008-companion-planting-data.md).
 
-Not yet built (arrives in later Phase 1 stages): companion data (1.4), and the
-merge/validate/emit step that actually writes to `/data` (1.5).
+Not yet built (arrives in Stage 1.5): the merge/validate/emit step that
+actually writes to `/data`.
 
 **PFAF and Permapeople adapters (the rest of 1.2) are blocked, not skipped.**
 PFAF's bulk database is paywalled ($30–150, no free bulk download exists);
@@ -138,6 +144,70 @@ these are spacing figures hand-verified against authoritative charts.
    validates every row, enforces the ≥2-source and unique-id rules, and checks
    each intensive figure has a real SFG citation.
 
+## Companion-planting data (`src/companions/`)
+
+Evidence-tagged companion/antagonist relationships (Stage 1.4 — full design
+in [`docs/adr/0008`](../../docs/adr/0008-companion-planting-data.md)). Also
+deliberately **not** a `SourceAdapter`: it produces relationships _between_
+two plants, not a name to resolve, which is not what that interface is for.
+
+- **The data** is split across two files by how it was produced:
+  - `src/companions/curated.ts` — `CURATED_COMPANION_RELATIONSHIPS`, 8
+    hand-picked relationships among the Stage 1.3 spacing crops, each backed
+    by a real citation (a study, an extension plant-pathology page, an
+    agronomy review) and individually evidence-tagged by weighing that
+    citation's actual strength.
+  - `src/companions/openfarm-derived.ts` — `OPENFARM_DERIVED_COMPANION_RELATIONSHIPS`,
+    mechanically extracted from OpenFarm's own scraped `companions` field
+    (already cached, `cache/openfarm-crops.json`, no new fetch). Always
+    tagged `traditional`: a scraped wiki field has no citation of its own to
+    elevate it. 78 relationships as of this stage.
+  - `src/companions/relationships.ts` combines both into
+    `ALL_COMPANION_RELATIONSHIPS`, and exposes `toPlantLinksById` — the
+    bridge Stage 1.5 uses to attach real, `PlantLinkSchema`-validated
+    `PlantLink`s onto merged `Plant` records by id.
+- **The shape** (`src/companions/schema.ts`) reuses the engine's
+  `EvidenceLevelSchema`/`SlugSchema`/`SourceRefSchema` verbatim and adds the
+  directed-edge framing curation needs: `from`/`to`, `kind`
+  (`companion`/`antagonist`), and a `symmetric` flag recording whether the
+  claim holds in both directions.
+- **The plant-id universe** (`src/companions/plant-id-universe.ts`) — every
+  relationship's `from`/`to` is checked against the union of the Stage 1.3
+  spacing ids and every OpenFarm crop Stage 1.2's mapper actually produces a
+  `Plant` for (164 ids total). Full referential integrity against the final
+  merged dataset is Stage 1.5's job, but this stops a dangling link from
+  being authored in the first place.
+- **Sourcing and evidence calls.** See the ADR for the full per-relationship
+  reasoning and the retrieval-honesty caveat (several cited sites are
+  network-blocked in the authoring sandbox; citations came from search
+  snippets of the real pages and are reviewer-re-verifiable, the same
+  discipline `docs/adr/0007` used for spacing). It also records why the named
+  Wikipedia companion-planting dataset (`GenevieveMilliken/companion_plants`)
+  was investigated but not used: the host is reachable but its data file's
+  path is undiscoverable without GitHub API/git access, which this sandbox
+  blocks.
+
+### Adding a companion/antagonist relationship
+
+1. **Hand-curated, cited relationship:** add a `CompanionRelationship` to
+   `CURATED_COMPANION_RELATIONSHIPS` in `src/companions/curated.ts`. Give it
+   `from`/`to` (plant ids), `kind`, an honestly-chosen `evidence` tag, a
+   `note` explaining _why_ that tag, `symmetric`, and **at least one real
+   citation** in `sources` (two, if you want it held to the `well-supported`
+   bar `curated.test.ts` checks). Both `from` and `to` must resolve in
+   `PLANT_ID_UNIVERSE` — a test will fail otherwise. **For a `symmetric:
+false` entry, `from` must be the plant that benefits/is harmed, not the
+   plant that causes the effect** — see `schema.ts`'s doc comment on
+   `CompanionRelationshipSchema` for the direction convention (getting this
+   backwards passes every existing check silently, since both directions are
+   valid slugs).
+2. **OpenFarm-derived relationships** need no manual addition — extending
+   `sources/openfarm/categories.ts`'s allow-list automatically grows
+   `OPENFARM_DERIVED_COMPANION_RELATIONSHIPS` on the next run.
+3. `npm run test -w @garden-planner/etl` re-runs the `src/companions/*.test.ts`
+   suite: schema validity, evidence-tag presence, referential integrity
+   against the plant-id universe, and no exact-duplicate edges.
+
 ## Toolchain notes
 
 - The `start` script runs source directly via `node --experimental-strip-types`
@@ -205,6 +275,15 @@ src/
                              adds per-method ≥2-source provenance + sanity bounds.
     table.ts                 The curated data (HAND_VERIFIED_SPACING). Not a source
                              adapter — original curation. See docs/adr/0007.
+  companions/               Evidence-tagged companion/antagonist data (Stage 1.4).
+    schema.ts                CompanionRelationship schema: directed from/to edges
+                              reusing the engine's PlantLink/EvidenceLevel/SourceRef.
+    plant-id-universe.ts     The pre-merge id universe (spacing ids ∪ OpenFarm
+                              mapped ids) relationships are checked against.
+    curated.ts                Hand-picked, individually-cited relationships.
+    openfarm-derived.ts       Mechanical extraction from OpenFarm's companions field.
+    relationships.ts          Combines both; PlantLink-shaped output for Stage 1.5.
+                              Not a source adapter — see docs/adr/0008.
 cache/
   gbif-name-cache.json    The committed, offline-first name-resolution cache.
   openfarm-crops.json     The committed OpenFarm rescue-dump snapshot (340 records).

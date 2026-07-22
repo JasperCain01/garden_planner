@@ -42,6 +42,16 @@ Everything below follows from that.
   authoritative sources with the citations recorded per growing method. It is
   deliberately _not_ a `SourceAdapter`; Stage 1.5 imports it directly to merge
   spacing onto records (hand-verified figures winning over scraped ones).
+  Stage 1.4 ([`adr/0008`](./adr/0008-companion-planting-data.md)) adds the
+  evidence-tagged companion/antagonist relationship dataset
+  (`packages/etl/src/companions/`): a small hand-curated, individually-cited
+  set (the only source of `well-supported` links) plus a larger set
+  mechanically derived from OpenFarm's own scraped `companions` field
+  (always `traditional` — an uncited scrape can't earn more). Every
+  relationship's `from`/`to` is checked against the union of the Stage 1.3
+  spacing ids and Stage 1.2's mapped OpenFarm ids, so links aren't dangling by
+  construction ahead of Stage 1.5's real referential-integrity gate. Also
+  deliberately _not_ a `SourceAdapter` — see the ADR for why.
 - **`/data`** is that committed static artifact: the plant "database" as a file
   the browser loads directly. No database server exists at runtime.
 - **`packages/engine`** is pure, framework-free logic (suitability scoring,
@@ -71,3 +81,4 @@ boundaries rather than by discipline alone. See `adr/0003`.
 | The plant-record schema (types + validation)           | `packages/engine/src/schema/`   |
 | The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`        |
 | The hand-verified spacing table (curation, not ingest) | `packages/etl/src/spacing/`     |
+| Evidence-tagged companion/antagonist data              | `packages/etl/src/companions/`  |
