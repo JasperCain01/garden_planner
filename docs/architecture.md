@@ -35,6 +35,13 @@ Everything below follows from that.
   adds the first real `SourceAdapter` — OpenFarm, via a community-rescued
   dump since no official one was ever published — establishing the
   raw-shape/cache/mapper/adapter pattern PFAF and Permapeople follow next.
+  Stage 1.3 ([`adr/0007`](./adr/0007-hand-verified-spacing.md)) adds the one
+  part of the pipeline that is **original curation, not ingestion**: a
+  hand-verified, method-aware spacing table (`packages/etl/src/spacing/`) for a
+  starter set of common British edibles, each figure cross-checked against ≥2
+  authoritative sources with the citations recorded per growing method. It is
+  deliberately _not_ a `SourceAdapter`; Stage 1.5 imports it directly to merge
+  spacing onto records (hand-verified figures winning over scraped ones).
 - **`/data`** is that committed static artifact: the plant "database" as a file
   the browser loads directly. No database server exists at runtime.
 - **`packages/engine`** is pure, framework-free logic (suitability scoring,
@@ -63,3 +70,4 @@ boundaries rather than by discipline alone. See `adr/0003`.
 | Specific decisions and their alternatives              | [`adr/`](./adr/)                |
 | The plant-record schema (types + validation)           | `packages/engine/src/schema/`   |
 | The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`        |
+| The hand-verified spacing table (curation, not ingest) | `packages/etl/src/spacing/`     |

@@ -32,8 +32,12 @@ import { z } from 'zod';
  * A URL-and-filename-safe slug: lowercase alphanumerics separated by single
  * hyphens (e.g. `"onion"`, `"climbing-french-bean"`). Used for the plant `id`
  * and for companion/antagonist references, so ids stay stable and legible.
+ *
+ * Exported so other stages that mint or validate `Plant.id`-shaped ids (e.g.
+ * Stage 1.3's hand-verified spacing table) reuse this exact rule rather than
+ * restating the regex and risking drift.
  */
-const SlugSchema = z
+export const SlugSchema = z
   .string()
   .regex(
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/,

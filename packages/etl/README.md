@@ -12,7 +12,7 @@ Full design reasoning: [`docs/adr/0005-gbif-name-resolver.md`](../../docs/adr/00
 [`docs/adr/0006-openfarm-source-adapter.md`](../../docs/adr/0006-openfarm-source-adapter.md)
 (the first source adapter).
 
-## Status (Stage 1.2)
+## Status (Stage 1.3)
 
 What exists today:
 
@@ -29,9 +29,15 @@ What exists today:
   `starterNamesSource` (`src/pipeline/starter-source.ts`, kept as a reference
   implementation of the interface but no longer the default).
 
-Not yet built (arrives in later Phase 1 stages): the hand-verified spacing
-table (1.3), companion data (1.4), and the merge/validate/emit step that
-actually writes to `/data` (1.5).
+- **The hand-verified spacing table: Stage 1.3** (`src/spacing/`), a curated,
+  method-aware spacing table for 12 common British edibles, each figure
+  cross-checked against ≥2 authoritative sources with the citations recorded
+  per growing method. This is **original curation, not a source adapter** — see
+  the section below and
+  [`docs/adr/0007`](../../docs/adr/0007-hand-verified-spacing.md).
+
+Not yet built (arrives in later Phase 1 stages): companion data (1.4), and the
+merge/validate/emit step that actually writes to `/data` (1.5).
 
 **PFAF and Permapeople adapters (the rest of 1.2) are blocked, not skipped.**
 PFAF's bulk database is paywalled ($30–150, no free bulk download exists);
@@ -90,6 +96,47 @@ maintainer can refresh it from the network with
 `cache.ts#refreshOpenFarmCache`, backed by the injectable transport in
 `src/sources/openfarm/transport.ts` (unit tests inject a stub, exactly like
 `resolve/gbif-transport.ts`).
+
+## Hand-verified spacing table (`src/spacing/`)
+
+The one part of the pipeline that is **original curation, not ingestion**
+(Stage 1.3 ⭐ — full design in
+[`docs/adr/0007`](../../docs/adr/0007-hand-verified-spacing.md)). It is
+deliberately **not** a `SourceAdapter`: there is no external source to fetch:
+these are spacing figures hand-verified against authoritative charts.
+
+- **The data** lives in `src/spacing/table.ts` as `HAND_VERIFIED_SPACING`, a
+  typed `SpacingRecord[]`. A `.ts` module (not JSON) so every figure can carry
+  an inline comment explaining the value and its sources. It covers 12 common
+  British edibles (the Stage 1.1 demo five plus overlap with the OpenFarm crop
+  list, to maximise Stage 1.5 merge overlap).
+- **The shape** (`src/spacing/schema.ts`) reuses the engine's `SpacingSchema`
+  verbatim (row and/or intensive) and adds **per-method provenance**:
+  `provenance.row` / `provenance.intensive`, each requiring **≥2 source
+  citations**, and each coupled to its figure so an intensive density can never
+  be back-filled from row-only citations. Sanity bounds
+  (`spacingSanityIssues`, `SPACING_SANITY_BOUNDS`) reject implausible values on
+  top of the schema's positivity floor.
+- **Sourcing.** Each figure is cross-checked against ≥2 sources (RHS + Old
+  Farmer's Almanac for row figures; two square-foot-gardening charts for
+  intensive figures), recorded per row. Genuine source disagreements (e.g.
+  onion 9-vs-16 per square) are recorded in each row's `note`, not smoothed
+  over. See the ADR for the retrieval-honesty caveat (the source sites were
+  network-blocked in the authoring sandbox; figures came from search snippets
+  of the real pages and are reviewer-re-verifiable).
+
+### Adding a crop to the spacing table
+
+1. Add a `SpacingRecord` to `HAND_VERIFIED_SPACING` in `src/spacing/table.ts`.
+2. Give it `id`/`commonName`/`scientificName`/`category`, and a `spacing` block
+   with `row` and/or `intensive` — **only the methods you can actually cite**.
+3. For each method present, add **≥2 `provenance` citations** that state _that
+   method's_ figure. Don't derive an intensive density from a row figure — leave
+   the block absent if you can't cite it (the schema allows row-only or
+   intensive-only).
+4. `npm run test -w @garden-planner/etl` re-runs `table.test.ts`, which
+   validates every row, enforces the ≥2-source and unique-id rules, and checks
+   each intensive figure has a real SFG citation.
 
 ## Toolchain notes
 
@@ -153,6 +200,11 @@ src/
     openfarm/               The first real source adapter (Stage 1.2). See
                              docs/adr/0006 and this file's "Adding a source"
                              section above for the module-by-module pattern.
+  spacing/                  Hand-verified, method-aware spacing table (Stage 1.3).
+    schema.ts                SpacingRecord schema: reuses the engine's SpacingSchema,
+                             adds per-method ≥2-source provenance + sanity bounds.
+    table.ts                 The curated data (HAND_VERIFIED_SPACING). Not a source
+                             adapter — original curation. See docs/adr/0007.
 cache/
   gbif-name-cache.json    The committed, offline-first name-resolution cache.
   openfarm-crops.json     The committed OpenFarm rescue-dump snapshot (340 records).
