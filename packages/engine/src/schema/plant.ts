@@ -44,12 +44,18 @@ export const SlugSchema = z
     'must be a lowercase hyphen-separated slug (e.g. "climbing-french-bean")',
   );
 
-/** A calendar month as an integer, January = 1 … December = 12. */
-const MonthSchema = z
+/**
+ * A calendar month as an integer, January = 1 … December = 12. Exported (Stage
+ * 1.6) so the climate module can reuse this exact bound for a frost date's
+ * month component instead of restating "1 to 12" independently.
+ */
+export const MonthSchema = z
   .number()
   .int()
   .min(1, 'month must be between 1 (January) and 12 (December)')
   .max(12, 'month must be between 1 (January) and 12 (December)');
+/** A calendar month number, `z.infer`-derived from {@link MonthSchema}. */
+export type MonthNumber = z.infer<typeof MonthSchema>;
 
 // ---------------------------------------------------------------------------
 // Ordered enums

@@ -73,6 +73,16 @@ Everything below follows from that.
   truth and the TypeScript types are `z.infer`-derived from it, so the ETL, the
   engine, and the UI all validate and type against one shape. See
   [`adr/0004`](./adr/0004-plant-schema.md), especially the method-aware spacing.
+  Stage 1.6 ([`adr/0010`](./adr/0010-location-climate-static-data.md)) adds
+  **location/climate static data** (`packages/engine/src/climate/`): a
+  climate-profile zod schema (reusing the schema's `RhsHardinessRatingSchema`,
+  `HardinessSchema`, `MonthRangeSchema`, and `SourceRefSchema` rather than
+  restating them), a hand-curated UK-default profile plus a small extensible
+  region set (each frost date and hardiness band individually cited, in the
+  same style as the Stage 1.3 spacing table), and a fully-offline
+  `resolveClimate(location)` the suitability engine (Stage 2.1) and the
+  plot-definition UI (Stage 3.2) will consume. Online geocoding is deferred
+  (interface-ready — see the ADR); the offline path never touches the network.
 - **`app`** is the React + Vite front-end — the only thing deployed. It loads the
   dataset, calls the engine, and renders the drag-and-drop UI.
 
@@ -91,6 +101,7 @@ boundaries rather than by discipline alone. See `adr/0003`.
 | Staged build plan, per-stage models, verification      | [`WORKPLAN.md`](../WORKPLAN.md) |
 | Specific decisions and their alternatives              | [`adr/`](./adr/)                |
 | The plant-record schema (types + validation)           | `packages/engine/src/schema/`   |
+| Location/climate static data and `resolveClimate`      | `packages/engine/src/climate/`  |
 | The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`        |
 | The hand-verified spacing table (curation, not ingest) | `packages/etl/src/spacing/`     |
 | Evidence-tagged companion/antagonist data              | `packages/etl/src/companions/`  |

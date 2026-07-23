@@ -16,6 +16,14 @@
  */
 export * from './schema/index.ts';
 
+/**
+ * Location/climate static data and the `resolveClimate` interface (Stage 1.6):
+ * the UK-default profile, a small extensible region set, and the offline
+ * resolver the suitability engine (Stage 2.1) and plot-definition UI (Stage
+ * 3.2) consume. See `climate/index.ts` and `docs/adr/0010-*.md`.
+ */
+export * from './climate/index.ts';
+
 /** Marker the app shell reads to confirm the engine package is wired in. */
 export const ENGINE_READY = true;
 
