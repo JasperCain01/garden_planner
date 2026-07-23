@@ -52,6 +52,23 @@ validated feedback._
   vs. the location's climate, soil match, and season. This is what powers both
   the ranked palette (step 2) and the warnings (step 4).
 
+### Beyond the core loop: user-added crops and exporting the plot
+
+Two capabilities extend the core loop (added after the initial design; staged in
+[`WORKPLAN.md`](./WORKPLAN.md)):
+
+- **Add your own crop.** The shipped dataset can't cover every variety on every
+  seed rack, so a user can add a crop by hand from the packet — name, spacing,
+  growing season, light, category — and pick an illustration for it from the
+  bundled icon set. It then behaves like any other crop for the session: scored,
+  ranked, placed, counted. This lives entirely client-side and lasts for the
+  session. (Separately, the maintainer can add crops _permanently_ to the shipped
+  dataset through the build pipeline, growing the list everyone gets.)
+- **Export a picture of the plot.** Once a plot is laid out, the user can export
+  an image (PNG) of it — with a key naming the chosen crops and the soil/climate
+  settings — to keep, print, or share. It is a snapshot to look at, not a file
+  that reopens for editing, which keeps it simple and fully offline.
+
 ---
 
 ## 2. Is there sufficient plant data? (Yes — and the edibles-only scope is why)

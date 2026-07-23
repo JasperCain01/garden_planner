@@ -93,6 +93,32 @@ horticultural logic and the data pipeline can each be tested and reasoned about
 on their own, and the "build-time vs run-time" split is enforced by the package
 boundaries rather than by discipline alone. See `adr/0003`.
 
+## Planned additions (not yet built — see `WORKPLAN.md`)
+
+Three capabilities were added to the plan after Phase 1. They are staged in
+`WORKPLAN.md` but not yet implemented, and they shape a few of the boundaries
+above:
+
+- **User-defined crops (Stage 3.6, enabled by the Stage 0.3 schema amendment).**
+  A user who buys seeds can add their own crop from the packet (name, spacing,
+  season, light, category) and pick a bundled icon for it. This is why the plant
+  schema is being relaxed (Stage 0.3) so `scientificName`/`provenance` are optional
+  on the user-authored path while _shipped_ data stays fully attributed, and why
+  the app's runtime plant list (Stage 3.1) is **the shipped dataset plus an
+  in-memory, session-scoped overlay of user crops** — the engine consumes the
+  merged list and is indifferent to a plant's origin. User crops live for the
+  session only; there is no reload-persistence layer.
+- **Maintainer-authored crops in the dataset (Stage 1.7).** A curated
+  full-`Plant` input feeding the same Stage 1.5 merge and hard-fail gate, so the
+  shipped crop list can grow by hand without a new external source. Distinct from
+  user crops: these are permanent, fully attributed, and go through the build.
+- **Plot-image export (Stage 3.7).** The user can export a PNG of their finished
+  plot plus a legend of chosen crops and the soil/climate settings, via the canvas
+  library's own image export. A terminal picture, not a re-loadable save — which
+  is precisely why no plan-serialisation or persistence subsystem is needed. The
+  self-owned, same-origin icon set (Stage 4.1) is what keeps the export canvas
+  untainted and the feature possible.
+
 ## Where to look next
 
 | Topic                                                  | File                            |
