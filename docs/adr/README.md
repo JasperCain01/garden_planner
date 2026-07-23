@@ -28,3 +28,4 @@ old one and mark the old one `Superseded`.
 - [0006 — OpenFarm source adapter: why this dataset, and the mapping/caching design](./0006-openfarm-source-adapter.md)
 - [0007 — Hand-verified spacing table: shape, sourcing method, and sanity bounds](./0007-hand-verified-spacing.md)
 - [0008 — Companion-planting data: evidence tagging, sourcing, and the plant-id universe](./0008-companion-planting-data.md)
+- [0009 — Dataset merge: join-key policy, conflict resolution, and licensing finalization](./0009-dataset-merge-and-licensing.md)

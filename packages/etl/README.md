@@ -12,7 +12,7 @@ Full design reasoning: [`docs/adr/0005-gbif-name-resolver.md`](../../docs/adr/00
 [`docs/adr/0006-openfarm-source-adapter.md`](../../docs/adr/0006-openfarm-source-adapter.md)
 (the first source adapter).
 
-## Status (Stage 1.4)
+## Status (Stage 1.5)
 
 What exists today:
 
@@ -42,8 +42,13 @@ What exists today:
   section below and
   [`docs/adr/0008`](../../docs/adr/0008-companion-planting-data.md).
 
-Not yet built (arrives in Stage 1.5): the merge/validate/emit step that
-actually writes to `/data`.
+- **The merge, validation gate, and artifact emitter: Stage 1.5** (`src/merge/`),
+  the ⭐ keystone that reconciles the three inputs above into the committed
+  `data/plants.json` — joining spacing and companion slices onto the OpenFarm
+  plants, applying the conflict rules (hand-verified spacing wins), remapping
+  companion-link ids for referential integrity, and enforcing the **hard-fail
+  validation gate**. Run with `npm run build:data`. See the section below and
+  [`docs/adr/0009`](../../docs/adr/0009-dataset-merge-and-licensing.md).
 
 **PFAF and Permapeople adapters (the rest of 1.2) are blocked, not skipped.**
 PFAF's bulk database is paywalled ($30–150, no free bulk download exists);
@@ -74,6 +79,37 @@ file untouched. Commit the file if it changed.
 @garden-planner/etl` work the same as any other workspace; `npm run build -w
 @garden-planner/etl` type-checks (this package ships no compiled output — the
 `start` script runs the TypeScript source directly).
+
+## Building the dataset (`src/merge/`, Stage 1.5)
+
+```bash
+npm run build:data -w @garden-planner/etl
+```
+
+This is the step that writes the app's shipped data. It:
+
+1. **Probes GBIF reachability** once. If reachable, it resolves names live and
+   fills each plant's `gbifId`; if not (the current reality — `api.gbif.org` is
+   blocked), it builds with `gbifId: null` fast, without waiting on ~160 doomed
+   network calls.
+2. **Gathers** the mappable OpenFarm plants (keeping a record even when GBIF
+   can't place it — the join key falls back to scientific name / slug), skipping
+   any with absurd spacing with a stated reason.
+3. **Merges** the hand-verified spacing (which _wins_ over OpenFarm's scraped row
+   spacing) and the companion/antagonist links onto the right plants, joining by
+   GBIF id → unambiguous scientific name → shared slug / a small curated alias
+   table (`beetroot`→`beet`, `french-bean`→`green-bean`), and remapping
+   companion-link ids through the same unification so nothing dangles.
+4. Runs the **hard-fail validation gate** (schema + referential integrity +
+   sanity bounds) over the whole set — the build fails loudly, listing every
+   problem, if any record is malformed, dangling-referenced, or absurd.
+5. Writes `data/plants.json` and reports what it attached, remapped, and dropped.
+
+The reconciliation policy, the licensing decision, and the known `broad-bean` gap
+are documented in [`docs/adr/0009`](../../docs/adr/0009-dataset-merge-and-licensing.md).
+The merge logic is pure and injectable, so `src/merge/*.test.ts` exercises it
+(including the gate failing on an intentionally-broken record) without any
+network access.
 
 ## Offline-first: the cache
 
@@ -284,6 +320,17 @@ src/
     openfarm-derived.ts       Mechanical extraction from OpenFarm's companions field.
     relationships.ts          Combines both; PlantLink-shaped output for Stage 1.5.
                               Not a source adapter — see docs/adr/0008.
+  merge/                    The Stage 1.5 merge, validation gate, and emitter.
+    aliases.ts               Curated slug aliases (beetroot→beet, french-bean→green-bean).
+    join.ts                  Join-key primitives: gbifId → scientific name → slug/alias.
+    collect-openfarm.ts      Gathers OpenFarm plants, resilient to GBIF being offline.
+    sanity.ts                Dataset-level (tree-tolerant) spacing absurdity bounds.
+    merge.ts                 The merge: attach spacing (wins) + remapped links.
+    validate.ts              The hard-fail gate: schema + referential integrity + sanity.
+    artifact.ts              Builds/writes data/plants.json (header + sorted plants).
+    build-dataset.ts         Orchestrates gather → merge → validate → artifact (pure).
+  build-data.ts            CLI entry: reads caches, probes GBIF, writes /data.
+                            Executed by `npm run build:data`.
 cache/
   gbif-name-cache.json    The committed, offline-first name-resolution cache.
   openfarm-crops.json     The committed OpenFarm rescue-dump snapshot (340 records).

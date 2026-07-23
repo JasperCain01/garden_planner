@@ -8,25 +8,50 @@ All source code in this repository is licensed under the MIT License (see
 
 DATASET
 -------
-The plant dataset shipped under /data is licensed under Creative Commons
-Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0).
+The plant dataset shipped under /data (data/plants.json) is licensed under
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+(CC BY-NC-SA 4.0):  https://creativecommons.org/licenses/by-nc-sa/4.0/
 
-Reason: the dataset is derived in part from Plants For A Future (PFAF), which is
-distributed under CC BY-NC-SA and requires derivative datasets to adopt the same
-terms. This project is non-commercial by design, so this is not a constraint in
-practice — it is recorded here for clarity and to keep attribution honest.
+Why CC BY-NC-SA, finalized in Workplan Stage 1.5 (see
+docs/adr/0009-dataset-merge-and-licensing.md for the full reasoning):
 
-Data sources (full per-record provenance is captured in the dataset itself and
-finalized in Workplan Stage 1.5):
+  The sources actually shipped in the current artifact do NOT by themselves
+  compel NonCommercial — the content is OpenFarm (CC0-1.0, a public-domain
+  dedication) plus original curation (hand-verified spacing figures, which are
+  facts and not themselves copyrightable; and the companion/antagonist links).
+  Plants For A Future (PFAF) — the CC BY-NC-SA source whose share-alike terms
+  drive this choice — is NOT yet ingested: its download endpoint is blocked by
+  the build sandbox's egress policy (the same class of block that keeps GBIF
+  unreachable; see docs/adr/0006). So today's content alone could ship under a
+  more permissive licence.
 
-  - Plants For A Future (PFAF)          https://pfaf.org/         CC BY-NC-SA
-  - Permapeople                         https://permapeople.org/
-  - OpenFarm crops rescue (community    https://github.com/thefullnacho/openfarm-crops-rescue  CC0-1.0
+  The dataset is nonetheless held at CC BY-NC-SA deliberately: it is the
+  project's ratified stance (WORKPLAN.md §0.5), the project is non-commercial by
+  design, and PFAF is the intended primary source of growing-requirement data
+  (DESIGN.md §2). Holding the eventual target from the start avoids relicensing
+  already-released data the moment PFAF lands. CC BY-NC-SA is a valid, more
+  restrictive licence for a compilation of CC0 content, so there is no conflict.
+
+Data sources ACTUALLY SHIPPED in the current artifact (full per-record
+provenance is captured in data/plants.json itself):
+
+  - OpenFarm crops rescue (community      https://github.com/thefullnacho/openfarm-crops-rescue  CC0-1.0
     Wayback Machine recovery — see docs/adr/0006; OpenFarm's own live API
     and repository never published a data dump before shutting down in 2025)
-  - GBIF taxonomic backbone             https://www.gbif.org/     (name resolution)
-  - USDA PLANTS                         (public domain)
-  - Hand-verified spacing table         (RHS / square-foot / extension guides)
+  - Hand-verified spacing table           (RHS, Old Farmer's Almanac, Square Foot
+    Gardening Foundation and reproduced SFG charts — cited per figure in
+    packages/etl/src/spacing/table.ts; see docs/adr/0007)
+  - Companion/antagonist relationships    (hand-curated + OpenFarm-derived,
+    evidence-tagged; see packages/etl/src/companions and docs/adr/0008)
+
+Data sources PLANNED but NOT yet ingested (their egress is blocked in the build
+sandbox; each will be added, with its licence recorded here, when reachable — the
+CC BY-NC-SA choice above already anticipates PFAF):
+
+  - Plants For A Future (PFAF)             https://pfaf.org/         CC BY-NC-SA
+  - Permapeople                            https://permapeople.org/
+  - GBIF taxonomic backbone                https://www.gbif.org/     (name resolution join key)
+  - USDA PLANTS                            (public domain)
 
 ILLUSTRATIONS
 -------------
@@ -34,3 +59,4 @@ Crop illustrations under the app's icon set are self-owned / permissively
 licensed and carry no third-party restrictions (see DESIGN.md and Stage 4.1).
 
 If you add a new data source, record its licence here and in /data/README.md.
+When PFAF is ingested, move it from "planned" to "shipped" above.

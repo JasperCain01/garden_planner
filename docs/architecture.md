@@ -52,8 +52,20 @@ Everything below follows from that.
   spacing ids and Stage 1.2's mapped OpenFarm ids, so links aren't dangling by
   construction ahead of Stage 1.5's real referential-integrity gate. Also
   deliberately _not_ a `SourceAdapter` — see the ADR for why.
-- **`/data`** is that committed static artifact: the plant "database" as a file
-  the browser loads directly. No database server exists at runtime.
+  Stage 1.5 ([`adr/0009`](./adr/0009-dataset-merge-and-licensing.md)) is the
+  ⭐ keystone that ties it all together (`packages/etl/src/merge/`): it gathers
+  the OpenFarm plants, **joins** the spacing and companion slices onto them
+  (GBIF id when present, then unambiguous scientific name, then shared slug /
+  a small curated alias table — GBIF being unreachable, the fallback carries the
+  load today and upgrades to GBIF-id joins for free when the block lifts),
+  applies the conflict rules (hand-verified spacing wins), remaps companion-link
+  ids so referential integrity holds by construction, runs the **hard-fail
+  validation gate** (schema + referential integrity + sanity bounds), and emits
+  the artifact. Run it with `npm run build:data -w @garden-planner/etl`.
+- **`/data`** is that committed static artifact (`data/plants.json`): the plant
+  "database" as a plain-JSON file the browser loads directly. No database server
+  exists at runtime. As of Stage 1.5 it holds 160 validated, merged plants; see
+  [`data/README.md`](../data/README.md) for its shape and current caveats.
 - **`packages/engine`** is pure, framework-free logic (suitability scoring,
   spacing/density, warnings). It runs in the browser but has no UI dependency, so
   it is unit-testable in isolation. It also hosts the **canonical plant-record
@@ -82,3 +94,5 @@ boundaries rather than by discipline alone. See `adr/0003`.
 | The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`        |
 | The hand-verified spacing table (curation, not ingest) | `packages/etl/src/spacing/`     |
 | Evidence-tagged companion/antagonist data              | `packages/etl/src/companions/`  |
+| The Stage 1.5 merge, validation gate, and artifact     | `packages/etl/src/merge/`       |
+| The committed dataset artifact and its caveats         | `data/README.md`                |
