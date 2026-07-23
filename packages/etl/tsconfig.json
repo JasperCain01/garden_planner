@@ -1,6 +1,11 @@
 {
   // The ETL runs under Node (build time only), so it gets Node types and no DOM.
   // Type-check only for now; the pipeline is developed in Phase 1.
+  //
+  // The `start` script runs source directly via `node --experimental-strip-types`
+  // (see README), and Node's ESM resolver — unlike a bundler — requires explicit
+  // extensions on relative imports. So this package's relative imports write
+  // `./foo.ts`; see `tsconfig.base.json`'s `allowImportingTsExtensions` comment.
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"],
