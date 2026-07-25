@@ -227,10 +227,23 @@ by different stages.
 
 ### 1.4 Continuous validation (the safety net)
 
-- **CI on every push** runs: lint → typecheck → unit → component → build → E2E →
-  dataset validation. A stage that breaks any of these is not done.
-- **Deploy preview.** The GitHub Pages deploy (Stage 5.2) runs on merge so the
-  hosted version is always current and testable.
+The checks themselves are the safety net, and they are **not optional**: lint →
+typecheck → format → unit → component → build → E2E → dataset validation. A
+stage that breaks any of these is not done (§0.3).
+
+**Automating them in GitHub Actions is deliberately deferred until the project
+is complete.** There is no `.github/workflows/` directory, and stages should not
+add one — that includes the Pages deploy in Stage 5.2, which stays a manual
+deploy until then. Run the checks locally, from the repo root, before calling a
+stage done:
+
+```bash
+npm run lint && npm run typecheck && npm test && npm run build && npm run format:check
+```
+
+When Actions do land at the end of the build, they should automate exactly this
+list plus the E2E, offline, a11y and Lighthouse runs the later stages describe —
+nothing that isn't already a check a contributor can run by hand.
 
 ---
 
@@ -249,13 +262,15 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Deliverables:** Chosen stack wired up (see §0.5); workspace layout
   (`/app` frontend, `/engine` framework-free logic, `/etl` build-time pipeline,
   `/data` committed artifacts, `/docs` + `/docs/adr`); lint + format + typecheck
-  - test runner configured; CI workflow (lint/typecheck/test/build); `README`
-    skeleton; `LICENSE` for code (MIT or GPL; dataset licence is CC BY-NC-SA,
-    finalized with attribution in Stage 1.5 per PFAF terms); `CONTRIBUTING.md`;
-    ADRs recording the stack and framework choices (§0.5).
+  - test runner configured; `README` skeleton; `LICENSE` for code (MIT or GPL;
+    dataset licence is CC BY-NC-SA, finalized with attribution in Stage 1.5 per
+    PFAF terms); `CONTRIBUTING.md`; ADRs recording the stack and framework
+    choices (§0.5). _(This stage originally shipped a CI workflow too; it has
+    since been removed — GitHub Actions wait until the project is complete,
+    §1.4.)_
 - **Model:** **Sonnet.** Well-understood setup work; some judgement on structure.
 - **Verification:** `npm install && npm run build && npm test` succeeds from a
-  clean clone; CI passes on the first push.
+  clean clone.
 
 #### Stage 0.2 — Data schema definition ⭐ keystone
 

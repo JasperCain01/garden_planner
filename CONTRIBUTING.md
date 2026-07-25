@@ -31,7 +31,10 @@ npm test
 npm run build
 ```
 
-CI enforces the same checks on every push and pull request.
+Run them yourself before opening a pull request. **There is deliberately no CI
+workflow in this repository yet** — GitHub Actions are being left until the
+project is complete (see `WORKPLAN.md` §1.4), so nothing will run these checks
+for you.
 
 ## Development workflow
 
