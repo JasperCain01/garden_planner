@@ -3,8 +3,8 @@
  *
  * This package intentionally has **no UI-framework dependency and no DOM access**
  * so it can be unit-tested in isolation and reused anywhere (see WORKPLAN.md
- * Phase 2). The real suitability-scoring and spacing/density logic arrives in
- * Stages 2.1–2.3.
+ * Phase 2). The spacing/density calculator (2.2) and warnings engine (2.3) join
+ * the suitability scorer here as they land.
  *
  * Stage 0.2 adds the **canonical plant-record schema** — the shape every later
  * stage builds on. It is re-exported here as the package's public surface.
@@ -24,14 +24,24 @@ export * from './schema/index.ts';
  */
 export * from './climate/index.ts';
 
+/**
+ * The suitability-scoring engine (Stage 2.1 — the ⭐ keystone "brain"): the
+ * plot/growing-conditions schema, the four per-dimension scorers and their
+ * reasoning, `scorePlant`, and the `rankPlants` helper the palette (Stage 3.3)
+ * ranks crops with. See `suitability/index.ts` and
+ * `docs/adr/0012-suitability-scoring.md`.
+ */
+export * from './suitability/index.ts';
+
 /** Marker the app shell reads to confirm the engine package is wired in. */
 export const ENGINE_READY = true;
 
 /**
- * Placeholder entry point for the suitability/spacing engine.
+ * Placeholder entry point kept from the Stage 0.1 scaffold.
  *
- * Replaced by the real API in Phase 2. Returns a short human-readable status
- * string so a smoke test (and the app shell) can assert the package is live.
+ * The real API is `scorePlant`/`rankPlants` (and, from Stage 2.2, the density
+ * calculator); this survives only so the app shell's smoke test can assert the
+ * package is live.
  */
 export function engineStatus(): string {
   return 'engine scaffold ready';

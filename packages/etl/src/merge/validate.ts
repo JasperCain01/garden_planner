@@ -18,8 +18,10 @@
  *   3. **Sanity bounds** — every plant's spacing must clear the dataset-level
  *      plausibility bounds (`sanity.ts#datasetSpacingIssues`: no absurd distances
  *      or densities; tree-tolerant, so it fits the full merged set rather than
- *      just the 12-veg curation table). Plus structural sanity: unique ids, and a
- *      non-empty dataset (an empty artifact is a build failure, not valid data).
+ *      just the 12-veg curation table). Plus structural sanity: unique ids, no id
+ *      squatting the `user-` namespace reserved for user-defined crops (Stage 0.3
+ *      / ADR 0011), and a non-empty dataset (an empty artifact is a build failure,
+ *      not valid data).
  *
  * The gate **collects every issue and then fails once**, listing them all, so a
  * contributor sees the full picture rather than fixing one error only to hit the
@@ -27,7 +29,12 @@
  * is the non-throwing form tests and reports use.
  */
 
-import { safeValidatePlant, type Plant } from '@garden-planner/engine';
+import {
+  isUserPlantId,
+  safeValidatePlant,
+  USER_PLANT_ID_PREFIX,
+  type Plant,
+} from '@garden-planner/engine';
 import { datasetSpacingIssues } from './sanity.ts';
 
 /** A single validation problem, tagged by which of the three layers caught it. */
@@ -99,6 +106,22 @@ export function validateDataset(records: readonly unknown[]): DatasetValidationR
         kind: 'structural',
         plantId: id,
         message: `duplicate plant id "${id}" appears ${count} times`,
+      });
+    }
+  }
+
+  // --- Structural: the `user-` id namespace is reserved (Stage 0.3) ---
+  // The other half of the user-crop id guarantee (ADR 0011): user crops are
+  // `user-`-namespaced so they can never collide with a shipped id in the app's
+  // runtime `shipped ∪ user` list (Stage 3.1). That only holds if *shipped* ids
+  // stay out of the namespace — which is a dataset-level rule, so it belongs in
+  // this gate rather than in the per-record schema.
+  for (const id of idCounts.keys()) {
+    if (isUserPlantId(id)) {
+      issues.push({
+        kind: 'structural',
+        plantId: id,
+        message: `shipped plant id "${id}" uses the reserved "${USER_PLANT_ID_PREFIX}" namespace, which is for user-defined crops only (ADR 0011)`,
       });
     }
   }

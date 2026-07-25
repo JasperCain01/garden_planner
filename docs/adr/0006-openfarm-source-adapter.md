@@ -280,6 +280,75 @@ depend on 0.2/1.1, not on 1.2 being fully populated) — it only means the
 source until a human unblocks PFAF/Permapeople or a future session gets
 USDA/GBIF network access.
 
+## Addendum 2 (2026-07): sources re-checked with web access — verdicts
+
+The first addendum's open items were re-investigated from a session that has
+web-search / web-fetch access (the earlier session's blockers were mostly the
+sandbox egress policy, which still denies direct `CONNECT` to `pfaf.org`,
+`permapeople.org`, `plants.usda.gov`, and `api.gbif.org`, but search-backed
+fetch reaches them). Findings, so the next session doesn't redo them:
+
+**`bripatch/plant-variety-database` — now positively confirmed unreliable; do
+not ingest.** The first addendum rejected it as _unverifiable_; with data access
+it is verifiable, and it fails. `plants.windrivergreens.com` and its parent
+`windrivergreens.com` are real and live (Wind River Greens is a genuine
+microgreens farm in Milton, GA), so the "unreachable source site" flag is
+resolved — but that only makes the data problem clearer. A spot-check of
+`data/varieties.csv` finds **"Cherry Belle" — the single most iconic radish
+cultivar (RHS `Raphanus sativus 'Cherry Belle'`, 1949 All-America Selections
+winner) — filed as `category: tomato`, `scientific_name: Solanum lycopersicum
+'Cherry Belle'`, described as "a prolific cherry tomato," with
+`source_database: usda+ncstate`.** Neither USDA nor NC State Extension classes
+Cherry Belle as a tomato; the citation is fabricated. USDA-zone values are also
+internally incoherent (nearly every tomato tagged `10-11`, a tropical-perennial
+range, while the same-species Roma alone is `4-9`). The repo's headline "no
+AI-generated plant facts" claim does not hold. Ingesting this would violate
+`WORKPLAN.md` §1 outright. **Verdict: rejected, permanently — not "recheck
+later."** (Its CC BY 4.0 licence was never the problem.)
+
+**Recommended replacement path (free; one free account).** No single free bulk
+source is a drop-in for the PFAF plan DESIGN.md assumed. The workable path is a
+small combination, none of it AI-fabricated:
+
+- **Permapeople** — the closest live replacement for the "growing-requirements
+  API" role. Free to use, **CC BY-SA 4.0**, requires a free account: sign up at
+  `permapeople.org`, then generate an API key pair in account settings and pass
+  it as the `x-permapeople-key-id` / `x-permapeople-key-secret` request headers.
+  Its terms are **non-commercial-only**, which aligns with this project's
+  confirmed non-commercial dataset stance. **This is the recommended
+  "sign-up-for-a-free-account" option.** _Licensing wrinkle to settle first:_
+  Permapeople is CC BY-**SA** while PFAF is CC BY-**NC**-SA; the two ShareAlike
+  terms do not cleanly combine into one relicensed compilation (BY-SA forbids
+  adding the NC restriction). The schema's per-field provenance already keeps
+  each fact attributable to its source, which is the practical mitigation, but
+  whether to include both is a maintainer licensing call for Stage 1.5, not the
+  adapter's.
+- **USDA PLANTS — public domain, no account, no licence strings.** Best clean
+  complement for taxonomy / growth-habit / native range; US-centric, so weaker
+  on UK season timing. Reachable as a Darwin Core Archive via GBIF
+  (`www.gbif.org/dataset/705922f7-5ba5-49ab-a75d-722e3090e690`); still
+  egress-blocked in the automated environment, so this is a "download once from
+  a contributor machine and commit the archive" step, not something the CI ETL
+  fetches live. No ShareAlike conflict with anything.
+- **OpenFarm rescue (CC0)** — already ingested and working; keep it.
+- **PFAF** — still no free bulk export; the offline database is a paid one-time
+  download ($30 student / $50 home / $150 commercial), CC BY-NC-SA. Legitimate
+  and cheap if its UK-edibles depth is wanted, but it is the source that binds
+  the whole dataset to non-commercial. Optional, and a spend decision for a
+  human.
+
+**Also considered and rejected this pass:**
+
+- [`Digitiain/open-plant-data`](https://github.com/Digitiain/open-plant-data) —
+  UK-oriented veg/flower JSON with the right fields in spirit, but only ~3
+  commits, no `LICENSE`/licence statement (default all-rights-reserved), and too
+  early-stage/sparse to build on. Revisit if it matures and adds a licence.
+- **Perenual** (`perenual.com`) — has a free API tier, but redistribution rights
+  for building a shipped, re-published dataset are unclear and the commercial
+  tier is paywalled ($139+/mo); wrong shape for a committed static artifact.
+- `heydenberk/gardening-data` and Trefle — unchanged from Addendum 1 (no licence;
+  historically unreliable, respectively).
+
 ## Consequences
 
 - `NOTICE` is corrected: OpenFarm's licence there was recorded as CC BY-SA

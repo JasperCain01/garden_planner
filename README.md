@@ -3,11 +3,18 @@
 An offline-capable, statically-hosted planner for **edible** gardens and
 allotments. Describe your plot (size, light/shade, location — default Britain),
 and the app helps you work out which crops will thrive, how many fit at proper
-spacing, and how to arrange them — with drag-and-drop and live warnings.
+spacing, and how to arrange them — with drag-and-drop and live warnings. You can
+also **add your own crops** from a seed packet and **export a picture** of the
+finished plot.
 
-> **Status: early scaffolding.** This is the project skeleton (Workplan
-> Stage 0.1). The features described above are built in later stages — see
-> [`WORKPLAN.md`](./WORKPLAN.md).
+> **Status: Stages 0.1–1.6 complete.** The plant-record schema, the build-time
+> ETL, and the validated dataset (`data/plants.json`, 160 crops) are built and
+> green; the framework-free engine (Phase 2) and the drag-and-drop UI (Phase 3+)
+> come next. Stage 0.3 has since added the schema half of **user-added crops** —
+> a seed packet's fields validate and upcast into a full plant record, while
+> shipped data stays fully attributed (see
+> [`docs/adr/0011`](./docs/adr/0011-user-defined-crop-schema.md)); the add-crop UI
+> itself, and plot-image export, are planned in [`WORKPLAN.md`](./WORKPLAN.md).
 
 ## Why this exists
 

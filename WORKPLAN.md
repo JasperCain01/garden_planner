@@ -75,8 +75,9 @@ these are not optional niceties:
 
 A stage is complete only when: deliverables exist; `lint`, `typecheck`, and the
 test suite pass; the app still builds; new code is commented per 0.2; any
-non-obvious decision has an ADR; and relevant docs are updated. Run the repo's
-`/verify` and `/code-review` skills before considering a stage finished.
+non-obvious decision has an ADR; relevant docs are updated; and **the brief for
+the next stage is written** (§0.6). Run the repo's `/verify` and `/code-review`
+skills before considering a stage finished.
 
 ### 0.4 How to read the "Model" recommendation
 
@@ -115,6 +116,29 @@ The ETL is a separate Node/TypeScript workspace.
 **Licensing (confirmed): non-commercial.** Code under a permissive/copyleft OSS
 licence (MIT or GPL); the shipped **dataset** under **CC BY-NC-SA** to honour
 PFAF's terms, with attribution recorded in a `NOTICE`/provenance file.
+
+### 0.6 Write the next stage's brief before finishing (hand-off discipline)
+
+Every stage runs in a **fresh session with no memory of the ones before it** (the
+preamble to this section). The thing that makes that work is the per-stage brief
+in `docs/stage-<n>-brief.md`: a tight, self-contained hand-off that concentrates
+what the next session needs — what was built, the decisions and trade-offs made,
+the traps discovered, and where the new code lives — so it doesn't have to
+reconstruct any of it from the diff. This has been the practice since the start;
+it is now a **requirement, not an optional courtesy**, so it can't be lost just
+because a prompt forgot to ask for it.
+
+**A stage is not done until it has written the brief for the stage that comes
+next** (`docs/stage-<next>-brief.md`), mirroring the shape of the existing briefs:
+_goal_, _where it lives_, _what to build_, _constraints/gotchas already solved_,
+_deliverables_, _definition of done_, and _model_. Record anything this stage
+learned that the next one would otherwise rediscover the hard way — environment
+blockers, schema/interface shapes to reuse, and the decisions an ADR captures
+(point the next session _at_ the ADR rather than repeating it). If the next stage
+is ambiguous (the dependency map branches), write the brief for the most likely
+next stage and note the alternatives. This closes the loop the ADRs open: an ADR
+records _why_ a decision was made; the brief tells the next session _what to do
+with it_.
 
 ---
 
@@ -156,6 +180,10 @@ by different stages.
 - **Component tests** for UI logic (filtering, ranking, warning display).
 - **End-to-end tests (Playwright)** for the core journeys: define a plot → see a
   ranked palette → drag a plant in → see a count → trigger and clear a warning.
+- **User-content & export journeys.** The new capabilities get their own coverage:
+  a user-defined crop validates through the same `validatePlant` gate and behaves
+  like a shipped crop end-to-end (Stage 3.6), and the plot-image export produces a
+  non-blank PNG with icons and legend (Stage 3.7).
 - **Offline test.** An E2E run that loads the app, goes offline, and confirms it
   still functions — this is a _requirement_, so it gets an explicit test.
 - **PWA / performance audit.** A Lighthouse check in CI for installability and
@@ -208,6 +236,38 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   the spacing and provenance modelling right here avoids expensive rework.
 - **Verification:** Schema validates a hand-written sample record for 2–3 crops
   (onion, lettuce, a fruit); invalid samples are correctly rejected by tests.
+
+#### Stage 0.3 — Schema amendment for user-defined crops ⭐ keystone
+
+- **Goal:** Let the schema describe a crop a **user** enters from a seed packet,
+  not only a fully-sourced record from the ETL — the enabling change for
+  user-defined crops (Stage 3.6).
+- **Depends on:** 0.2.
+- **Why now (before Phase 2):** the plant schema is the single source of truth the
+  engine (Phase 2) and UI (Phase 3) build on. Relaxing it is cheap while only
+  tests depend on it, and expensive to unwind once scoring, packing, and the
+  palette are written against the stricter shape — so it lands here, not when the
+  UI finally needs it.
+- **Deliverables:** Make the two fields a seed-packet user can't supply
+  **optional** — `scientificName` (a user has "Cherry Belle", not _Raphanus
+  sativus_) and record-level `provenance` — _or_ keep `provenance` required but let
+  callers pass a synthesised `{ sources: [{ source: 'user-entered' }] }`. Decide
+  which, keeping `validatePlant` usable as **both** the ETL's hard-fail gate _and_
+  the UI's on-submit validator. A **user-crop id-namespacing convention** (e.g. a
+  `user-` prefix) so a user crop can never collide with a shipped `id`. An ADR
+  (`docs/adr/0011-user-defined-crop-schema.md`) recording exactly which fields were
+  relaxed, why, and — crucially — **how the guarantee that _shipped_ data stays
+  fully attributed is preserved** (e.g. a `validateShippedPlant` vs
+  `validateUserPlant` split, or an ETL-side lint that re-tightens what the schema
+  now permits). This must not become a licence/provenance loophole for shipped
+  data.
+- **Model:** **Opus.** Keystone-schema change with a cross-cutting consequence
+  (it must loosen the user path without weakening the shipped-data guarantee) —
+  exactly the "wrong call is expensive to unwind" profile §0.4 reserves for Opus.
+- **Verification:** A minimal user-shaped record (common name + spacing + light +
+  category, no scientific name, no source) validates; a _shipped_ record still
+  fails if it lacks provenance (whichever mechanism enforces that); every existing
+  Stage 0.2 sample record still parses unchanged.
 
 ### Phase 1 — Data pipeline
 
@@ -289,6 +349,35 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Verification:** UK default resolves fully offline; optional geocoding
   degrades cleanly when offline (tested).
 
+#### Stage 1.7 — Curated full-plant input (maintainer-authored crops)
+
+- **Goal:** A channel for the maintainer to **permanently add a crop to the
+  shipped dataset** by hand — the "grow the list of available crops" request —
+  feeding the same merge and hard-fail gate as every other source.
+- **Depends on:** 0.2 (0.3 optional — maintainer-added crops should meet the full
+  shipped-data bar, so they need no relaxation), and 1.5 (the merge it extends).
+- **Why it's needed:** today the dataset is assembled from OpenFarm plants plus
+  the _thin_ spacing and companion slices; there is **no input for a hand-authored
+  _full_ `Plant`**. This adds one: a curated `Plant[]` file (e.g.
+  `packages/etl/src/curated/plants.ts`) that the Stage 1.5 merge folds in directly
+  — the same "curated slice, hand-verified wins" pattern already there, but with
+  full records, so it is _less_ work than the spacing join.
+- **Deliverables:** The curated-plants module + its wiring into
+  `packages/etl/src/merge/` so its records reconcile alongside OpenFarm's (decide
+  and document the conflict rule when a curated crop overlaps an OpenFarm one —
+  curated presumably wins, mirroring hand-verified spacing); each curated record
+  fully schema-valid with real provenance; referential integrity preserved (keep
+  curated additions link-free, or only linking to ids known to ship). ADR for the
+  input's shape and its place in the join order; update the ETL README and
+  `data/README.md`.
+- **Model:** **Sonnet** to build the input and wiring (establishes the pattern);
+  **Haiku / local qwen3-coder** to add individual crop rows later against the
+  settled shape and the validating schema.
+- **Verification:** A curated crop appears in the built `data/plants.json` and
+  passes the gate; an intentionally-broken curated record fails the build loudly
+  (reuses Stage 1.5's gate); a curated crop overlapping an OpenFarm slug
+  reconciles by the documented rule, not by silent duplication.
+
 ### Phase 2 — Engine (framework-free, browser-side)
 
 #### Stage 2.1 — Suitability scoring engine ⭐ keystone
@@ -334,7 +423,13 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Goal:** The static SPA skeleton the features hang off.
 - **Depends on:** 0.1.
 - **Deliverables:** App shell, state management, routing configured for a
-  **GitHub Pages base path** (this bites early if ignored), dataset-loading layer.
+  **GitHub Pages base path** (this bites early if ignored), and a dataset-loading
+  layer that exposes the runtime plant list as **the shipped dataset plus any
+  user-defined crops** (Stage 3.6) layered on top — an in-memory, session-scoped
+  overlay, _not_ a rewrite of the shipped artifact. The engine and palette consume
+  this merged list and must not care which source a plant came from. (User crops
+  live only for the session; there is no persistence layer — the app exports a
+  _picture_, not a re-loadable save file, see Stage 3.7.)
 - **Model:** **Sonnet.**
 - **Verification:** App loads the bundled dataset and renders a placeholder;
   builds correctly under the Pages base path.
@@ -382,6 +477,57 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Model:** **Sonnet.**
 - **Verification:** E2E: place an antagonist pair → warning appears; resolve it →
   warning clears.
+
+#### Stage 3.6 — User-defined crops ⭐ (new capability)
+
+- **Goal:** Let a user who has bought seeds **add their own crop** from the packet
+  — name, spacing, growing season, light, category — pick an icon for it from the
+  bundled set, and use it in the palette and on the canvas exactly like a shipped
+  crop, for the duration of the session.
+- **Depends on:** 0.3 (the relaxed schema), 3.1 (the shipped ∪ user overlay), 3.3
+  (palette), 3.4 (canvas), 4.1 (the icon set to pick from).
+- **Deliverables:** An add-crop form capturing the seed-packet fields, validated on
+  submit with the **same `validatePlant`** the ETL uses (a user crop is a
+  first-class `Plant`, not a parallel shape); slugified, `user-`-namespaced ids
+  that can't collide with shipped ones; an **icon picker constrained to the bundled
+  SVG set** plus the generic fallback (no external-image upload — it would break
+  the self-owned-asset/licensing story _and_ taint the export canvas, see Stage
+  3.7); the crop injected into the session's runtime plant list so the palette
+  ranks it and the canvas can place it. User crops persist **in session state
+  only** (no reload persistence — out of scope by decision).
+- **Model:** **Sonnet.** Well-scoped form + validation + state wiring against the
+  settled schema and palette.
+- **Verification:** Component tests for the form (valid packet → a `Plant` the
+  engine accepts; missing required field → a clear error); E2E: add a custom crop
+  → it appears in the palette, scores against the plot, and drags onto the canvas
+  with a correct count.
+
+#### Stage 3.7 — Export the plot as an image ⭐ (new capability)
+
+- **Goal:** Let the user **export a picture** (PNG) of the plot they've built — the
+  canvas plus a **key naming the chosen crops** and the plot's **soil/climate
+  settings** — to keep, print, or share. A terminal image artifact, not a
+  re-loadable save.
+- **Depends on:** 3.4 (the canvas) and 4.2 (icons wired, so the picture shows real
+  crop icons); 3.5/3.6 for what the legend lists. Best implemented after Phase 4.
+- **Deliverables:** An export action that composes plot + legend + settings and
+  renders them to a downloadable image via the canvas library's own export
+  (`react-konva`/Konva `toDataURL`/`toBlob` — largely built-in, §0.5). Compose the
+  legend and soil/climate text into the exported frame (a Konva side layer is
+  simplest). **Default to PNG** (flat illustration + text compresses badly as
+  JPEG); offer JPEG as a secondary option if wanted. Export at a fixed `pixelRatio`
+  so the image is crisp regardless of screen size.
+- **Gotchas to handle (record in the ADR):** await `document.fonts.ready` and **all
+  icon-image loads before rasterising**, or the export shows blank icons / fallback
+  fonts; the canvas stays **untainted only because every icon is self-owned and
+  same-origin** (Stage 4.1) — never draw an external-URL image onto it or export
+  silently breaks (a reason Stage 3.6's icon picker excludes uploads).
+- **Model:** **Sonnet.** Well-scoped canvas feature; the heavy lifting is
+  library-provided.
+- **Verification:** E2E: build a small plot → export → a non-empty PNG downloads
+  whose dimensions match the fixed export size; a visual snapshot confirms icons
+  and legend render (not blank). Ties into the a11y/legibility pass (6.2) for the
+  key.
 
 ### Phase 4 — Content & assets
 
@@ -443,9 +589,11 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Deliverables:** A complete `README` (what it is, live link, one-command local
   run, offline use); an **architecture overview** tying `DESIGN.md`, the ADRs,
   and the code together; a **data-provenance & licensing** doc (sources, PFAF
-  attribution, dataset licence); and **how-to guides**: "add a plant", "add a
-  companion relationship", "add an icon", "run the ETL". Verify code comments
-  meet §0.2 across the codebase.
+  attribution, dataset licence); and **how-to guides**: "add a plant to the
+  shipped dataset" (the Stage 1.7 curated input), "add your own crop in the app"
+  (Stage 3.6), "add a companion relationship", "add an icon", "run the ETL", and
+  "export a plot as an image" (Stage 3.7). Verify code comments meet §0.2 across
+  the codebase.
 - **Model:** **Sonnet.**
 - **Verification:** A newcomer (or a fresh session simulating one) can go from
   clone to running app and to adding a plant using only the docs.
@@ -475,28 +623,31 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 ## 3. Dependency map & suggested order
 
 ```
-0.1 ─► 0.2 ─┬─► 1.1 ─► 1.2 ─┐
-            ├─► 1.3 ────────┼─► 1.5 ─► 2.1 ─► 2.2 ─► 2.3
-            ├─► 1.4 ────────┘                 │
-            └─► 1.6 ──────────────────────────┘
+0.1 ─► 0.2 ─► 0.3 ─┬─► 1.1 ─► 1.2 ─┐
+                   ├─► 1.3 ────────┤
+                   ├─► 1.4 ────────┼─► 1.5 ─► 2.1 ─► 2.2 ─► 2.3
+                   ├─► 1.6 ────────┤
+                   └─► 1.7 ────────┘   (1.7 curated crops also feed the 1.5 merge)
 0.1 ─► 3.1 ─► 3.2 ─► 3.3 ─► 3.4 ─► 3.5
+(0.3 · 3.3 · 3.4 · 4.1) ─► 3.6   user-defined crops
+(3.4 · 4.2) ─────────────► 3.7   export plot as image
 Phase 1 crop list ─► 4.1 ─► 4.2
 MVP ─► 5.1 ─► 5.2
 all ─► 6.1, 6.2, 6.3
 ```
 
-Natural critical path: **0.1 → 0.2 → (data phase) → engine → frontend → offline →
-deploy → docs.** Phases 1 (data) and 3 (frontend scaffolding) can proceed in
+Natural critical path: **0.1 → 0.2 → 0.3 → (data phase) → engine → frontend →
+offline → deploy → docs.** Phases 1 (data) and 3 (frontend scaffolding) can proceed in
 parallel by different sessions once 0.2 exists, since the frontend can start
 against sample data before the full dataset is built.
 
 ## 4. Model-tier summary
 
-| Tier                                       | Stages                                                                              |
-| ------------------------------------------ | ----------------------------------------------------------------------------------- |
-| **Opus** (keystone / algorithmic)          | 0.2, 1.5, 2.1, 2.2 (+ optionally 3.4, 6.3)                                          |
-| **Sonnet** (bulk of the build)             | 0.1, 1.1, 1.2 (first adapter), 1.3, 1.4, 1.6, 2.3, 3.1–3.5, 4.1, 5.1, 5.2, 6.1, 6.2 |
-| **Haiku / local qwen3-coder** (mechanical) | 1.2 (later adapters), 4.2, parts of 4.1 & 5.2                                       |
+| Tier                                       | Stages                                                                                   |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| **Opus** (keystone / algorithmic)          | 0.2, 0.3, 1.5, 2.1, 2.2 (+ optionally 3.4, 6.3)                                          |
+| **Sonnet** (bulk of the build)             | 0.1, 1.1, 1.2 (first adapter), 1.3, 1.4, 1.6, 1.7, 2.3, 3.1–3.7, 4.1, 5.1, 5.2, 6.1, 6.2 |
+| **Haiku / local qwen3-coder** (mechanical) | 1.2 (later adapters), 1.7 (later crop rows), 4.2, parts of 4.1 & 5.2                     |
 
 Rule of thumb: **Opus where a wrong decision is expensive to unwind; Sonnet for
 well-scoped feature work; Haiku/local for mechanical work against a settled

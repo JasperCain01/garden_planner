@@ -73,6 +73,13 @@ Everything below follows from that.
   truth and the TypeScript types are `z.infer`-derived from it, so the ETL, the
   engine, and the UI all validate and type against one shape. See
   [`adr/0004`](./adr/0004-plant-schema.md), especially the method-aware spacing.
+  Stage 0.3 ([`adr/0011`](./adr/0011-user-defined-crop-schema.md)) adds
+  `schema/user-plant.ts`: a permissive **input** schema for a crop typed off a seed
+  packet (no scientific name, no citation) plus an **upcast** that turns it into a
+  fully-valid `Plant` — synthesising `user-entered` provenance and a `user-`
+  namespaced id. `PlantSchema`/`validatePlant` are deliberately unchanged, so the
+  ETL's hard-fail gate for _shipped_ data keeps requiring full identity and
+  attribution; the relaxation exists only at that input boundary.
   Stage 1.6 ([`adr/0010`](./adr/0010-location-climate-static-data.md)) adds
   **location/climate static data** (`packages/engine/src/climate/`): a
   climate-profile zod schema (reusing the schema's `RhsHardinessRatingSchema`,
@@ -83,6 +90,24 @@ Everything below follows from that.
   `resolveClimate(location)` the suitability engine (Stage 2.1) and the
   plot-definition UI (Stage 3.2) will consume. Online geocoding is deferred
   (interface-ready — see the ADR); the offline path never touches the network.
+  Stage 2.1 ([`adr/0012`](./adr/0012-suitability-scoring.md)) adds the engine's
+  first real brain — **suitability scoring**
+  (`packages/engine/src/suitability/`): a zod-first plot/growing-conditions
+  schema (light, soil, a resolved `ClimateProfile`, an optional planting month —
+  reusing the Stage 0.2 enums so a plot's light level and a plant's light
+  requirement are literally the same enum), four per-dimension scorers (light,
+  hardiness, soil, season) that each return a score **and** a human-readable
+  reason, an aggregate `scorePlant` carrying the full breakdown, and
+  `rankPlants` — the palette's entry point (Stage 3.3). The design decision worth
+  reading the ADR for is the **missing-data policy**: no shipped record carries
+  hardiness, soil or seasons today, so an unassessable dimension is _excluded_
+  from the weighted mean rather than defaulted, the gap is reported as a
+  `confidence` figure and stated in the result's own reasoning, and the ranking
+  score is shrunk towards a neutral prior in proportion to it — so "absent" reads
+  as neither a perfect match nor a total mismatch. A hard mismatch on any one
+  dimension caps the whole result (a full-sun crop in deep shade cannot average
+  its way to a good score). The machine-readable `finding` on each dimension is
+  the contract Stage 2.3's warnings engine builds on.
 - **`app`** is the React + Vite front-end — the only thing deployed. It loads the
   dataset, calls the engine, and renders the drag-and-drop UI.
 
@@ -93,17 +118,50 @@ horticultural logic and the data pipeline can each be tested and reasoned about
 on their own, and the "build-time vs run-time" split is enforced by the package
 boundaries rather than by discipline alone. See `adr/0003`.
 
+## Planned additions (not yet built — see `WORKPLAN.md`)
+
+Three capabilities were added to the plan after Phase 1. They are staged in
+`WORKPLAN.md` but not yet implemented, and they shape a few of the boundaries
+above:
+
+- **User-defined crops (Stage 3.6; the enabling schema work is done — Stage 0.3,
+  [`adr/0011`](./adr/0011-user-defined-crop-schema.md)).** A user who buys seeds can
+  add their own crop from the packet (name, spacing, season, light, category) and
+  pick a bundled icon for it. The schema side already exists: `UserPlantInputSchema`
+  accepts what a packet gives, and `createUserPlant` upcasts it to a full `Plant`
+  with synthesised `user-entered` provenance and a `user-`-namespaced id — while
+  _shipped_ data stays fully attributed, because the base schema and the ETL gate
+  were left strict. What remains for 3.6 is the form, the icon picker, and the state
+  wiring. That upcast is also why the app's runtime plant list (Stage 3.1) can be
+  **the shipped dataset plus an in-memory, session-scoped overlay of user crops** —
+  every entry is a valid `Plant`, so the engine consumes the merged list and is
+  indifferent to a plant's origin, and user crops carry no companion links so the
+  merged list has nothing to dangle. User crops live for the session only; there is
+  no reload-persistence layer.
+- **Maintainer-authored crops in the dataset (Stage 1.7).** A curated
+  full-`Plant` input feeding the same Stage 1.5 merge and hard-fail gate, so the
+  shipped crop list can grow by hand without a new external source. Distinct from
+  user crops: these are permanent, fully attributed, and go through the build.
+- **Plot-image export (Stage 3.7).** The user can export a PNG of their finished
+  plot plus a legend of chosen crops and the soil/climate settings, via the canvas
+  library's own image export. A terminal picture, not a re-loadable save — which
+  is precisely why no plan-serialisation or persistence subsystem is needed. The
+  self-owned, same-origin icon set (Stage 4.1) is what keeps the export canvas
+  untainted and the feature possible.
+
 ## Where to look next
 
-| Topic                                                  | File                            |
-| ------------------------------------------------------ | ------------------------------- |
-| Concept, data-source assessment, licensing rationale   | [`DESIGN.md`](../DESIGN.md)     |
-| Staged build plan, per-stage models, verification      | [`WORKPLAN.md`](../WORKPLAN.md) |
-| Specific decisions and their alternatives              | [`adr/`](./adr/)                |
-| The plant-record schema (types + validation)           | `packages/engine/src/schema/`   |
-| Location/climate static data and `resolveClimate`      | `packages/engine/src/climate/`  |
-| The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`        |
-| The hand-verified spacing table (curation, not ingest) | `packages/etl/src/spacing/`     |
-| Evidence-tagged companion/antagonist data              | `packages/etl/src/companions/`  |
-| The Stage 1.5 merge, validation gate, and artifact     | `packages/etl/src/merge/`       |
-| The committed dataset artifact and its caveats         | `data/README.md`                |
+| Topic                                                  | File                                       |
+| ------------------------------------------------------ | ------------------------------------------ |
+| Concept, data-source assessment, licensing rationale   | [`DESIGN.md`](../DESIGN.md)                |
+| Staged build plan, per-stage models, verification      | [`WORKPLAN.md`](../WORKPLAN.md)            |
+| Specific decisions and their alternatives              | [`adr/`](./adr/)                           |
+| The plant-record schema (types + validation)           | `packages/engine/src/schema/`              |
+| User-crop input schema and its upcast to a `Plant`     | `packages/engine/src/schema/user-plant.ts` |
+| Location/climate static data and `resolveClimate`      | `packages/engine/src/climate/`             |
+| Suitability scoring, its reasoning, and `rankPlants`   | `packages/engine/src/suitability/`         |
+| The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`                   |
+| The hand-verified spacing table (curation, not ingest) | `packages/etl/src/spacing/`                |
+| Evidence-tagged companion/antagonist data              | `packages/etl/src/companions/`             |
+| The Stage 1.5 merge, validation gate, and artifact     | `packages/etl/src/merge/`                  |
+| The committed dataset artifact and its caveats         | `data/README.md`                           |
