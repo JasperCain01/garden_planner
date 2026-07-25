@@ -174,6 +174,38 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   array with the overlay's values and is the runtime realisation of ADR 0011's
   shipped-∪-user design. See the ADR for why Zustand and why an id-keyed map
   over an array.
+  Stage 3.2 ([`adr/0016`](./adr/0016-outline-editor-svg-not-konva.md)) adds the
+  **plot-definition page** (`app/src/plot/`), which now renders at the index
+  route (`routes/Home.tsx` — Stage 3.1 left it a placeholder specifically for
+  this stage to replace, per its own brief): `ShapePicker.tsx` builds a
+  `PlotRegion` from a preset (rectangle/L-shape/circle) and metre-valued
+  dimensions via the engine's factory functions, converted to centimetres at
+  the boundary (`plot/units.ts`); `PlotOutlineEditor.tsx` is the free-form
+  drag/add/remove-corner editor, re-validating every edit through
+  `safeValidatePlotRegion` and showing an invalid outline (self-intersecting,
+  too few corners, a collapsed edge) inline rather than ever handing it to
+  `onChange` — its pure vertex-array edits live separately in
+  `plot/outline-ops.ts` so they're testable with no DOM at all;
+  `PlotConditionsForm.tsx` assembles light (required), soil (optional,
+  all-or-nothing per facet per `PlotSoilSchema`), and location (the UK default
+  or a `CLIMATE_REGIONS` pick — no free-text geocoding, per ADR 0010's defer)
+  into a `PlotConditionsInput`, resolving it live via `resolvePlotConditions`
+  to show whether it's currently valid. `state/plot-store.ts` is the new
+  per-concern Zustand store (ADR 0015's convention) holding the current
+  `PlotRegion` and `PlotConditionsInput` — the _input_ shape, not a resolved
+  `PlotConditions`, so the form stays editable; downstream stages call
+  `resolvePlotConditions` themselves at the point they need the resolved
+  value. The one decision worth reading the ADR for: the outline editor is
+  **plain SVG + native pointer events, not react-konva** — react-konva is
+  ratified (`WORKPLAN.md` §0.5) but for Stage 3.4's actual canvas scene; a
+  handful of draggable polygon corners doesn't need a retained-canvas
+  renderer, and adopting Konva here would hand 3.4 both the library and
+  whatever conventions this editor happened to establish for it, instead of
+  letting 3.4 design against its own requirements. The ADR also records the
+  drag math's coordinate-conversion trick (a fixed, component-known
+  pixel-per-centimetre ratio via the SVG's own `viewBox` scaling, needing no
+  `getBoundingClientRect`/`getScreenCTM` call — both are awkward-to-nonexistent
+  under the jsdom test environment).
 
 ## Why a monorepo with these boundaries
 
@@ -231,6 +263,8 @@ above:
 | App shell, routing, GitHub Pages basename                  | `app/src/routes/`                          |
 | Dataset-loading layer (loads + validates the shipped list) | `app/src/dataset/shipped-plants.ts`        |
 | The user-plant overlay store and merged `usePlantList`     | `app/src/state/`                           |
+| The plot-definition page, shape picker, outline editor     | `app/src/plot/`                            |
+| The plot store (current region + conditions input)         | `app/src/state/plot-store.ts`              |
 | The ETL pipeline shell, GBIF resolver, adding a source     | `packages/etl/README.md`                   |
 | The hand-verified spacing table (curation, not ingest)     | `packages/etl/src/spacing/`                |
 | Evidence-tagged companion/antagonist data                  | `packages/etl/src/companions/`             |
