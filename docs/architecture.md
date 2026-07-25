@@ -129,6 +129,30 @@ Everything below follows from that.
   is not a blanket `√3/2`, and the **fallback rule**: 151 of the 160 shipped
   records have row spacing only, so asking for an intensive count derives a
   conservative equal-area square and labels it rather than refusing.
+  Stage 2.3 ([`adr/0014`](./adr/0014-warnings-and-companion-suggestions.md)) adds
+  the **warnings & companion-suggestion engine**
+  (`packages/engine/src/warnings/`), the last piece of `DESIGN.md`'s core
+  loop: `evaluatePlot(conditions, placements)` is the single entry point Stage
+  3.5 calls per state change, returning every warning (`wrong-light`,
+  `overcrowded`, `wrong-sowing-season`, `antagonist-adjacency`,
+  `climate-mismatch` — a closed, discriminated-union `Warning` type, never
+  prose to parse) and every companion suggestion for what's already placed, in
+  one call. Three warning kinds are thin wrappers over Stage 2.1's per-dimension
+  findings (only `mismatch`/`unsuitable` warn — `marginal` and both `unknown-*`
+  findings stay silent, so the sparse shipped dataset doesn't nag about its own
+  gaps); two are new work over Stage 2.2's geometry. The design decisions worth
+  reading the ADR for: **"planted nearby"** is real polygon-to-polygon distance
+  (never a bounding-box shortcut) against a threshold derived from the two
+  crops' own spacing, not a fixed constant; **overcrowding** reuses `fitPlant`
+  directly, since its whole-cell-conservative count already makes "placed more
+  than fits" and "placed closer than spacing" the same test; and **evidence
+  tags** (ADR 0008) are carried through unaveraged into both antagonist-warning
+  severity and companion-suggestion wording, phrased assertively for the three
+  `well-supported` links and hedged for the 82 `traditional` ones rather than
+  hiding the folklore majority outright. A user-defined crop (ADR 0011) can
+  never produce or receive a suggestion or an antagonist warning — not via a
+  defensive check, but because its `companions`/`antagonists` are structurally
+  always absent.
 - **`app`** is the React + Vite front-end — the only thing deployed. It loads the
   dataset, calls the engine, and renders the drag-and-drop UI.
 
@@ -182,6 +206,7 @@ above:
 | Location/climate static data and `resolveClimate`      | `packages/engine/src/climate/`             |
 | Suitability scoring, its reasoning, and `rankPlants`   | `packages/engine/src/suitability/`         |
 | The plot-region polygon, packing geometry, `fitPlant`  | `packages/engine/src/spacing/`             |
+| Warnings, companion suggestions, `evaluatePlot`        | `packages/engine/src/warnings/`            |
 | The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`                   |
 | The hand-verified spacing table (curation, not ingest) | `packages/etl/src/spacing/`                |
 | Evidence-tagged companion/antagonist data              | `packages/etl/src/companions/`             |

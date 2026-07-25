@@ -42,6 +42,16 @@ export * from './suitability/index.ts';
  */
 export * from './spacing/index.ts';
 
+/**
+ * The warnings & companion-suggestion engine (Stage 2.3): `evaluatePlot`, the
+ * single entry point Stage 3.5 calls per state change, returning every
+ * warning (wrong light, overcrowding, wrong sowing season, antagonist
+ * adjacency, climate mismatch) and companion suggestion for what's placed.
+ * See `warnings/index.ts` and
+ * `docs/adr/0014-warnings-and-companion-suggestions.md`.
+ */
+export * from './warnings/index.ts';
+
 /** Marker the app shell reads to confirm the engine package is wired in. */
 export const ENGINE_READY = true;
 

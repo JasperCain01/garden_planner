@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   ENGINE_READY,
   engineStatus,
+  evaluatePlot,
   rankPlants,
+  rectangleRegion,
   resolvePlotConditions,
   scorePlant,
   validatePlant,
@@ -42,5 +44,25 @@ describe('engine public surface', () => {
 
     expect(scorePlant(plant, conditions).band).toBe('good');
     expect(rankPlants([plant], conditions)).toHaveLength(1);
+  });
+
+  it('exposes the warnings & companion-suggestion engine end to end', () => {
+    const plant = validatePlant({
+      id: 'onion',
+      commonName: 'Onion',
+      scientificName: 'Allium cepa',
+      gbifId: null,
+      category: 'vegetable',
+      light: 'full-shade', // deliberately wrong for the plot below
+      spacing: { row: { inRowCm: 10, betweenRowCm: 30 } },
+      provenance: { sources: [{ source: 'hand-written test fixture' }] },
+    });
+    const conditions = resolvePlotConditions({ light: 'full-sun' });
+    const placements = [{ id: 'bed-1', plant, region: rectangleRegion(100, 100), count: 1 }];
+
+    const evaluation = evaluatePlot(conditions, placements);
+    expect(evaluation.warnings).toHaveLength(1);
+    expect(evaluation.warnings[0].kind).toBe('wrong-light');
+    expect(evaluation.suggestions).toHaveLength(0);
   });
 });

@@ -35,12 +35,13 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 1.7 Curated full-plant input             | ⬜ not started | Independent of Phase 2; the one thing that lifts scoring confidence above 0.35                                                    |
 | 2.1 Suitability scoring engine ⭐        | ✅             | ADR [0012](./docs/adr/0012-suitability-scoring.md); `src/suitability/`, `rankPlants`                                              |
 | 2.2 Spacing / density calculator ⭐      | ✅             | ADR [0013](./docs/adr/0013-spacing-density-calculator.md); `src/spacing/`, `fitPlant`, `PlotRegionSchema`                         |
-| 2.3 Warnings & companion suggestions     | 🔜 **next**    | Brief: [`docs/stage-2.3-brief.md`](./docs/stage-2.3-brief.md)                                                                     |
-| 3.x Frontend MVP                         | ⬜ not started | 3.1 is unblocked and can run in parallel with 2.3                                                                                 |
+| 2.3 Warnings & companion suggestions     | ✅             | ADR [0014](./docs/adr/0014-warnings-and-companion-suggestions.md); `src/warnings/`, `evaluatePlot`                                |
+| 3.x Frontend MVP                         | ⬜ not started | 3.1 is next. Brief: [`docs/stage-3.1-brief.md`](./docs/stage-3.1-brief.md)                                                        |
 | 4.x–6.x Assets, offline, deploy, polish  | ⬜ not started | —                                                                                                                                 |
 
-**In one line:** the data layer and the engine's two calculations are built and
-green; Phase 2 has one stage left (2.3), and Phase 3 (the UI) has not started.
+**In one line:** the data layer and the engine's whole brain — suitability
+scoring, spacing/density, and warnings & companion suggestions — are built and
+green; Phase 2 is complete, and Phase 3 (the UI) has not started.
 
 ---
 
