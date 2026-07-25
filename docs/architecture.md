@@ -90,6 +90,24 @@ Everything below follows from that.
   `resolveClimate(location)` the suitability engine (Stage 2.1) and the
   plot-definition UI (Stage 3.2) will consume. Online geocoding is deferred
   (interface-ready — see the ADR); the offline path never touches the network.
+  Stage 2.1 ([`adr/0012`](./adr/0012-suitability-scoring.md)) adds the engine's
+  first real brain — **suitability scoring**
+  (`packages/engine/src/suitability/`): a zod-first plot/growing-conditions
+  schema (light, soil, a resolved `ClimateProfile`, an optional planting month —
+  reusing the Stage 0.2 enums so a plot's light level and a plant's light
+  requirement are literally the same enum), four per-dimension scorers (light,
+  hardiness, soil, season) that each return a score **and** a human-readable
+  reason, an aggregate `scorePlant` carrying the full breakdown, and
+  `rankPlants` — the palette's entry point (Stage 3.3). The design decision worth
+  reading the ADR for is the **missing-data policy**: no shipped record carries
+  hardiness, soil or seasons today, so an unassessable dimension is _excluded_
+  from the weighted mean rather than defaulted, the gap is reported as a
+  `confidence` figure and stated in the result's own reasoning, and the ranking
+  score is shrunk towards a neutral prior in proportion to it — so "absent" reads
+  as neither a perfect match nor a total mismatch. A hard mismatch on any one
+  dimension caps the whole result (a full-sun crop in deep shade cannot average
+  its way to a good score). The machine-readable `finding` on each dimension is
+  the contract Stage 2.3's warnings engine builds on.
 - **`app`** is the React + Vite front-end — the only thing deployed. It loads the
   dataset, calls the engine, and renders the drag-and-drop UI.
 
@@ -141,6 +159,7 @@ above:
 | The plant-record schema (types + validation)           | `packages/engine/src/schema/`              |
 | User-crop input schema and its upcast to a `Plant`     | `packages/engine/src/schema/user-plant.ts` |
 | Location/climate static data and `resolveClimate`      | `packages/engine/src/climate/`             |
+| Suitability scoring, its reasoning, and `rankPlants`   | `packages/engine/src/suitability/`         |
 | The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`                   |
 | The hand-verified spacing table (curation, not ingest) | `packages/etl/src/spacing/`                |
 | Evidence-tagged companion/antagonist data              | `packages/etl/src/companions/`             |
