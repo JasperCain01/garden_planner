@@ -1,8 +1,8 @@
 # Stage 2.1 brief — suitability scoring engine ⭐ keystone
 
 A tight starting point for a fresh session. Read [`DESIGN.md`](../DESIGN.md)
-(§1 the core loop, §3 "What the app actually does with the data") and
-[`WORKPLAN.md`](../WORKPLAN.md) (§0 ground rules and the Stage 2.1 entry) first;
+(§1 "What the app does", especially "The two calculations that make it useful")
+and [`WORKPLAN.md`](../WORKPLAN.md) (§0 ground rules and the Stage 2.1 entry) first;
 this brief concentrates the requirements and, more importantly, **the shape of the
 real data you'll be scoring** — which is not what you'd assume.
 
