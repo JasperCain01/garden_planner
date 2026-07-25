@@ -7,14 +7,21 @@ spacing, and how to arrange them — with drag-and-drop and live warnings. You c
 also **add your own crops** from a seed packet and **export a picture** of the
 finished plot.
 
-> **Status: Stages 0.1–1.6 complete.** The plant-record schema, the build-time
-> ETL, and the validated dataset (`data/plants.json`, 160 crops) are built and
-> green; the framework-free engine (Phase 2) and the drag-and-drop UI (Phase 3+)
-> come next. Stage 0.3 has since added the schema half of **user-added crops** —
-> a seed packet's fields validate and upcast into a full plant record, while
-> shipped data stays fully attributed (see
-> [`docs/adr/0011`](./docs/adr/0011-user-defined-crop-schema.md)); the add-crop UI
-> itself, and plot-image export, are planned in [`WORKPLAN.md`](./WORKPLAN.md).
+> **Status: Stages 0.1–1.6, 0.3, 2.1 and 2.2 complete.** The plant-record schema,
+> the build-time ETL and the validated dataset (`data/plants.json`, 160 crops) are
+> built and green, and so are the framework-free engine's two calculations:
+> **suitability scoring** — rank any crop against a plot's light, hardiness, soil
+> and season, with the reasoning exposed
+> ([`docs/adr/0012`](./docs/adr/0012-suitability-scoring.md)) — and the
+> **spacing / density calculator**, which answers "how many onions can I fit?" for
+> an arbitrary polygon plot, respecting its shape rather than just its area
+> ([`docs/adr/0013`](./docs/adr/0013-spacing-density-calculator.md)). The warnings
+> engine (2.3) and the drag-and-drop UI (Phase 3+) come next. Stage 0.3 has also
+> added the schema half of **user-added crops** — a seed packet's fields validate
+> and upcast into a full plant record, while shipped data stays fully attributed
+> ([`docs/adr/0011`](./docs/adr/0011-user-defined-crop-schema.md)); the add-crop UI
+> itself, and plot-image export, are planned in [`WORKPLAN.md`](./WORKPLAN.md),
+> whose Progress table is the up-to-date picture.
 
 ## Why this exists
 

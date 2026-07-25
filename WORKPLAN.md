@@ -13,6 +13,37 @@ from solid ground.
 
 ---
 
+## Progress
+
+Where the build has got to. **Update this table as part of the stage** — it is
+the one place a fresh session can see what already exists without reading the
+whole plan, and a stale entry costs the next session more than it saves this
+one. A stage counts as ✅ only when it meets the definition of done (§0.3):
+green, commented, ADR written, docs updated, and the next brief handed off.
+
+| Stage                                    | Status         | Left behind                                                                                                                       |
+| ---------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1 Repo scaffolding & tooling           | ✅             | ADRs [0001](./docs/adr/0001-tech-stack.md)–[0003](./docs/adr/0003-static-client-side-architecture.md)                             |
+| 0.2 Data schema ⭐                       | ✅             | ADR [0004](./docs/adr/0004-plant-schema.md); `packages/engine/src/schema/`                                                        |
+| 0.3 Schema amendment: user crops ⭐      | ✅             | ADR [0011](./docs/adr/0011-user-defined-crop-schema.md); `schema/user-plant.ts`                                                   |
+| 1.1 ETL scaffolding & name resolution    | ✅             | ADR [0005](./docs/adr/0005-gbif-name-resolver.md); GBIF resolver (offline-cached)                                                 |
+| 1.2 Source adapters                      | ⚠️ partial     | ADR [0006](./docs/adr/0006-openfarm-source-adapter.md); **OpenFarm only** — PFAF and Permapeople still to follow the same pattern |
+| 1.3 Hand-verified spacing table ⭐       | ✅             | ADR [0007](./docs/adr/0007-hand-verified-spacing.md); `packages/etl/src/spacing/`                                                 |
+| 1.4 Companion-planting data              | ✅             | ADR [0008](./docs/adr/0008-companion-planting-data.md); 85 companion + 6 antagonist links                                         |
+| 1.5 Dataset build, merge & validation ⭐ | ✅             | ADR [0009](./docs/adr/0009-dataset-merge-and-licensing.md); `data/plants.json` (160 crops)                                        |
+| 1.6 Location & climate static data       | ✅             | ADR [0010](./docs/adr/0010-location-climate-static-data.md); `packages/engine/src/climate/`                                       |
+| 1.7 Curated full-plant input             | ⬜ not started | Independent of Phase 2; the one thing that lifts scoring confidence above 0.35                                                    |
+| 2.1 Suitability scoring engine ⭐        | ✅             | ADR [0012](./docs/adr/0012-suitability-scoring.md); `src/suitability/`, `rankPlants`                                              |
+| 2.2 Spacing / density calculator ⭐      | ✅             | ADR [0013](./docs/adr/0013-spacing-density-calculator.md); `src/spacing/`, `fitPlant`, `PlotRegionSchema`                         |
+| 2.3 Warnings & companion suggestions     | 🔜 **next**    | Brief: [`docs/stage-2.3-brief.md`](./docs/stage-2.3-brief.md)                                                                     |
+| 3.x Frontend MVP                         | ⬜ not started | 3.1 is unblocked and can run in parallel with 2.3                                                                                 |
+| 4.x–6.x Assets, offline, deploy, polish  | ⬜ not started | —                                                                                                                                 |
+
+**In one line:** the data layer and the engine's two calculations are built and
+green; Phase 2 has one stage left (2.3), and Phase 3 (the UI) has not started.
+
+---
+
 ## 0. Ground rules that apply to every stage
 
 These are constraints and conventions that hold across the whole build. A fresh
@@ -73,11 +104,16 @@ these are not optional niceties:
 
 ### 0.3 Definition of done (every stage)
 
-A stage is complete only when: deliverables exist; `lint`, `typecheck`, and the
-test suite pass; the app still builds; new code is commented per 0.2; any
-non-obvious decision has an ADR; relevant docs are updated; and **the brief for
-the next stage is written** (§0.6). Run the repo's `/verify` and `/code-review`
-skills before considering a stage finished.
+A stage is complete only when: deliverables exist; `lint`, `typecheck`,
+`format:check` and the test suite pass; the app still builds; new code is
+commented per 0.2; any non-obvious decision has an ADR (and is added to
+`docs/adr/README.md`'s index); relevant docs are updated; **the Progress table
+above records the stage**; and **the brief for the next stage is written**
+(§0.6).
+
+> There is **no `.claude/` skills directory in this repository**, so the
+> `/verify` and `/code-review` commands earlier drafts of this plan referred to
+> do not exist. Review your own diff before calling a stage done.
 
 ### 0.4 How to read the "Model" recommendation
 
@@ -191,10 +227,23 @@ by different stages.
 
 ### 1.4 Continuous validation (the safety net)
 
-- **CI on every push** runs: lint → typecheck → unit → component → build → E2E →
-  dataset validation. A stage that breaks any of these is not done.
-- **Deploy preview.** The GitHub Pages deploy (Stage 5.2) runs on merge so the
-  hosted version is always current and testable.
+The checks themselves are the safety net, and they are **not optional**: lint →
+typecheck → format → unit → component → build → E2E → dataset validation. A
+stage that breaks any of these is not done (§0.3).
+
+**Automating them in GitHub Actions is deliberately deferred until the project
+is complete.** There is no `.github/workflows/` directory, and stages should not
+add one — that includes the Pages deploy in Stage 5.2, which stays a manual
+deploy until then. Run the checks locally, from the repo root, before calling a
+stage done:
+
+```bash
+npm run lint && npm run typecheck && npm test && npm run build && npm run format:check
+```
+
+When Actions do land at the end of the build, they should automate exactly this
+list plus the E2E, offline, a11y and Lighthouse runs the later stages describe —
+nothing that isn't already a check a contributor can run by hand.
 
 ---
 
@@ -213,13 +262,15 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Deliverables:** Chosen stack wired up (see §0.5); workspace layout
   (`/app` frontend, `/engine` framework-free logic, `/etl` build-time pipeline,
   `/data` committed artifacts, `/docs` + `/docs/adr`); lint + format + typecheck
-  - test runner configured; CI workflow (lint/typecheck/test/build); `README`
-    skeleton; `LICENSE` for code (MIT or GPL; dataset licence is CC BY-NC-SA,
-    finalized with attribution in Stage 1.5 per PFAF terms); `CONTRIBUTING.md`;
-    ADRs recording the stack and framework choices (§0.5).
+  - test runner configured; `README` skeleton; `LICENSE` for code (MIT or GPL;
+    dataset licence is CC BY-NC-SA, finalized with attribution in Stage 1.5 per
+    PFAF terms); `CONTRIBUTING.md`; ADRs recording the stack and framework
+    choices (§0.5). _(This stage originally shipped a CI workflow too; it has
+    since been removed — GitHub Actions wait until the project is complete,
+    §1.4.)_
 - **Model:** **Sonnet.** Well-understood setup work; some judgement on structure.
 - **Verification:** `npm install && npm run build && npm test` succeeds from a
-  clean clone; CI passes on the first push.
+  clean clone.
 
 #### Stage 0.2 — Data schema definition ⭐ keystone
 

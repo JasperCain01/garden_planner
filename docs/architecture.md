@@ -108,6 +108,27 @@ Everything below follows from that.
   dimension caps the whole result (a full-sun crop in deep shade cannot average
   its way to a good score). The machine-readable `finding` on each dimension is
   the contract Stage 2.3's warnings engine builds on.
+  Stage 2.2 ([`adr/0013`](./adr/0013-spacing-density-calculator.md)) adds the
+  engine's second calculation — the **spacing / density calculator**
+  (`packages/engine/src/spacing/`), which answers "how many onions can I fit?".
+  A plot region is an **arbitrary simple polygon** in centimetres (zod-first,
+  with the preset shapes — rectangle, L-shape, circle — as _factory functions_
+  building the one type, so the free-form outline a user drags is the same code
+  path); the schema rejects self-intersecting, collapsed and under-3-corner
+  outlines with messages Stage 3.2 can show. Counting is **shape-aware**: a
+  lattice is laid over the region's bounding box and a plant is kept only if the
+  whole rectangle it is allotted lies inside the outline, so an L-shaped plot
+  counts strictly fewer plants than its bounding box and "a plant that half-fits
+  doesn't" is a rule rather than an aspiration. It is **method-aware** too (rows
+  vs. intensive beds, ADR 0004 §2), offers square or offset/hexagonal packing,
+  and returns a result that explains itself — method used vs. asked for, whether
+  the spacing was recorded or derived, the effective grid, every plant's
+  position for the canvas (Stage 3.4), and a sentence for the UI. The decisions
+  worth reading the ADR for are the whole-cell containment rule (which makes the
+  area upper bound a theorem), the offset row pitch `√(b² − (s/2)²)` and why it
+  is not a blanket `√3/2`, and the **fallback rule**: 151 of the 160 shipped
+  records have row spacing only, so asking for an intensive count derives a
+  conservative equal-area square and labels it rather than refusing.
 - **`app`** is the React + Vite front-end — the only thing deployed. It loads the
   dataset, calls the engine, and renders the drag-and-drop UI.
 
@@ -160,6 +181,7 @@ above:
 | User-crop input schema and its upcast to a `Plant`     | `packages/engine/src/schema/user-plant.ts` |
 | Location/climate static data and `resolveClimate`      | `packages/engine/src/climate/`             |
 | Suitability scoring, its reasoning, and `rankPlants`   | `packages/engine/src/suitability/`         |
+| The plot-region polygon, packing geometry, `fitPlant`  | `packages/engine/src/spacing/`             |
 | The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`                   |
 | The hand-verified spacing table (curation, not ingest) | `packages/etl/src/spacing/`                |
 | Evidence-tagged companion/antagonist data              | `packages/etl/src/companions/`             |

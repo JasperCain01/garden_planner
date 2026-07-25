@@ -32,3 +32,4 @@ old one and mark the old one `Superseded`.
 - [0010 — Location & climate static data: profile shape, frost-date representation, module home, and the geocoding defer](./0010-location-climate-static-data.md)
 - [0011 — User-defined crops: a separate input schema, an upcast, and the `user-` id namespace](./0011-user-defined-crop-schema.md)
 - [0012 — Suitability scoring: the weighting model, the missing-data policy, and how reasoning is represented](./0012-suitability-scoring.md)
+- [0013 — Spacing / density calculator: the region model, the packing geometry, and the method-fallback rule](./0013-spacing-density-calculator.md)
