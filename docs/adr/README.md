@@ -34,3 +34,4 @@ old one and mark the old one `Superseded`.
 - [0012 — Suitability scoring: the weighting model, the missing-data policy, and how reasoning is represented](./0012-suitability-scoring.md)
 - [0013 — Spacing / density calculator: the region model, the packing geometry, and the method-fallback rule](./0013-spacing-density-calculator.md)
 - [0014 — Warnings & companion suggestions: adjacency on a polygon, the overcrowding test, the missing-data floor, and how evidence is surfaced](./0014-warnings-and-companion-suggestions.md)
+- [0015 — App state management: Zustand, and the id-keyed user-plant overlay](./0015-app-state-management.md)

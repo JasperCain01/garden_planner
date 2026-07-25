@@ -154,7 +154,26 @@ Everything below follows from that.
   defensive check, but because its `companions`/`antagonists` are structurally
   always absent.
 - **`app`** is the React + Vite front-end — the only thing deployed. It loads the
-  dataset, calls the engine, and renders the drag-and-drop UI.
+  dataset, calls the engine, and renders the drag-and-drop UI. Stage 3.1
+  ([`adr/0015`](./adr/0015-app-state-management.md)) adds the shell every later
+  Phase 3 stage hangs off: `routes/` holds the router (`react-router-dom`, a
+  `createBrowserRouter`/`createMemoryRouter`-shared route tree so tests don't
+  need a real browser History object) with its `basename` derived from Vite's
+  `base` — the two must move together for a GitHub Pages project-site subpath
+  to work, verified against a **built** preview rather than dev, since `vite
+dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
+  the dataset-loading layer: it imports `data/plants.json` as an ordinary
+  bundled JSON module (no fetch, no loading state) and re-validates every
+  record through `safeValidatePlant` before anything else sees it, failing
+  loudly on a corrupt artifact rather than three components deep.
+  `state/user-plants-store.ts` is a small Zustand store holding the session's
+  user-defined crops as `Record<Plant['id'], Plant>` (keyed by id, so "no
+  duplicate id" is structural rather than a rule call sites remember); and
+  `state/use-plant-list.ts`'s `usePlantList()` is the **one** hook every later
+  stage should call for "the current plant list" — it concatenates the shipped
+  array with the overlay's values and is the runtime realisation of ADR 0011's
+  shipped-∪-user design. See the ADR for why Zustand and why an id-keyed map
+  over an array.
 
 ## Why a monorepo with these boundaries
 
@@ -176,8 +195,10 @@ above:
   accepts what a packet gives, and `createUserPlant` upcasts it to a full `Plant`
   with synthesised `user-entered` provenance and a `user-`-namespaced id — while
   _shipped_ data stays fully attributed, because the base schema and the ETL gate
-  were left strict. What remains for 3.6 is the form, the icon picker, and the state
-  wiring. That upcast is also why the app's runtime plant list (Stage 3.1) can be
+  were left strict. What remains for 3.6 is the form and the icon picker; the state
+  wiring landed in Stage 3.1 (`app/src/state/user-plants-store.ts`,
+  [`adr/0015`](./adr/0015-app-state-management.md)). That upcast is also why the
+  app's runtime plant list (Stage 3.1) is
   **the shipped dataset plus an in-memory, session-scoped overlay of user crops** —
   every entry is a valid `Plant`, so the engine consumes the merged list and is
   indifferent to a plant's origin, and user crops carry no companion links so the
@@ -196,19 +217,22 @@ above:
 
 ## Where to look next
 
-| Topic                                                  | File                                       |
-| ------------------------------------------------------ | ------------------------------------------ |
-| Concept, data-source assessment, licensing rationale   | [`DESIGN.md`](../DESIGN.md)                |
-| Staged build plan, per-stage models, verification      | [`WORKPLAN.md`](../WORKPLAN.md)            |
-| Specific decisions and their alternatives              | [`adr/`](./adr/)                           |
-| The plant-record schema (types + validation)           | `packages/engine/src/schema/`              |
-| User-crop input schema and its upcast to a `Plant`     | `packages/engine/src/schema/user-plant.ts` |
-| Location/climate static data and `resolveClimate`      | `packages/engine/src/climate/`             |
-| Suitability scoring, its reasoning, and `rankPlants`   | `packages/engine/src/suitability/`         |
-| The plot-region polygon, packing geometry, `fitPlant`  | `packages/engine/src/spacing/`             |
-| Warnings, companion suggestions, `evaluatePlot`        | `packages/engine/src/warnings/`            |
-| The ETL pipeline shell, GBIF resolver, adding a source | `packages/etl/README.md`                   |
-| The hand-verified spacing table (curation, not ingest) | `packages/etl/src/spacing/`                |
-| Evidence-tagged companion/antagonist data              | `packages/etl/src/companions/`             |
-| The Stage 1.5 merge, validation gate, and artifact     | `packages/etl/src/merge/`                  |
-| The committed dataset artifact and its caveats         | `data/README.md`                           |
+| Topic                                                      | File                                       |
+| ---------------------------------------------------------- | ------------------------------------------ |
+| Concept, data-source assessment, licensing rationale       | [`DESIGN.md`](../DESIGN.md)                |
+| Staged build plan, per-stage models, verification          | [`WORKPLAN.md`](../WORKPLAN.md)            |
+| Specific decisions and their alternatives                  | [`adr/`](./adr/)                           |
+| The plant-record schema (types + validation)               | `packages/engine/src/schema/`              |
+| User-crop input schema and its upcast to a `Plant`         | `packages/engine/src/schema/user-plant.ts` |
+| Location/climate static data and `resolveClimate`          | `packages/engine/src/climate/`             |
+| Suitability scoring, its reasoning, and `rankPlants`       | `packages/engine/src/suitability/`         |
+| The plot-region polygon, packing geometry, `fitPlant`      | `packages/engine/src/spacing/`             |
+| Warnings, companion suggestions, `evaluatePlot`            | `packages/engine/src/warnings/`            |
+| App shell, routing, GitHub Pages basename                  | `app/src/routes/`                          |
+| Dataset-loading layer (loads + validates the shipped list) | `app/src/dataset/shipped-plants.ts`        |
+| The user-plant overlay store and merged `usePlantList`     | `app/src/state/`                           |
+| The ETL pipeline shell, GBIF resolver, adding a source     | `packages/etl/README.md`                   |
+| The hand-verified spacing table (curation, not ingest)     | `packages/etl/src/spacing/`                |
+| Evidence-tagged companion/antagonist data                  | `packages/etl/src/companions/`             |
+| The Stage 1.5 merge, validation gate, and artifact         | `packages/etl/src/merge/`                  |
+| The committed dataset artifact and its caveats             | `data/README.md`                           |
