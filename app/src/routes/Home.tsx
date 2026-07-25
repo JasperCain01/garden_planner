@@ -1,28 +1,15 @@
 /**
- * Placeholder home route (Workplan Stage 3.1). Stage 3.2 replaces this with
- * the real plot-definition page; until then it exists to prove the three
- * things this stage is responsible for actually work together: the app shell
- * renders, the engine package is wired in, and the bundled dataset loads.
+ * The index route. Through Stage 3.1 this was a placeholder proving the app
+ * shell, engine wiring, and dataset-loading layer worked; Stage 3.2 replaces
+ * that content with the real first step of `DESIGN.md`'s core loop — defining
+ * the plot — since a second nav link with the placeholder still at `/` would
+ * leave the actual entry point to the app behind a click. The component stays
+ * named `Home` because it's still what the router's index route renders; the
+ * real content lives in `../plot/PlotDefinitionPage.tsx`.
  */
 
-import { engineStatus } from '@garden-planner/engine';
-import { usePlantList } from '../state/use-plant-list.ts';
+import { PlotDefinitionPage } from '../plot/PlotDefinitionPage.tsx';
 
 export function Home() {
-  const plants = usePlantList();
-
-  return (
-    <>
-      <p>
-        Project skeleton. Features arrive in later stages — see <code>WORKPLAN.md</code>.
-      </p>
-      <p>
-        Engine status: <strong>{engineStatus()}</strong>
-      </p>
-      <p>
-        Plant list loaded: <strong>{plants.length} crops</strong> (shipped + any added this
-        session).
-      </p>
-    </>
-  );
+  return <PlotDefinitionPage />;
 }

@@ -6,11 +6,12 @@
  * to `createMemoryRouter` instead — a real browser history object is neither
  * needed nor wanted under jsdom (see `App.test.tsx`).
  *
- * Only a placeholder index route exists so far, per the brief: Stage 3.2
- * replaces `Home` with the real plot-definition page. `NotFound` demonstrates
- * the router actually routes (an unmatched path renders something, rather than
- * a blank screen) without inventing app features beyond the plumbing this stage
- * owns.
+ * `Home` (Stage 3.2) renders the real plot-definition page
+ * (`../plot/PlotDefinitionPage.tsx`) as the index route — Stage 3.1 left it a
+ * placeholder specifically so this stage could replace its content in place,
+ * rather than adding a second nav link and leaving the placeholder at `/`.
+ * `NotFound` demonstrates the router actually routes (an unmatched path
+ * renders something, rather than a blank screen).
  */
 
 import { createBrowserRouter, type RouteObject } from 'react-router-dom';

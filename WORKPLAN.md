@@ -37,13 +37,16 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 2.2 Spacing / density calculator ⭐      | ✅             | ADR [0013](./docs/adr/0013-spacing-density-calculator.md); `src/spacing/`, `fitPlant`, `PlotRegionSchema`                         |
 | 2.3 Warnings & companion suggestions     | ✅             | ADR [0014](./docs/adr/0014-warnings-and-companion-suggestions.md); `src/warnings/`, `evaluatePlot`                                |
 | 3.1 App shell, state & routing           | ✅             | ADR [0015](./docs/adr/0015-app-state-management.md); `app/src/routes/`, `app/src/state/`, `app/src/dataset/shipped-plants.ts`     |
-| 3.2–3.x Frontend MVP (remainder)         | ⬜ not started | 3.2 is next. Brief: [`docs/stage-3.2-brief.md`](./docs/stage-3.2-brief.md)                                                        |
+| 3.2 Plot definition UI                   | ✅             | ADR [0016](./docs/adr/0016-outline-editor-svg-not-konva.md); `app/src/plot/`, `app/src/state/plot-store.ts`                       |
+| 3.3–3.x Frontend MVP (remainder)         | ⬜ not started | 3.3 is next. Brief: [`docs/stage-3.3-brief.md`](./docs/stage-3.3-brief.md)                                                        |
 | 4.x–6.x Assets, offline, deploy, polish  | ⬜ not started | —                                                                                                                                 |
 
 **In one line:** the data layer and the engine's whole brain — suitability
 scoring, spacing/density, and warnings & companion suggestions — are built and
 green; Phase 2 is complete, and Phase 3 (the UI) now has its app shell, state
-management, routing, and dataset-loading layer (Stage 3.1) in place.
+management, routing, dataset-loading layer (Stage 3.1), and plot-definition UI
+(Stage 3.2 — shape picker, free-form outline editor, growing-conditions form,
+and the plot store) in place.
 
 ---
 
