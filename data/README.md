@@ -17,6 +17,16 @@ scraped figures on conflict) and the evidence-tagged companion/antagonist links
 (`packages/engine/src/schema/`; zod is the source of truth, see
 [`/docs/adr/0004-plant-schema.md`](../docs/adr/0004-plant-schema.md)).
 
+The Stage 0.3 amendment for user-defined crops
+([`/docs/adr/0011-user-defined-crop-schema.md`](../docs/adr/0011-user-defined-crop-schema.md))
+**did not relax the bar this artifact has to clear.** Every shipped record still
+needs full identity and provenance; the permissive path is a separate input schema
+used only by the in-browser add-crop form, whose crops live in session memory and
+are never written here. Two things follow for this file: the build gate now also
+rejects any shipped id in the reserved **`user-` namespace** (which belongs to
+session-scoped user crops), and nothing in `plants.json` carries `user-entered`
+provenance.
+
 Known caveats for this build, all a consequence of the build environment (not the
 pipeline):
 

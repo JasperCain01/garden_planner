@@ -10,8 +10,11 @@ finished plot.
 > **Status: Stages 0.1–1.6 complete.** The plant-record schema, the build-time
 > ETL, and the validated dataset (`data/plants.json`, 160 crops) are built and
 > green; the framework-free engine (Phase 2) and the drag-and-drop UI (Phase 3+)
-> come next. The user-facing features described above — including user-added crops
-> and plot-image export — are planned in [`WORKPLAN.md`](./WORKPLAN.md).
+> come next. Stage 0.3 has since added the schema half of **user-added crops** —
+> a seed packet's fields validate and upcast into a full plant record, while
+> shipped data stays fully attributed (see
+> [`docs/adr/0011`](./docs/adr/0011-user-defined-crop-schema.md)); the add-crop UI
+> itself, and plot-image export, are planned in [`WORKPLAN.md`](./WORKPLAN.md).
 
 ## Why this exists
 

@@ -79,6 +79,26 @@ describe('validateDataset — the hard-fail gate catches every layer', () => {
     expect(report.issues.some((i) => i.kind === 'structural')).toBe(true);
   });
 
+  it('fails on a shipped id squatting the reserved `user-` namespace (structural)', () => {
+    // ADR 0011: `user-` ids belong to session-scoped user-defined crops (Stage
+    // 3.6). If shipped data could use one, the "a user crop can never collide
+    // with a shipped crop" guarantee behind Stage 3.1's `shipped ∪ user` runtime
+    // list would be worth nothing. The record below is otherwise perfectly valid —
+    // it is the *id* the gate must reject.
+    const squatter = plant({ id: 'user-cherry-belle' });
+    const report = validateDataset([squatter]);
+    expect(report.ok).toBe(false);
+    expect(report.issues.some((i) => i.kind === 'structural' && /reserved/.test(i.message))).toBe(
+      true,
+    );
+    expect(() => assertValidDataset([squatter])).toThrow(/reserved/);
+  });
+
+  it('does not mistake an ordinary id that merely contains "user" for a namespaced one', () => {
+    const report = validateDataset([plant({ id: 'user' }), plant({ id: 'cucumber' })]);
+    expect(report.ok).toBe(true);
+  });
+
   it('collects ALL issues, not just the first', () => {
     const onion = plant({ companions: [{ plantId: 'ghost', evidence: 'traditional' }] });
     const report = validateDataset([onion, { id: 'bad', not: 'a plant' }]);
