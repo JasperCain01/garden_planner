@@ -399,10 +399,17 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Deliverables:** Functions computing plant counts from method-aware spacing
   and a plot _region_ (respecting shape, not just area), offering square vs.
   offset (hexagonal) packing; clear docs on the geometry.
+- **Region model (decided):** the region is an **arbitrary simple polygon**. The
+  product direction is **preset shapes** (rectangle, L-shape, …) that the user
+  then **adjusts free-form** by dragging, adding and removing corners — so
+  non-convex regions are the normal case, presets are factories for one polygon
+  type rather than separate variants, and "respecting shape, not just area" means
+  real containment testing rather than a bounding-box approximation.
 - **Model:** **Opus.** The packing geometry is the most algorithmically subtle
   piece in the app.
 - **Verification:** Golden cases against hand-worked answers; **property-based
-  tests** (monotonicity, area upper bound); zero/degenerate-region cases.
+  tests** (monotonicity, area upper bound); zero/degenerate-region cases; a
+  non-convex region counting strictly fewer plants than its bounding box.
 
 #### Stage 2.3 — Warnings & companion-suggestion engine
 
@@ -437,13 +444,16 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 #### Stage 3.2 — Plot definition UI
 
 - **Goal:** Let the user describe their plot.
-- **Depends on:** 3.1, 1.6.
-- **Deliverables:** Inputs for dimensions (and/or draw a shape), light level
-  (with per-area zones if feasible — see open questions in `DESIGN.md`), soil,
-  and location (defaulting to Britain).
+- **Depends on:** 3.1, 1.6, 2.2 (for the region shape it must produce).
+- **Deliverables:** A **shape picker offering presets** (rectangle, L-shape, …)
+  sized by dimensions, plus **free-form adjustment** of the outline — drag,
+  add and remove corners — emitting the polygon region Stage 2.2 defines; light
+  level (with per-area zones if feasible — see open questions in `DESIGN.md`),
+  soil, and location (defaulting to Britain).
 - **Model:** **Sonnet.**
-- **Verification:** Component tests for input validation; produces a plot object
-  the engine accepts.
+- **Verification:** Component tests for input validation, including that an
+  outline dragged into a self-intersecting shape is rejected with a message
+  rather than passed to the engine; produces a plot object the engine accepts.
 
 #### Stage 3.3 — Plant palette (filtered & ranked)
 

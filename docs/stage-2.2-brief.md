@@ -7,10 +7,11 @@ Stage 2.2 entry) first; this brief concentrates the requirements, the shape of
 the real spacing data, and the conventions Stage 2.1 just set that this stage
 should follow rather than reinvent.
 
-Stages 0.1–1.6, 0.3 **and 2.1** are done and on the branch you'll be given. You
-have a real dataset (`data/plants.json`, 160 plants), a settled method-aware
-spacing schema, a climate module, and a working suitability engine. Build on
-them; don't redefine any of it.
+Stages 0.1–1.6, 0.3 **and 2.1** are all merged into `main` — **branch from
+`main`**, which is the source of truth for everything before this stage. You have
+a real dataset (`data/plants.json`, 160 plants), a settled method-aware spacing
+schema, a climate module, and a working suitability engine. Build on them; don't
+redefine any of it.
 
 ## Goal
 
@@ -34,29 +35,72 @@ Framework-free: no React, no DOM (WORKPLAN §0.2).
 
 ## What to build
 
-1. **A plot-region type.** What the user has drawn or typed: at minimum a
-   rectangle in centimetres or metres. Decide whether to support more (an L-shape,
-   a polygon, a circle) — and if you defer, define the type so a shape can be
-   added without a breaking change, exactly as ADR 0010 §6 did for geocoding.
+1. **A plot-region type — a polygon. This is decided, not open.** The product
+   direction is **preset shapes plus a free-form / adjustable outline**: the user
+   picks a rectangle, an L-shape or similar to start from, then drags its corners
+   (and adds or removes them) to match the real plot. So the region model is an
+   arbitrary simple polygon, not a rectangle with "more shapes later".
+
+   What follows from that, and what the ADR should record:
+   - **One geometry path.** Strongly prefer a single polygon type — an ordered
+     list of vertices — with the presets as **factory functions** that build one
+     (`rectangleRegion(widthCm, heightCm)`, `lShapeRegion(…)`, and a circle
+     approximated by an n-gon if you offer one). A discriminated union of
+     `rectangle | lShape | polygon` means every packing routine grows a `switch`
+     and the free-form case ends up the least-tested branch. If you keep a
+     lighter-weight shape descriptor for the UI's benefit (so 3.2 can re-open a
+     rectangle as width × height rather than four points), the **calculator must
+     still take the polygon**.
+   - **Non-convex is the normal case, not the exotic one.** An L-shaped
+     allotment is a preset. "Respecting shape, not just area" therefore has real
+     teeth: a naive bounding-box count is wrong for the shape the user most
+     likely drew, so plant positions must be tested for containment
+     (point-in-polygon), and the count is of the positions that actually fall
+     inside.
+   - **Validation is part of the schema.** At least 3 vertices; reject
+     self-intersecting outlines (a free-form editor _will_ produce them when a
+     corner is dragged across an edge) with an error the UI can show; decide and
+     document whether the ring is implicitly closed, and whether winding order
+     matters. Area via the shoelace formula, so the area upper-bound property
+     test has an honest bound to compare against.
+   - **Pick one unit and state it.** Spacing is in centimetres throughout the
+     plant schema, so centimetre vertices keep the calculator conversion-free;
+     the UI can present metres.
+
    zod as the single source of truth, types via `z.infer`, reusing existing
    vocabulary where it exists.
+
 2. **The count functions**, per growing method:
    - **Row** — from `spacing.row` (`inRowCm` × `betweenRowCm`), laying rows across
      the region. Rows have an orientation; whether the caller chooses it or the
-     calculator picks the better one is your call to make and document.
+     calculator picks the better one is your call to make and document. Note that
+     orientation matters _more_ once regions are polygons: on an L-shape, rows
+     run along one arm or the other and the counts genuinely differ, so
+     "whichever fits more" is a defensible default but must be a documented one.
    - **Intensive** — from `spacing.intensive` (`perSquareMetre` and/or
      `plantsPerSquare`, where a "square" is a 30 cm × 30 cm square-foot cell).
      Note both figures are optional and either may be the only one present.
 3. **Square vs. offset (hexagonal) packing** as an explicit option, with the
    geometry documented. Offset packing buys roughly 15% more plants for the same
    spacing; the row-offset arithmetic (`√3/2 × spacing` between rows) is the
-   subtle part and deserves a worked comment.
+   subtle part and deserves a worked comment. The natural shape of the algorithm
+   with polygon regions is: generate candidate positions over the region's
+   bounding box on the chosen lattice, then keep the ones inside the polygon —
+   which keeps square and offset packing to one routine differing only in the
+   lattice, and makes the non-convex case fall out for free.
 4. **A result that explains itself.** Follow Stage 2.1's precedent: the count is
    not enough on its own — return the method used, the packing used, the
    effective grid, and a short human-readable line the UI can show ("28 onions:
    7 rows of 4 at 10 cm × 30 cm"). Stage 3.4 shows live count feedback as plants
    are dragged, and Stage 2.3 raises an overcrowding warning; both need more than
    an integer.
+
+   **Consider returning the plant positions themselves**, not just the count.
+   You will have computed them to do containment testing, the canvas (3.4) has to
+   draw something at those points, and a count with no positions makes the canvas
+   invent its own layout that disagrees with the number shown beside it. If you
+   decide against it — positions are a bigger API surface to keep stable — say so
+   in the ADR so 3.4 knows the layout is its own problem.
 
 ## The data you'll actually be calculating from
 
@@ -141,15 +185,27 @@ settles house style for engine modules. In particular:
    arithmetic in the comment, as `suitability/score.test.ts` does); the Workplan's
    **property-based tests** — monotonicity (a bigger region never yields fewer
    plants; wider spacing never yields more) and the **area upper bound** (a count
-   never exceeds region area ÷ per-plant area); zero and degenerate regions (zero
-   width, a region narrower than one plant's spacing); the intensive path against
-   the nine real records that have one; and offset-vs-square on hand-built
-   fixtures.
-3. **ADR** `docs/adr/0013-spacing-density-calculator.md`: the region model, the
-   packing geometry and its assumptions (edges, part-rows, rounding — a plant that
-   half-fits doesn't), the method-selection/fallback rule, and how counts are
-   explained. Mirror the shape of `0012`/`0011`, and add it to
-   `docs/adr/README.md`'s index.
+   never exceeds region area ÷ per-plant area, with area from the shoelace
+   formula); zero and degenerate regions (zero width, a region narrower than one
+   plant's spacing); the intensive path against the nine real records that have
+   one; and offset-vs-square on hand-built fixtures.
+
+   The polygon model adds its own required cases: a **non-convex L-shape**
+   counting strictly fewer plants than its bounding box (the test that proves the
+   calculator is shape-aware rather than area-aware); a preset rectangle and a
+   hand-built four-vertex polygon of the same size producing **identical** counts
+   (the presets really are the same path); a **self-intersecting** outline
+   rejected by the schema; a polygon with fewer than 3 vertices rejected; and
+   vertex order / winding not changing the answer.
+
+3. **ADR** `docs/adr/0013-spacing-density-calculator.md`: the region model
+   (polygon-with-presets is a **given** — record how you represented it, the
+   validation rules, and what you did about self-intersection and winding, not
+   whether to support shapes), the packing geometry and its assumptions (edges,
+   part-rows, rounding — a plant that half-fits doesn't; and whether plants may
+   sit right on the boundary or need an inset), the method-selection/fallback
+   rule, and how counts are explained. Mirror the shape of `0012`/`0011`, and add
+   it to `docs/adr/README.md`'s index.
 4. Update `docs/architecture.md` (the engine bullet and the "Where to look next"
    table).
 5. **Write the brief for the next stage** (WORKPLAN §0.6, a requirement not a
@@ -157,8 +213,10 @@ settles house style for engine modules. In particular:
    engine, Sonnet)**, which depends on 2.1, 2.2 and 1.4. Note in it that Stage
    2.1 exposes `finding`/`limitedBy` precisely so 2.3's rules need not parse
    prose; that companion links exist on only 56/160 records and carry a mandatory
-   `evidence` tag (ADR 0008) the UI must be honest about; and that user-defined
-   crops carry no links at all (ADR 0011 §4).
+   `evidence` tag (ADR 0008) the UI must be honest about; that user-defined crops
+   carry no links at all (ADR 0011 §4); and whatever this stage settles about
+   region geometry that the antagonist-adjacency rule will need (2.3 has to decide
+   what "planted nearby" means in centimetres on a polygon).
 
 ## Definition of done (WORKPLAN §0.3)
 

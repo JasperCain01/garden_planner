@@ -22,11 +22,14 @@ and **what architecture is needed**. No implementation detail yet.
 The core loop is: _describe your plot → get suitable plants → arrange them → get
 validated feedback._
 
-1. **Define the plot.** The user enters dimensions (or draws a shape), an
-   overall light level (full sun / partial shade / full shade, ideally with
-   per-area variation), soil type if known, and a location. Location defaults
-   to Britain and drives climate: frost dates, hardiness rating, and season
-   timing.
+1. **Define the plot.** The user starts from a **preset shape** (rectangle,
+   L-shape, …) sized by its dimensions and then **adjusts the outline freely** —
+   dragging, adding and removing corners — until it matches the real plot; few
+   allotments are neat rectangles, so the region is modelled as an arbitrary
+   polygon rather than a width × height. They also give an overall light level
+   (full sun / partial shade / full shade, ideally with per-area variation), soil
+   type if known, and a location. Location defaults to Britain and drives
+   climate: frost dates, hardiness rating, and season timing.
 2. **Discover suitable plants.** The app scores every plant in its database
    against the plot's conditions and presents a filtered, ranked palette —
    e.g. "edibles that thrive in a shady, damp British plot."
@@ -47,7 +50,10 @@ validated feedback._
 - **Spacing / density.** Given a plant's recommended spacing (in-row and
   between-row, or a "plants per m²" figure) and the available area, compute a
   realistic count. This needs to respect the _shape_ of the placed region, not
-  just total area, and ideally offer square vs. offset (hexagonal) packing.
+  just total area — and since that region is an arbitrary polygon the user has
+  adjusted by hand (step 1), often non-convex, a bounding-box approximation would
+  be wrong for exactly the plots people actually have. It should also offer
+  square vs. offset (hexagonal) packing.
 - **Suitability scoring.** A per-plant score combining light match, hardiness
   vs. the location's climate, soil match, and season. This is what powers both
   the ranked palette (step 2) and the warnings (step 4).
