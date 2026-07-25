@@ -33,15 +33,23 @@ export * from './climate/index.ts';
  */
 export * from './suitability/index.ts';
 
+/**
+ * The spacing / density calculator (Stage 2.2 — ⭐ algorithmic): the plot-region
+ * schema and its preset shapes, and `fitPlant`/`fitSpacing`, which answer
+ * `DESIGN.md`'s "how many onions can I fit?" shape-aware (an arbitrary simple
+ * polygon, not a bounding box) and method-aware (rows vs. intensive beds). See
+ * `spacing/index.ts` and `docs/adr/0013-spacing-density-calculator.md`.
+ */
+export * from './spacing/index.ts';
+
 /** Marker the app shell reads to confirm the engine package is wired in. */
 export const ENGINE_READY = true;
 
 /**
  * Placeholder entry point kept from the Stage 0.1 scaffold.
  *
- * The real API is `scorePlant`/`rankPlants` (and, from Stage 2.2, the density
- * calculator); this survives only so the app shell's smoke test can assert the
- * package is live.
+ * The real API is `scorePlant`/`rankPlants` and `fitPlant`/`fitSpacing`; this
+ * survives only so the app shell's smoke test can assert the package is live.
  */
 export function engineStatus(): string {
   return 'engine scaffold ready';
