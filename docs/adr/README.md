@@ -33,3 +33,4 @@ old one and mark the old one `Superseded`.
 - [0011 — User-defined crops: a separate input schema, an upcast, and the `user-` id namespace](./0011-user-defined-crop-schema.md)
 - [0012 — Suitability scoring: the weighting model, the missing-data policy, and how reasoning is represented](./0012-suitability-scoring.md)
 - [0013 — Spacing / density calculator: the region model, the packing geometry, and the method-fallback rule](./0013-spacing-density-calculator.md)
+- [0014 — Warnings & companion suggestions: adjacency on a polygon, the overcrowding test, the missing-data floor, and how evidence is surfaced](./0014-warnings-and-companion-suggestions.md)
