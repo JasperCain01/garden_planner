@@ -39,16 +39,19 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 3.1 App shell, state & routing           | ✅             | ADR [0015](./docs/adr/0015-app-state-management.md); `app/src/routes/`, `app/src/state/`, `app/src/dataset/shipped-plants.ts`                                      |
 | 3.2 Plot definition UI                   | ✅             | ADR [0016](./docs/adr/0016-outline-editor-svg-not-konva.md); `app/src/plot/`, `app/src/state/plot-store.ts`                                                        |
 | 3.3 Plant palette (filtered & ranked)    | ✅             | `app/src/palette/` (`PlantPalette.tsx`, `filters.ts`); layout decision recorded in `docs/architecture.md` (no ADR — follows directly from `DESIGN.md`'s core loop) |
-| 3.4–3.x Frontend MVP (remainder)         | ⬜ not started | 3.4 is next. Brief: [`docs/stage-3.4-brief.md`](./docs/stage-3.4-brief.md)                                                                                         |
-| 4.x–6.x Assets, offline, deploy, polish  | ⬜ not started | —                                                                                                                                                                  |
+| 3.4 Drag-and-drop plot canvas ⭐         | ✅             | ADR [0017](./docs/adr/0017-plot-canvas-konva-and-dnd-kit.md); `app/src/canvas/`, `app/src/state/placements-store.ts`; E2E in `app/e2e/plot-canvas.spec.ts`         |
+| 3.5–3.x Frontend MVP (remainder)         | ⬜ not started | 3.5 is next. Brief: [`docs/stage-3.5-brief.md`](./docs/stage-3.5-brief.md)                                                                                         |
 
 **In one line:** the data layer and the engine's whole brain — suitability
 scoring, spacing/density, and warnings & companion suggestions — are built and
 green; Phase 2 is complete, and Phase 3 (the UI) now has its app shell, state
 management, routing, dataset-loading layer (Stage 3.1), plot-definition UI
 (Stage 3.2 — shape picker, free-form outline editor, growing-conditions form,
-and the plot store), and a ranked, searchable, filterable plant palette
-(Stage 3.3, rendered on the same page as the plot form) in place.
+and the plot store), a ranked, searchable, filterable plant palette (Stage
+3.3), and — the app's signature interaction — a drag-and-drop plot canvas
+(Stage 3.4: react-konva scene, dnd-kit palette handoff, live `fitPlant`
+density feedback, and select/move/remove for placed plants) all composed on
+the one plot-definition page.
 
 ---
 

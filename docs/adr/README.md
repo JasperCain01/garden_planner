@@ -36,3 +36,4 @@ old one and mark the old one `Superseded`.
 - [0014 — Warnings & companion suggestions: adjacency on a polygon, the overcrowding test, the missing-data floor, and how evidence is surfaced](./0014-warnings-and-companion-suggestions.md)
 - [0015 — App state management: Zustand, and the id-keyed user-plant overlay](./0015-app-state-management.md)
 - [0016 — Outline editor: plain SVG + pointer events, not react-konva yet](./0016-outline-editor-svg-not-konva.md)
+- [0017 — Plot canvas: react-konva's scene, dnd-kit's handoff, and how (little) it's component-tested](./0017-plot-canvas-konva-and-dnd-kit.md)

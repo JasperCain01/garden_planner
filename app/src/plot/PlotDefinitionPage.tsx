@@ -1,23 +1,34 @@
 /**
- * The plot-definition page (Workplan Stage 3.2, extended in 3.3) —
- * `DESIGN.md` §1 steps 1–2 of the core loop. Composes the plot-definition
- * pieces against the plot store (`state/plot-store.ts`): pick a preset
- * shape, adjust its outline free-form, describe the growing conditions —
- * and, as of Stage 3.3, the ranked plant palette right below it. This is
- * what `routes/Home` renders as the app's index route (Stage 3.1 left `Home`
- * as a placeholder specifically for this to replace — see that route's
- * history in `docs/stage-3.1-brief.md`).
+ * The plot-definition page (Workplan Stage 3.2, extended in 3.3 and 3.4) —
+ * `DESIGN.md` §1's whole "describe → discover → arrange" core loop.
+ * Composes the plot-definition pieces against the plot store
+ * (`state/plot-store.ts`): pick a preset shape, adjust its outline
+ * free-form, describe the growing conditions, browse the ranked plant
+ * palette (Stage 3.3), and — as of Stage 3.4 — drag plants from it onto the
+ * plot canvas. This is what `routes/Home` renders as the app's index route
+ * (Stage 3.1 left `Home` as a placeholder specifically for this to replace —
+ * see that route's history in `docs/stage-3.1-brief.md`).
  *
- * **Why the palette lives on this page rather than a separate route:** see
- * `docs/architecture.md`'s Stage 3.3 note. Short version — `DESIGN.md`'s
- * "describe → discover → arrange → validate" loop reads as one continuous
- * flow, not four separate pages, and Stage 3.4's canvas will want the
- * palette visible *alongside* placement (drag a plant from the palette onto
- * the canvas) rather than navigated away from.
+ * **Why the palette (and now the canvas) live on this page rather than a
+ * separate route:** see `docs/architecture.md`'s Stage 3.3 note. Short
+ * version — `DESIGN.md`'s "describe → discover → arrange → validate" loop
+ * reads as one continuous flow, not four separate pages, and the canvas
+ * needs the palette visible *alongside* placement (drag a plant from the
+ * palette onto the canvas) rather than navigated away from.
+ *
+ * **The `DndContext` boundary (Workplan Stage 3.4).** `PlantPalette`'s
+ * entries are dnd-kit drag sources and `PlotCanvasSection`'s canvas is the
+ * drop target (`canvas/drop.ts`'s `CANVAS_DROPPABLE_ID`) — both need a
+ * shared `DndContext` ancestor, and this page is where they're both already
+ * composed, so it owns that context and the drop handler
+ * (`useCanvasDropHandler`) rather than either feature reaching for its own.
  */
 
+import { DndContext } from '@dnd-kit/core';
 import { usePlotStore } from '../state/plot-store.ts';
 import { PlantPalette } from '../palette/PlantPalette.tsx';
+import { PlotCanvasSection } from '../canvas/PlotCanvasSection.tsx';
+import { useCanvasDropHandler } from '../canvas/useCanvasDropHandler.ts';
 import { PlotConditionsForm } from './PlotConditionsForm.tsx';
 import { PlotOutlineEditor } from './PlotOutlineEditor.tsx';
 import { ShapePicker } from './ShapePicker.tsx';
@@ -27,18 +38,22 @@ export function PlotDefinitionPage() {
   const setRegion = usePlotStore((state) => state.setRegion);
   const conditionsInput = usePlotStore((state) => state.conditionsInput);
   const setConditionsInput = usePlotStore((state) => state.setConditionsInput);
+  const handleDragEnd = useCanvasDropHandler(region);
 
   return (
-    <section>
-      <h2>1. Define your plot</h2>
-      <p>
-        Start from a preset shape, then drag, add or remove corners until the outline matches your
-        real plot.
-      </p>
-      <ShapePicker onApply={setRegion} />
-      <PlotOutlineEditor region={region} onChange={setRegion} />
-      <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
+    <DndContext onDragEnd={handleDragEnd}>
+      <section>
+        <h2>1. Define your plot</h2>
+        <p>
+          Start from a preset shape, then drag, add or remove corners until the outline matches your
+          real plot.
+        </p>
+        <ShapePicker onApply={setRegion} />
+        <PlotOutlineEditor region={region} onChange={setRegion} />
+        <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
+      </section>
       <PlantPalette />
-    </section>
+      <PlotCanvasSection />
+    </DndContext>
   );
 }
