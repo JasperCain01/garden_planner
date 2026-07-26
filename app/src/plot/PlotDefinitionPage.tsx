@@ -29,6 +29,13 @@
  * the same "compute once at the composing page, thread down" reasoning this
  * page already applies to `handleDragEnd`, so evaluating the five warning
  * rules doesn't happen twice per render.
+ *
+ * **User-defined crops (Workplan Stage 3.6).** `UserCropsSection` sits
+ * between the palette and the canvas — `DESIGN.md` frames "add your own
+ * crop" as a capability *beyond* the four-step core loop, so it gets its own
+ * unnumbered section rather than a fifth numbered step, positioned so a
+ * newly-added crop is visible in the palette immediately above before the
+ * user scrolls down to place it.
  */
 
 import { DndContext } from '@dnd-kit/core';
@@ -38,6 +45,7 @@ import { PlotCanvasSection } from '../canvas/PlotCanvasSection.tsx';
 import { useCanvasDropHandler } from '../canvas/useCanvasDropHandler.ts';
 import { useCanvasWarnings } from '../warnings/useCanvasWarnings.ts';
 import { WarningsSection } from '../warnings/WarningsSection.tsx';
+import { UserCropsSection } from '../user-crops/UserCropsSection.tsx';
 import { PlotConditionsForm } from './PlotConditionsForm.tsx';
 import { PlotOutlineEditor } from './PlotOutlineEditor.tsx';
 import { ShapePicker } from './ShapePicker.tsx';
@@ -63,6 +71,7 @@ export function PlotDefinitionPage() {
         <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
       </section>
       <PlantPalette />
+      <UserCropsSection />
       <PlotCanvasSection canvasWarnings={canvasWarnings} />
       <WarningsSection canvasWarnings={canvasWarnings} />
     </DndContext>

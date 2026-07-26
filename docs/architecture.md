@@ -313,6 +313,60 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   real shipped antagonist pair (potato/tomato, the dataset's one
   `well-supported` link) close together, confirms the warning, then drags one
   away and confirms it clears.
+  Stage 3.6 adds **user-defined crops** (`app/src/user-crops/`) —
+  `DESIGN.md`'s "beyond the core loop" capability, not a fifth numbered
+  core-loop step, so `UserCropsSection.tsx` renders unnumbered between the
+  palette and the canvas on `PlotDefinitionPage.tsx` rather than claiming a
+  "5." heading. `AddCropForm.tsx` collects exactly what
+  `UserPlantInputSchema` accepts (Stage 0.3, ADR 0011) — `commonName`,
+  `category`, `light`, a row-vs-intensive spacing toggle for `SpacingSchema`,
+  plus optional hardiness/soil/season fields — and validates on submit with
+  `safeValidateUserPlantInput`, bucketing the returned `ZodError`'s
+  `issues[].path` by top-level field and rendering each bucket next to the
+  fieldset it concerns, mirroring `PlotConditionsForm.tsx`'s own inline-error
+  pattern (Stage 3.2) rather than one generic banner. **The id-collision
+  check is separate from schema validation**: a schema-valid input can still
+  mint an id (`userPlantIdFromName`) that collides with a crop already in the
+  session (two packets, one name); the form checks the derived id against
+  `useUserPlantsStore()`'s current keys after validation succeeds and blocks
+  submission with a message until the user renames the crop or fills in the
+  `UserPlantInputSchema.id` escape hatch. `UserCropsSection.tsx` is the thin
+  store-wiring wrapper (mirroring `warnings/WarningsSection.tsx`'s own split
+  from `WarningsPanel.tsx`): it hands `AddCropForm` the store's current ids
+  and `addUserPlant`, and renders a "Your added crops" list with edit/remove
+  buttons gated on `isUserPlant(plant)` — re-opening the form pre-filled
+  (`plant-to-input.ts`'s `plantToUserPlantInput`, the inverse of the engine's
+  own upcast) and re-submitting with the same id, which
+  `useUserPlantsStore().addUserPlant` already replaces by id. **No new
+  palette or canvas code was needed** — confirmed with a dedicated E2E
+  journey (`app/e2e/add-custom-crop.spec.ts`) rather than assumed, per the
+  brief's own caution — because both already consume `usePlantList()`'s
+  shipped-∪-user overlay with no origin-awareness (Stage 3.1), exactly as
+  ADR 0011 designed.
+
+  **The icon-picker scoping decision (this stage's one open call).**
+  `WORKPLAN.md`'s dependency map names Stage 4.1 (the bundled SVG icon set)
+  as one of Stage 3.6's dependencies, and the Stage 3.6 workplan entry
+  describes an icon picker "constrained to the bundled SVG set". At the time
+  this stage ran, **Phase 4 had not started** (no Phase 4 rows existed in the
+  Progress table) — there was no bundled set to constrain a picker to. Rather
+  than block the whole stage on Stage 4.1, or invent icon assets outside this
+  stage's mandate, the form simply leaves `UserPlantInputSchema.icon` unset
+  for every user crop, falling back to whatever generic per-category
+  rendering the palette and canvas already use for _any_ crop (both render a
+  coloured circle plus an initial letter today — Stage 3.4's own note that
+  no icon set exists yet, "Stage 4.1/4.2's job"). This is recorded here
+  rather than as an ADR because, once Stage 4.1's status is checked (which
+  the brief made a hard requirement, not a judgment call), there is no real
+  second option: building a picker with nothing to pick from would mean
+  either inventing throwaway icon assets outside this stage's scope or
+  blocking Stage 3.6 entirely on a phase that hasn't started, and the crop's
+  own value — scored, ranked, placed, counted like any shipped crop — never
+  depended on having an icon in the first place. A real picker constrained to
+  the bundled set is Stage 4.1 (icon creation) plus Stage 4.2's (wiring)
+  natural follow-up once both exist; nothing about today's schema or store
+  needs to change for that later picker to slot in, since `icon` was already
+  an optional `SlugSchema` key on `UserPlantInputSchema` from Stage 0.3.
 
 ## Why a monorepo with these boundaries
 
@@ -323,26 +377,9 @@ boundaries rather than by discipline alone. See `adr/0003`.
 
 ## Planned additions (not yet built — see `WORKPLAN.md`)
 
-Three capabilities were added to the plan after Phase 1. They are staged in
-`WORKPLAN.md` but not yet implemented, and they shape a few of the boundaries
-above:
+Three capabilities were added to the plan after Phase 1. User-defined crops
+(Stage 3.6) are now built; the other two remain staged in `WORKPLAN.md`:
 
-- **User-defined crops (Stage 3.6; the enabling schema work is done — Stage 0.3,
-  [`adr/0011`](./adr/0011-user-defined-crop-schema.md)).** A user who buys seeds can
-  add their own crop from the packet (name, spacing, season, light, category) and
-  pick a bundled icon for it. The schema side already exists: `UserPlantInputSchema`
-  accepts what a packet gives, and `createUserPlant` upcasts it to a full `Plant`
-  with synthesised `user-entered` provenance and a `user-`-namespaced id — while
-  _shipped_ data stays fully attributed, because the base schema and the ETL gate
-  were left strict. What remains for 3.6 is the form and the icon picker; the state
-  wiring landed in Stage 3.1 (`app/src/state/user-plants-store.ts`,
-  [`adr/0015`](./adr/0015-app-state-management.md)). That upcast is also why the
-  app's runtime plant list (Stage 3.1) is
-  **the shipped dataset plus an in-memory, session-scoped overlay of user crops** —
-  every entry is a valid `Plant`, so the engine consumes the merged list and is
-  indifferent to a plant's origin, and user crops carry no companion links so the
-  merged list has nothing to dangle. User crops live for the session only; there is
-  no reload-persistence layer.
 - **Maintainer-authored crops in the dataset (Stage 1.7).** A curated
   full-`Plant` input feeding the same Stage 1.5 merge and hard-fail gate, so the
   shipped crop list can grow by hand without a new external source. Distinct from
@@ -352,7 +389,8 @@ above:
   library's own image export. A terminal picture, not a re-loadable save — which
   is precisely why no plan-serialisation or persistence subsystem is needed. The
   self-owned, same-origin icon set (Stage 4.1) is what keeps the export canvas
-  untainted and the feature possible.
+  untainted and the feature possible. Blocked on Stage 4.1/4.2 (icons); see
+  `docs/stage-4.1-brief.md`.
 
 ## Where to look next
 
@@ -378,6 +416,8 @@ above:
 | The drag-and-drop E2E journey                                     | `app/e2e/plot-canvas.spec.ts`              |
 | The warnings overlay, companion suggestions, placement derivation | `app/src/warnings/`                        |
 | The warnings-overlay E2E journey                                  | `app/e2e/warnings-overlay.spec.ts`         |
+| The add-crop form, id-collision check, edit/remove                | `app/src/user-crops/`                      |
+| The add-custom-crop E2E journey                                   | `app/e2e/add-custom-crop.spec.ts`          |
 | The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                   |
 | The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                |
 | Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`             |
