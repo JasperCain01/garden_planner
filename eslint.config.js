@@ -37,9 +37,9 @@ export default tseslint.config(
     },
   },
 
-  // Node code (engine, etl, config files) gets Node globals.
+  // Node code (engine, etl, config files, dev-only tooling) gets Node globals.
   {
-    files: ['packages/**/*.ts', '**/*.config.{ts,js}', 'app/e2e/**/*.ts'],
+    files: ['packages/**/*.ts', '**/*.config.{ts,js}', 'app/e2e/**/*.ts', 'tools/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
 
