@@ -64,7 +64,7 @@ Everything below follows from that.
   the artifact. Run it with `npm run build:data -w @garden-planner/etl`.
 - **`/data`** is that committed static artifact (`data/plants.json`): the plant
   "database" as a plain-JSON file the browser loads directly. No database server
-  exists at runtime. As of Stage 1.5 it holds 160 validated, merged plants; see
+  exists at runtime. As of Stage 1.7 it holds 162 validated, merged plants; see
   [`data/README.md`](../data/README.md) for its shape and current caveats.
 - **`packages/engine`** is pure, framework-free logic (suitability scoring,
   spacing/density, warnings). It runs in the browser but has no UI dependency, so
@@ -90,6 +90,23 @@ Everything below follows from that.
   `resolveClimate(location)` the suitability engine (Stage 2.1) and the
   plot-definition UI (Stage 3.2) will consume. Online geocoding is deferred
   (interface-ready — see the ADR); the offline path never touches the network.
+  Stage 1.7 ([`adr/0021`](./adr/0021-curated-plant-input.md)) adds the fourth
+  and final Stage 1.5 merge input: **maintainer-curated plants**
+  (`packages/etl/src/curated/plants.ts`), a plain hand-authored `Plant[]` held
+  to the same unrelaxed `validatePlant` bar as every OpenFarm-sourced record —
+  distinct from Stage 3.6's session-only, relaxed-schema user crops. `merge.ts`
+  folds curated plants in as a new first step: a curated plant whose id
+  collides with an OpenFarm plant's (directly, or via the existing
+  `SLUG_ALIASES` table) **replaces it outright**, mirroring "hand-verified
+  spacing wins" one level up; a non-colliding curated plant is simply added.
+  Past that fold-in, a curated plant is an ordinary `Plant` for every later
+  step (spacing attach, companion-link remap, the sanity filter, the final
+  schema re-validation) — no special-casing, which is what lets the two
+  crops shipped this stage (`broad-bean`, `jerusalem-artichoke`) prove the
+  pipeline end to end. `broad-bean` closes a gap ADR 0009 documented: OpenFarm
+  has no mappable _Vicia faba_, so the Stage 1.3 spacing row and the Stage 1.4
+  `leek` antagonist link had nothing to attach to until this stage gave them a
+  plant. The dataset now ships 162 plants.
   Stage 2.1 ([`adr/0012`](./adr/0012-suitability-scoring.md)) adds the engine's
   first real brain — **suitability scoring**
   (`packages/engine/src/suitability/`): a zod-first plot/growing-conditions
@@ -438,18 +455,14 @@ horticultural logic and the data pipeline can each be tested and reasoned about
 on their own, and the "build-time vs run-time" split is enforced by the package
 boundaries rather than by discipline alone. See `adr/0003`.
 
-## Planned additions (not yet built — see `WORKPLAN.md`)
+## Phases 1–4 complete
 
-Three capabilities were added to the plan after Phase 1: user-defined crops
-(Stage 3.6), the icon set plus wiring (Stages 4.1–4.2), and plot-image export
-(Stage 3.7). All three are now built; one addition remains staged in
-`WORKPLAN.md`:
-
-- **Maintainer-authored crops in the dataset (Stage 1.7).** A curated
-  full-`Plant` input feeding the same Stage 1.5 merge and hard-fail gate, so the
-  shipped crop list can grow by hand without a new external source. Distinct from
-  user crops: these are permanent, fully attributed, and go through the build.
-  See `docs/stage-1.7-brief.md`.
+Four capabilities were added to the plan after Phase 1's original scope: the
+curated dataset input (Stage 1.7), user-defined crops (Stage 3.6), the icon
+set plus wiring (Stages 4.1–4.2), and plot-image export (Stage 3.7). All four
+are now built, closing out Phases 1–4 in full. `WORKPLAN.md`'s Progress table
+and dependency map cover what's next (Phase 5, offline & deployment, and
+Phase 6, community readiness).
 
 ## Where to look next
 
@@ -484,5 +497,6 @@ Three capabilities were added to the plan after Phase 1: user-defined crops
 | The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                                              |
 | The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                                           |
 | Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`                                        |
+| Maintainer-curated full-plant input                               | `packages/etl/src/curated/`                                           |
 | The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                                             |
 | The committed dataset artifact and its caveats                    | `data/README.md`                                                      |

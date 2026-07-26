@@ -13,6 +13,11 @@ describe('PlotDefinitionPage', () => {
     });
   });
 
+  // This render+interact flow is consistently ~5s even on `main` (heavy
+  // component tree: outline editor, palette, canvas) — right at the default
+  // 5000ms test timeout's edge, so it flakes under parallel test-run load.
+  // Not a regression from this stage; just headroom for a pre-existing slow
+  // test (a longer per-test timeout, given explicitly below).
   it('produces a region and conditions the engine actually accepts, driven end to end through the DOM', () => {
     render(<PlotDefinitionPage />);
 
@@ -22,7 +27,9 @@ describe('PlotDefinitionPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /use this shape/i }));
 
     // Fill in growing conditions: partial shade, clay soil, a named region.
-    fireEvent.change(screen.getByLabelText(/light level/i), { target: { value: 'partial-shade' } });
+    fireEvent.change(screen.getByLabelText(/light level/i), {
+      target: { value: 'partial-shade' },
+    });
     fireEvent.change(screen.getByLabelText(/soil texture/i), { target: { value: 'clay' } });
     fireEvent.click(screen.getByLabelText(/pick a region/i));
     fireEvent.change(screen.getByLabelText(/^region$/i), {
@@ -38,7 +45,7 @@ describe('PlotDefinitionPage', () => {
     expect(resolved.light).toBe('partial-shade');
     expect(resolved.soil).toEqual({ texture: 'clay' });
     expect(resolved.climate.id).toBe('south-west-england');
-  });
+  }, 10_000);
 
   it('starts from a valid default plot even before any interaction', () => {
     render(<PlotDefinitionPage />);

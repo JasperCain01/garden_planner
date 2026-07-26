@@ -6,14 +6,15 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Enforces the size budget recorded in `docs/icon-style-guide.md`: the whole
- * icon set (160 crop icons + 1 fallback) must stay comfortably small, since
- * it ships bundled with every page load (WORKPLAN.md §0.1 — no runtime
- * fetch). CI is deferred (WORKPLAN.md §1.4), so this test *is* the recorded,
- * automatically-checked budget rather than a one-off manual note.
+ * icon set (one crop icon per shipped plant, plus 1 fallback) must stay
+ * comfortably small, since it ships bundled with every page load
+ * (WORKPLAN.md §0.1 — no runtime fetch). CI is deferred (WORKPLAN.md §1.4),
+ * so this test *is* the recorded, automatically-checked budget rather than a
+ * one-off manual note.
  *
  * Budgets: 4 KB per icon (the optimized set averages well under 1 KB; 4 KB
  * gives headroom for a contributor's hand-drawn replacement) and 250 KB total
- * (the optimized set is ~121 KB today).
+ * (the optimized set is ~122 KB today).
  */
 
 const here = path.dirname(fileURLToPath(import.meta.url));

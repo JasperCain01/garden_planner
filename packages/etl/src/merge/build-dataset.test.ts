@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { Plant } from '@garden-planner/engine';
 import type { GbifResolver, ResolveOutcome } from '../resolve/gbif-resolver.ts';
 import type { OpenFarmCropRaw } from '../sources/openfarm/types.ts';
 import { validateSpacingRecord } from '../spacing/schema.ts';
@@ -68,6 +69,7 @@ describe('buildDataset (end to end, offline / gbifId null)', () => {
     const result = await buildDataset({
       rawOpenFarm: [raw(), raw({ slug: 'carrot', name: 'Carrot', binomialName: 'Daucus carota' })],
       resolver: offlineResolver,
+      curatedPlants: [],
       spacingRecords: [onionSpacing],
       linksById: links({ onion: { companions: [{ plantId: 'carrot', evidence: 'traditional' }] } }),
       generatedAt: '2026-07-23',
@@ -96,11 +98,39 @@ describe('buildDataset (end to end, offline / gbifId null)', () => {
         raw({ slug: 'carrot', name: 'Carrot', binomialName: 'Daucus carota', spreadCm: 9000 }),
       ],
       resolver: offlineResolver,
+      curatedPlants: [],
       spacingRecords: [],
       linksById: links({ onion: { companions: [{ plantId: 'carrot', evidence: 'traditional' }] } }),
     });
     expect(result.plants.map((p) => p.id)).toEqual(['onion']);
     expect(result.mergeReport.companionLinksDropped.length).toBeGreaterThan(0);
     expect(validateDataset(result.artifact.plants).ok).toBe(true);
+  });
+
+  it('fails the build loudly on an intentionally-broken curated record (Stage 1.7)', async () => {
+    // WORKPLAN.md's Stage 1.7 verification bar: a maintainer-curated crop gets
+    // no shortcut past the hard-fail gate — `light` here is not a valid enum
+    // value, exactly the kind of typo `validate.test.ts` proves the gate
+    // catches for any other source.
+    const broken = {
+      id: 'mystery-curated-crop',
+      commonName: 'Mystery',
+      scientificName: 'Ignotum ignotum',
+      gbifId: null,
+      category: 'vegetable',
+      light: 'moonlight',
+      spacing: { row: { inRowCm: 30, betweenRowCm: 60 } },
+      provenance: { sources: [{ source: 'maintainer' }] },
+    };
+
+    await expect(
+      buildDataset({
+        rawOpenFarm: [raw()],
+        resolver: offlineResolver,
+        curatedPlants: [broken as unknown as Plant],
+        spacingRecords: [],
+        linksById: new Map(),
+      }),
+    ).rejects.toThrow();
   });
 });

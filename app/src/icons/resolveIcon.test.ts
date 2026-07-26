@@ -47,7 +47,7 @@ describe('resolveIcon', () => {
   });
 
   it('resolves every shipped crop to its own icon, not the fallback', () => {
-    // The whole point of shipping 160 icons: no shipped crop should silently
+    // The whole point of shipping a full icon set: no shipped crop should silently
     // land on the generic icon just because its id was mistyped somewhere in
     // classification.ts (tools/icons) or the file failed to generate.
     const fallenBack = SHIPPED_PLANTS.filter((plant) => resolveIcon(plant).isFallback);

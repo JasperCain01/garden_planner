@@ -10,12 +10,13 @@ import { evaluatePlot } from './evaluate';
 
 /**
  * Pinning **today's link coverage** as a tripwire, the way
- * `spacing/dataset.test.ts` pins the nine intensive records and
- * `suitability/dataset.test.ts` pins the 0/160 hardiness/soil/seasons
- * coverage. If Stage 1.7's curated records — or a future companions/antagonist
- * refresh — change this, these assertions are *meant* to fail: that is the
- * signal that the warnings/companions engine now has more (or different) real
- * data to work with than it did when this stage was built.
+ * `spacing/dataset.test.ts` pins the intensive records and
+ * `suitability/dataset.test.ts` pins hardiness/soil/seasons coverage. Stage
+ * 1.7's curated `broad-bean` record already tripped this once (see below) —
+ * closing ADR 0009's documented `leek`/`broad-bean` gap. If a future
+ * companions/antagonist refresh changes these counts again, that is the
+ * signal that the warnings/companions engine now has more (or different)
+ * real data to work with, not a broken test.
  */
 
 const DATASET_PATH = fileURLToPath(new URL('../../../../data/plants.json', import.meta.url));
@@ -35,10 +36,10 @@ const BY_ID = new Map(PLANTS.map((plant) => [plant.id, plant]));
 
 describe('the shipped companion/antagonist data (ADR 0008)', () => {
   it('is the dataset these expectations were written against', () => {
-    expect(PLANTS).toHaveLength(160);
+    expect(PLANTS).toHaveLength(162);
   });
 
-  it('carries companions on exactly 56/160 records, 85 links, 3 well-supported and 82 traditional', () => {
+  it('carries companions on exactly 56/162 records, 85 links, 3 well-supported and 82 traditional', () => {
     const withCompanions = PLANTS.filter((plant) => plant.companions !== undefined);
     expect(withCompanions).toHaveLength(56);
 
@@ -48,12 +49,16 @@ describe('the shipped companion/antagonist data (ADR 0008)', () => {
     expect(links.filter((link) => link.evidence === 'traditional')).toHaveLength(82);
   });
 
-  it('carries antagonists on exactly 6/160 records, 6 links -- three reciprocal pairs', () => {
+  it('carries antagonists on exactly 8/162 records, 8 links -- four reciprocal pairs', () => {
+    // Stage 1.7's curated `broad-bean` is the fourth pair: the Stage 1.4
+    // `leek`/`broad-bean` antagonist link (ADR 0008) had no plant to attach to
+    // until this stage gave broad-bean one (ADR 0009's documented gap, closed
+    // by ADR 0021).
     const withAntagonists = PLANTS.filter((plant) => plant.antagonists !== undefined);
-    expect(withAntagonists).toHaveLength(6);
+    expect(withAntagonists).toHaveLength(8);
 
     const links = withAntagonists.flatMap((plant) => plant.antagonists ?? []);
-    expect(links).toHaveLength(6);
+    expect(links).toHaveLength(8);
 
     const pairs = new Set(
       withAntagonists.flatMap((plant) =>
@@ -61,7 +66,9 @@ describe('the shipped companion/antagonist data (ADR 0008)', () => {
       ),
     );
     // Every reciprocal pair collapses to one entry when sorted and deduped.
-    expect(pairs).toEqual(new Set(['garlic<->green-bean', 'onion<->pea', 'potato<->tomato']));
+    expect(pairs).toEqual(
+      new Set(['broad-bean<->leek', 'garlic<->green-bean', 'onion<->pea', 'potato<->tomato']),
+    );
   });
 
   it('is the entire shipped basis for antagonist-adjacency: garlic/green-bean and onion/pea traditional, potato/tomato well-supported', () => {

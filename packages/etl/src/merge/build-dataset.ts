@@ -16,6 +16,7 @@ import type { OpenFarmCropRaw } from '../sources/openfarm/types.ts';
 import type { SpacingRecord } from '../spacing/schema.ts';
 import { HAND_VERIFIED_SPACING } from '../spacing/table.ts';
 import { toPlantLinksById, type PlantLinksByKind } from '../companions/relationships.ts';
+import { CURATED_PLANTS } from '../curated/plants.ts';
 import { collectOpenFarmPlants, type CollectOpenFarmResult } from './collect-openfarm.ts';
 import { mergeDataset, type MergeReport } from './merge.ts';
 import { assertValidDataset } from './validate.ts';
@@ -29,6 +30,8 @@ export interface BuildDatasetInputs {
   readonly rawOpenFarm: readonly OpenFarmCropRaw[];
   /** GBIF resolver — real (network) or offline/stub. Its cache state decides gbifId fill. */
   readonly resolver: GbifResolver;
+  /** Maintainer-curated full-plant records (Stage 1.7); defaults to `CURATED_PLANTS`. */
+  readonly curatedPlants?: readonly Plant[];
   /** Spacing rows; defaults to the hand-verified table. */
   readonly spacingRecords?: readonly SpacingRecord[];
   /** Companion links by pre-merge id; defaults to the full relationship set. */
@@ -54,6 +57,7 @@ export interface BuildDatasetResult {
  */
 export async function buildDataset(inputs: BuildDatasetInputs): Promise<BuildDatasetResult> {
   const log = inputs.log ?? (() => {});
+  const curatedPlants = inputs.curatedPlants ?? CURATED_PLANTS;
   const spacingRecords = inputs.spacingRecords ?? HAND_VERIFIED_SPACING;
   const linksById = inputs.linksById ?? toPlantLinksById();
 
@@ -64,12 +68,20 @@ export async function buildDataset(inputs: BuildDatasetInputs): Promise<BuildDat
       `gbif resolved=${collect.gbif.resolved} unresolved=${collect.gbif.unresolved} error=${collect.gbif.error}.`,
   );
 
-  log('Merging spacing and companion/antagonist data…');
+  log('Merging curated plants, spacing and companion/antagonist data…');
   const { plants: merged, report } = mergeDataset({
     openFarmPlants: collect.plants,
+    curatedPlants,
     spacingRecords,
     linksById,
   });
+  log(
+    `  Curated: ${curatedPlants.length} plant(s), ${report.curatedOverrides.length} ` +
+      `override(s) of an OpenFarm-sourced record.`,
+  );
+  for (const o of report.curatedOverrides) {
+    log(`    · curated "${o.curatedId}" replaced OpenFarm "${o.overriddenId}"`);
+  }
   log(
     `  Spacing attached to ${report.spacingAttached.length} plant(s); ` +
       `${report.spacingUnattached.length} spacing row(s) had no home.`,

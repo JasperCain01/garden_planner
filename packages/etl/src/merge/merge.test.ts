@@ -49,6 +49,7 @@ function linksMap(
 describe('mergeDataset — spacing', () => {
   it('lets hand-verified spacing win over OpenFarm scraped spacing', () => {
     const result = mergeDataset({
+      curatedPlants: [],
       openFarmPlants: [plant({ spacing: { row: { inRowCm: 8, betweenRowCm: 30 } } })],
       spacingRecords: [spacingRow()],
       linksById: new Map(),
@@ -70,6 +71,7 @@ describe('mergeDataset — spacing', () => {
 
   it('attaches spacing across a British-name alias (beetroot → beet)', () => {
     const result = mergeDataset({
+      curatedPlants: [],
       // Two Beta vulgaris crops make the scientific name ambiguous, so only the
       // curated alias can pick the right one (mirrors beet vs. chard in reality).
       openFarmPlants: [
@@ -89,6 +91,7 @@ describe('mergeDataset — spacing', () => {
 
   it('reports a spacing row with no home rather than dropping it silently', () => {
     const result = mergeDataset({
+      curatedPlants: [],
       openFarmPlants: [plant()],
       spacingRecords: [spacingRow({ id: 'broad-bean', scientificName: 'Vicia faba' })],
       linksById: new Map(),
@@ -100,6 +103,7 @@ describe('mergeDataset — spacing', () => {
 
   it('drops a plant whose final spacing is absurd, with a reason', () => {
     const result = mergeDataset({
+      curatedPlants: [],
       openFarmPlants: [
         plant({
           id: 'kiwifruit',
@@ -118,6 +122,7 @@ describe('mergeDataset — spacing', () => {
     // The whole point of moving the sanity check after the override: a bad scrape
     // (6000 cm) is replaced by the good hand-verified figure, so the plant ships.
     const result = mergeDataset({
+      curatedPlants: [],
       openFarmPlants: [
         plant({ id: 'onion', spacing: { row: { inRowCm: 8, betweenRowCm: 6000 } } }),
       ],
@@ -131,6 +136,7 @@ describe('mergeDataset — spacing', () => {
   it('throws if two spacing rows resolve to the same plant', () => {
     expect(() =>
       mergeDataset({
+        curatedPlants: [],
         openFarmPlants: [plant({ id: 'onion', scientificName: 'Allium cepa' })],
         spacingRecords: [
           spacingRow({ id: 'onion' }),
@@ -145,6 +151,7 @@ describe('mergeDataset — spacing', () => {
 describe('mergeDataset — companion/antagonist links', () => {
   it('attaches links to the owning plant', () => {
     const result = mergeDataset({
+      curatedPlants: [],
       openFarmPlants: [
         plant({ id: 'onion' }),
         plant({ id: 'carrot', scientificName: 'Daucus carota' }),
@@ -160,6 +167,7 @@ describe('mergeDataset — companion/antagonist links', () => {
 
   it('remaps links across an alias (french-bean → green-bean)', () => {
     const result = mergeDataset({
+      curatedPlants: [],
       openFarmPlants: [
         plant({ id: 'green-bean', scientificName: 'Phaseolus vulgaris' }),
         plant({ id: 'garlic', scientificName: 'Allium sativum' }),
@@ -180,6 +188,7 @@ describe('mergeDataset — companion/antagonist links', () => {
 
   it('drops links whose owner or target is not a plant, with a reason', () => {
     const result = mergeDataset({
+      curatedPlants: [],
       openFarmPlants: [plant({ id: 'leek', scientificName: 'Allium porrum' })],
       spacingRecords: [],
       linksById: linksMap({
@@ -197,6 +206,7 @@ describe('mergeDataset — companion/antagonist links', () => {
 
   it('drops a link that becomes a self-link after id unification', () => {
     const result = mergeDataset({
+      curatedPlants: [],
       openFarmPlants: [plant({ id: 'green-bean', scientificName: 'Phaseolus vulgaris' })],
       spacingRecords: [],
       // green-bean links to french-bean, which aliases back to green-bean itself.
@@ -209,9 +219,105 @@ describe('mergeDataset — companion/antagonist links', () => {
   });
 });
 
+describe('mergeDataset — curated plants (Stage 1.7)', () => {
+  function curated(overrides: Partial<Plant> = {}): Plant {
+    return validatePlant({
+      id: 'jerusalem-artichoke',
+      commonName: 'Jerusalem artichoke',
+      scientificName: 'Helianthus tuberosus',
+      gbifId: null,
+      category: 'vegetable',
+      light: 'full-sun',
+      spacing: { row: { inRowCm: 30, betweenRowCm: 90 } },
+      provenance: { sources: [{ source: 'RHS' }] },
+      ...overrides,
+    });
+  }
+
+  it('adds a curated plant with no OpenFarm counterpart as a new first-class plant', () => {
+    const result = mergeDataset({
+      openFarmPlants: [plant({ id: 'onion' })],
+      curatedPlants: [curated()],
+      spacingRecords: [],
+      linksById: new Map(),
+    });
+    expect(result.plants.map((p) => p.id)).toEqual(['jerusalem-artichoke', 'onion']);
+    expect(result.report.curatedOverrides).toEqual([]);
+  });
+
+  it('lets a curated plant overlapping an OpenFarm slug win, replacing it (not duplicating it)', () => {
+    const result = mergeDataset({
+      openFarmPlants: [
+        plant({
+          id: 'jerusalem-artichoke',
+          commonName: 'OpenFarm scrape',
+          provenance: { sources: [{ source: 'OpenFarm', license: 'CC0-1.0' }] },
+        }),
+      ],
+      curatedPlants: [curated({ commonName: 'Jerusalem artichoke (curated)' })],
+      spacingRecords: [],
+      linksById: new Map(),
+    });
+    // Exactly one record ships under the shared id — never a silent duplicate.
+    expect(result.plants.map((p) => p.id)).toEqual(['jerusalem-artichoke']);
+    expect(result.plants[0].commonName).toBe('Jerusalem artichoke (curated)');
+    expect(result.report.curatedOverrides).toEqual([
+      { curatedId: 'jerusalem-artichoke', overriddenId: 'jerusalem-artichoke' },
+    ]);
+  });
+
+  it('lets a curated plant reconcile through an alias, keeping the surviving canonical id', () => {
+    const result = mergeDataset({
+      openFarmPlants: [plant({ id: 'beet', scientificName: 'Beta vulgaris' })],
+      curatedPlants: [
+        curated({ id: 'beetroot', scientificName: 'Beta vulgaris', commonName: 'Beetroot' }),
+      ],
+      spacingRecords: [],
+      linksById: new Map(),
+      aliases: { beetroot: 'beet' },
+    });
+    // The alias resolves 'beetroot' to the existing 'beet' identity — the
+    // curated *content* wins, but the id that survives is the one the rest of
+    // the dataset (companion links, spacing rows) already knows, so nothing
+    // that already points at 'beet' is orphaned by the override.
+    expect(result.plants.map((p) => p.id)).toEqual(['beet']);
+    expect(result.plants[0].commonName).toBe('Beetroot');
+    expect(result.report.curatedOverrides).toEqual([
+      { curatedId: 'beetroot', overriddenId: 'beet' },
+    ]);
+  });
+
+  it('lets a curated plant attach hand-verified spacing and companion links, same as any other plant', () => {
+    // Mirrors the real broad-bean case (docs/adr/0009's known gap): a curated
+    // plant is an ordinary Plant once folded in, so the existing spacing-attach
+    // and companion-remap steps apply to it with no special-casing.
+    const result = mergeDataset({
+      openFarmPlants: [plant({ id: 'leek', scientificName: 'Allium porrum' })],
+      curatedPlants: [
+        curated({
+          id: 'broad-bean',
+          commonName: 'Broad bean',
+          scientificName: 'Vicia faba',
+          spacing: { row: { inRowCm: 20, betweenRowCm: 60 } },
+        }),
+      ],
+      spacingRecords: [spacingRow({ id: 'broad-bean', scientificName: 'Vicia faba' })],
+      linksById: linksMap({
+        leek: { antagonists: [link('broad-bean')] },
+        'broad-bean': { antagonists: [link('leek')] },
+      }),
+    });
+    const broadBean = result.plants.find((p) => p.id === 'broad-bean')!;
+    expect(broadBean.spacing.intensive).toEqual({ plantsPerSquare: 9 });
+    expect(broadBean.antagonists?.map((a) => a.plantId)).toEqual(['leek']);
+    expect(result.report.companionLinksDropped).toEqual([]);
+  });
+});
+
 describe('mergeDataset — output', () => {
   it('returns plants sorted by id and reports counts', () => {
     const result = mergeDataset({
+      curatedPlants: [],
       openFarmPlants: [
         plant({ id: 'onion' }),
         plant({ id: 'carrot', scientificName: 'Daucus carota' }),

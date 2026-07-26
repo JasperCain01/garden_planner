@@ -32,6 +32,7 @@ export {
 
 export {
   mergeDataset,
+  type CuratedOverride,
   type DroppedLink,
   type MergeInputs,
   type MergeReport,
