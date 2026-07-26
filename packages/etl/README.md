@@ -12,7 +12,7 @@ Full design reasoning: [`docs/adr/0005-gbif-name-resolver.md`](../../docs/adr/00
 [`docs/adr/0006-openfarm-source-adapter.md`](../../docs/adr/0006-openfarm-source-adapter.md)
 (the first source adapter).
 
-## Status (Stage 1.5)
+## Status (Stage 1.7)
 
 What exists today:
 
@@ -42,13 +42,22 @@ What exists today:
   section below and
   [`docs/adr/0008`](../../docs/adr/0008-companion-planting-data.md).
 
+- **Maintainer-curated plants: Stage 1.7** (`src/curated/`), a hand-authored
+  `Plant[]` for a maintainer to add a crop to the shipped dataset permanently
+  — the same unrelaxed `validatePlant` bar as every OpenFarm-sourced record
+  (distinct from Stage 3.6's session-only, relaxed-schema user crops). Also
+  **not a source adapter** — see the section below and
+  [`docs/adr/0021`](../../docs/adr/0021-curated-plant-input.md).
+
 - **The merge, validation gate, and artifact emitter: Stage 1.5** (`src/merge/`),
-  the ⭐ keystone that reconciles the three inputs above into the committed
-  `data/plants.json` — joining spacing and companion slices onto the OpenFarm
-  plants, applying the conflict rules (hand-verified spacing wins), remapping
-  companion-link ids for referential integrity, and enforcing the **hard-fail
-  validation gate**. Run with `npm run build:data`. See the section below and
-  [`docs/adr/0009`](../../docs/adr/0009-dataset-merge-and-licensing.md).
+  the ⭐ keystone that reconciles the four inputs above into the committed
+  `data/plants.json` — folding in curated plants (curated wins on a collision),
+  joining spacing and companion slices onto the resulting plants, applying the
+  conflict rules (hand-verified spacing wins), remapping companion-link ids for
+  referential integrity, and enforcing the **hard-fail validation gate**. Run
+  with `npm run build:data`. See the section below and
+  [`docs/adr/0009`](../../docs/adr/0009-dataset-merge-and-licensing.md) /
+  [`docs/adr/0021`](../../docs/adr/0021-curated-plant-input.md).
 
 **PFAF and Permapeople adapters (the rest of 1.2) are blocked, not skipped.**
 PFAF's bulk database is paywalled ($30–150, no free bulk download exists);
@@ -95,21 +104,84 @@ This is the step that writes the app's shipped data. It:
 2. **Gathers** the mappable OpenFarm plants (keeping a record even when GBIF
    can't place it — the join key falls back to scientific name / slug), skipping
    any with absurd spacing with a stated reason.
-3. **Merges** the hand-verified spacing (which _wins_ over OpenFarm's scraped row
+3. **Folds in the curated plants** (`src/curated/plants.ts`, Stage 1.7). A
+   curated plant whose id collides with an OpenFarm plant's (directly, or via
+   `SLUG_ALIASES`) **replaces it outright** — curated wins, mirroring
+   "hand-verified spacing wins" one level up (ADR 0009 §2 / ADR 0021). A
+   non-colliding curated plant is simply added as a new plant. From here on a
+   curated plant is an ordinary `Plant` — no special-casing in the steps below.
+4. **Merges** the hand-verified spacing (which _wins_ over OpenFarm's scraped row
    spacing) and the companion/antagonist links onto the right plants, joining by
    GBIF id → unambiguous scientific name → shared slug / a small curated alias
    table (`beetroot`→`beet`, `french-bean`→`green-bean`), and remapping
    companion-link ids through the same unification so nothing dangles.
-4. Runs the **hard-fail validation gate** (schema + referential integrity +
+5. Runs the **hard-fail validation gate** (schema + referential integrity +
    sanity bounds) over the whole set — the build fails loudly, listing every
    problem, if any record is malformed, dangling-referenced, or absurd.
-5. Writes `data/plants.json` and reports what it attached, remapped, and dropped.
+6. Writes `data/plants.json` and reports what it attached, remapped, and dropped.
 
-The reconciliation policy, the licensing decision, and the known `broad-bean` gap
-are documented in [`docs/adr/0009`](../../docs/adr/0009-dataset-merge-and-licensing.md).
+The reconciliation policy and the licensing decision are documented in
+[`docs/adr/0009`](../../docs/adr/0009-dataset-merge-and-licensing.md); the
+curated input's shape, its join-order placement, and the "curated wins"
+conflict rule are in
+[`docs/adr/0021`](../../docs/adr/0021-curated-plant-input.md) (which also
+records that Stage 1.7 closed the `broad-bean` gap ADR 0009 had left open).
 The merge logic is pure and injectable, so `src/merge/*.test.ts` exercises it
 (including the gate failing on an intentionally-broken record) without any
 network access.
+
+## Maintainer-curated plants (`src/curated/`)
+
+A channel for the **maintainer** to add a crop to the shipped dataset
+permanently, by hand (Stage 1.7 — full design in
+[`docs/adr/0021`](../../docs/adr/0021-curated-plant-input.md)). Distinct from
+the in-app add-crop form (Stage 3.6, `docs/adr/0011`): that path is
+session-only and deliberately relaxed-schema (no scientific name, no
+citation required); this one ships in `data/plants.json` and is held to the
+**same unrelaxed `validatePlant` bar** as every OpenFarm-sourced record — full
+identity, full provenance, no shortcut. Also deliberately **not** a
+`SourceAdapter`: there is no external source to fetch, only hand-verified
+facts, exactly like the spacing table and companion data.
+
+- **The data** lives in `src/curated/plants.ts` as `CURATED_PLANTS`, a plain
+  `Plant[]` — not wrapped in `validatePlant()` at authoring time, matching
+  `spacing/table.ts`'s convention of a plain array plus a schema-validating
+  test file (`plants.test.ts`) rather than `companions/curated.ts`'s "the type
+  covers it" style, since a full `Plant` is a much bigger record to typo.
+- **Two crops ship today**: `broad-bean` (closes the gap ADR 0009 documented —
+  OpenFarm has no mappable _Vicia faba_, so the Stage 1.3 spacing row and the
+  `leek` antagonist link had nothing to attach to until now) and
+  `jerusalem-artichoke` (a plain new addition, proving the no-collision path).
+  Both are **link-free** by design — see the ADR for why that's sufficient for
+  referential integrity without weakening the existing gate.
+- **Conflict rule**: a curated plant's `id` colliding with an OpenFarm plant's
+  (directly or via `SLUG_ALIASES`) makes the curated record replace it
+  wholesale, keeping the surviving canonical id (`merge.ts`'s step 0). See
+  the ADR for why the id, not necessarily the curated author's own choice,
+  is what survives.
+
+### Adding a curated crop
+
+1. Add a `Plant` object literal to `CURATED_PLANTS` in `src/curated/plants.ts`.
+   Give it full identity (`id`, `commonName`, `scientificName`, `gbifId: null`),
+   `category`, `light`, a `spacing` block, and `provenance.sources` with at
+   least one real, honestly-cited source — the same bar `validatePlant`
+   enforces for every other shipped record.
+2. Keep it link-free (no `companions`/`antagonists` of your own) unless you
+   also add the relationship to `companions/curated.ts` (Stage 1.4's channel,
+   already checked against the plant-id universe) — don't invent a second
+   path for the same fact.
+3. If this crop should replace an existing OpenFarm-sourced record, give it
+   that record's exact `id` (or an entry in `merge/aliases.ts#SLUG_ALIASES`
+   if the natural curated id differs) — see the ADR for what "wins" means.
+4. `npm run test -w @garden-planner/etl` re-runs `plants.test.ts` (schema
+   validity, unique ids, no `user-` namespace, link-free) and the merge/
+   build-dataset suites (fold-in behaviour, override reconciliation, the
+   gate failing on a broken curated record).
+5. `npm run build:data -w @garden-planner/etl` regenerates `data/plants.json`
+   with the new crop. If it needs its own icon rather than the generic
+   fallback, see `docs/icon-style-guide.md` and re-run
+   `tools/icons/generate.ts` (Stage 4.1).
 
 ## Offline-first: the cache
 
@@ -320,12 +392,16 @@ src/
     openfarm-derived.ts       Mechanical extraction from OpenFarm's companions field.
     relationships.ts          Combines both; PlantLink-shaped output for Stage 1.5.
                               Not a source adapter — see docs/adr/0008.
+  curated/                  Maintainer-curated full-plant input (Stage 1.7).
+    plants.ts                CURATED_PLANTS: a plain, hand-authored Plant[].
+                              Not a source adapter — see docs/adr/0021.
   merge/                    The Stage 1.5 merge, validation gate, and emitter.
     aliases.ts               Curated slug aliases (beetroot→beet, french-bean→green-bean).
     join.ts                  Join-key primitives: gbifId → scientific name → slug/alias.
     collect-openfarm.ts      Gathers OpenFarm plants, resilient to GBIF being offline.
     sanity.ts                Dataset-level (tree-tolerant) spacing absurdity bounds.
-    merge.ts                 The merge: attach spacing (wins) + remapped links.
+    merge.ts                 The merge: fold in curated (wins) + attach spacing (wins)
+                             + remapped links.
     validate.ts              The hard-fail gate: schema + referential integrity + sanity.
     artifact.ts              Builds/writes data/plants.json (header + sorted plants).
     build-dataset.ts         Orchestrates gather → merge → validate → artifact (pure).

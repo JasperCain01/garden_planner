@@ -12,9 +12,11 @@ import { fitPlant } from './fit';
  * `suitability/dataset.test.ts` sets the precedent, and the argument is the
  * same: hand-built fixtures prove the arithmetic, but only the real records
  * prove the model fits the data that actually ships. The coverage assertions
- * here are a **tripwire** as much as a test — if Stage 1.7's curated records
- * add intensive figures, several expectations below will change, and that is
- * intended.
+ * here are a **tripwire** as much as a test. Stage 1.7's two curated records
+ * (`broad-bean`, `jerusalem-artichoke`) are both row-only — like the great
+ * majority of the dataset — so they only moved the total plant count, not the
+ * intensive-coverage counts; a future curated record with a real intensive
+ * figure would trip those too, and that is intended.
  */
 
 const DATASET_PATH = fileURLToPath(new URL('../../../../data/plants.json', import.meta.url));
@@ -38,10 +40,12 @@ const ONE_SQUARE_METRE = rectangleRegion(100, 100);
 
 describe('the shipped spacing data', () => {
   it('is the dataset these expectations were written against', () => {
-    expect(PLANTS).toHaveLength(160);
+    expect(PLANTS).toHaveLength(162);
     // Every record has *some* spacing: ADR 0004 §2 makes that a schema rule, so
     // the calculator never has a "this crop has no spacing" case to handle.
-    expect(PLANTS.filter((plant) => plant.spacing.row !== undefined)).toHaveLength(160);
+    expect(PLANTS.filter((plant) => plant.spacing.row !== undefined)).toHaveLength(162);
+    // Stage 1.7's two curated records (`broad-bean`, `jerusalem-artichoke`) are
+    // both row-only, same as the great majority of the dataset, so this stays 9.
     expect(WITH_INTENSIVE).toHaveLength(9);
     // No record is intensive-only — that shape is reachable only through a
     // user-defined crop (ADR 0011), which is why `derived-from-intensive` has
@@ -148,10 +152,10 @@ describe('the nine crops with a real intensive figure', () => {
   });
 });
 
-describe('the other 151 records', () => {
+describe('the other 153 records', () => {
   it('all fall back to a derived square when asked for an intensive count', () => {
     const rowOnly = PLANTS.filter((plant) => plant.spacing.intensive === undefined);
-    expect(rowOnly).toHaveLength(151);
+    expect(rowOnly).toHaveLength(153);
     for (const plant of rowOnly) {
       const lattice = resolveLatticeSpacing(plant.spacing, 'intensive');
       expect(lattice.method).toBe('intensive');

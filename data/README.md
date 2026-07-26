@@ -9,10 +9,14 @@ a _build output_ of the `packages/etl` pipeline, committed to the repo so that:
 ## Status
 
 **Populated.** `plants.json` is the merged, validated dataset produced by Workplan
-**Stage 1.5** (see [`/docs/adr/0009-dataset-merge-and-licensing.md`](../docs/adr/0009-dataset-merge-and-licensing.md)).
-It currently holds **160 plants**: the OpenFarm crops the adapter can map,
-enriched with the hand-verified spacing table (Stage 1.3, spacing wins over
-scraped figures on conflict) and the evidence-tagged companion/antagonist links
+**Stage 1.5** (see [`/docs/adr/0009-dataset-merge-and-licensing.md`](../docs/adr/0009-dataset-merge-and-licensing.md))
+and extended by **Stage 1.7**'s curated input (see
+[`/docs/adr/0021-curated-plant-input.md`](../docs/adr/0021-curated-plant-input.md)).
+It currently holds **162 plants**: 160 OpenFarm crops the adapter can map, plus
+**2 maintainer-curated crops** (`broad-bean`, `jerusalem-artichoke` — full
+identity and provenance, held to the same bar as every other record), enriched
+with the hand-verified spacing table (Stage 1.3, spacing wins over scraped
+figures on conflict) and the evidence-tagged companion/antagonist links
 (Stage 1.4). Every record conforms to the Stage 0.2 schema
 (`packages/engine/src/schema/`; zod is the source of truth, see
 [`/docs/adr/0004-plant-schema.md`](../docs/adr/0004-plant-schema.md)).
@@ -34,9 +38,25 @@ pipeline):
   sandbox's egress policy, so the name resolver can't fill it. The merge joins by
   scientific name / slug instead and upgrades to GBIF-id joins automatically once
   the block lifts (ADR 0009). Nothing pretends to a GBIF id it doesn't have.
-- **`broad-bean` is not included.** Its hand-verified spacing has no mappable
-  OpenFarm counterpart (_Vicia faba_), so it and its two companion links are left
-  out this round — logged by the build, and recorded in ADR 0009's Consequences.
+- **`broad-bean` is no longer a gap.** It was previously excluded — ADR 0009's
+  Consequences recorded that OpenFarm has no mappable _Vicia faba_, so its
+  hand-verified spacing and its `leek` antagonist link had nothing to attach
+  to. Stage 1.7 closes this: it now ships as a curated crop (ADR 0021), and
+  both the spacing row and the companion link attach to it as normal.
+
+## The dataset's four inputs
+
+1. **OpenFarm** — the community-rescued crop dump (Stage 1.2).
+2. **The hand-verified spacing table** (Stage 1.3) — spacing wins on conflict.
+3. **Companion/antagonist relationships** (Stage 1.4).
+4. **Maintainer-curated plants** (Stage 1.7, `packages/etl/src/curated/plants.ts`)
+   — full, hand-authored `Plant` records for crops OpenFarm's dump doesn't have,
+   or a maintainer wants to correct. A curated crop colliding with an OpenFarm
+   one **replaces it outright** (curated wins, ADR 0021); everything else about
+   it — spacing attach, companion links, the hard-fail gate — works exactly
+   like any other plant, with no relaxation. Distinct from the in-app
+   add-crop form (Stage 3.6, ADR 0011): that path is session-only and
+   relaxed-schema; this one is permanent and held to the full shipped bar.
 
 ## The artifact shape
 
@@ -49,11 +69,15 @@ runtime needed at this size.
 ## How to regenerate it
 
 1. A contributor runs the ETL: `npm run build:data -w @garden-planner/etl`.
-2. The build gathers the OpenFarm plants, merges the spacing and companion data,
-   runs the **hard-fail validation gate** (schema + referential integrity +
-   sanity bounds — the build fails loudly on any invalid, dangling, or absurd
-   record), and writes `plants.json` here.
+2. The build gathers the OpenFarm plants, folds in the curated plants
+   (replacing an OpenFarm-sourced record outright on an id collision), merges
+   the spacing and companion data, runs the **hard-fail validation gate**
+   (schema + referential integrity + sanity bounds — the build fails loudly on
+   any invalid, dangling, or absurd record), and writes `plants.json` here.
 3. The contributor commits the regenerated artifact.
+
+To add a maintainer-curated crop permanently, see
+`packages/etl/README.md`'s "Maintainer-curated plants" section.
 
 ## Licensing
 

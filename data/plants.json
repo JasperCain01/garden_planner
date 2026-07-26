@@ -1,12 +1,18 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-23",
+  "generatedAt": "2026-07-26",
   "license": "CC-BY-NC-SA-4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-  "plantCount": 160,
+  "plantCount": 162,
   "sources": [
     {
+      "source": "Deep Green Permaculture"
+    },
+    {
       "source": "Garden Planner companion/antagonist dataset (Stage 1.4)"
+    },
+    {
+      "source": "North Carolina Extension Gardener Plant Toolbox"
     },
     {
       "source": "Old Farmer's Almanac"
@@ -675,6 +681,109 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2023-03-25; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           }
         ]
+      }
+    },
+    {
+      "id": "broad-bean",
+      "commonName": "Broad bean",
+      "scientificName": "Vicia faba",
+      "gbifId": null,
+      "category": "vegetable",
+      "edibleParts": ["seed"],
+      "light": "full-sun",
+      "spacing": {
+        "row": {
+          "inRowCm": 20,
+          "betweenRowCm": 60
+        }
+      },
+      "hardiness": {
+        "rhsRating": "H4",
+        "minTempC": -10
+      },
+      "soil": {
+        "textures": ["loam"],
+        "ph": ["neutral"],
+        "moisture": ["moist"]
+      },
+      "seasons": {
+        "sow": [
+          {
+            "start": 11,
+            "end": 11
+          },
+          {
+            "start": 2,
+            "end": 5
+          }
+        ],
+        "harvest": [
+          {
+            "start": 6,
+            "end": 8
+          }
+        ]
+      },
+      "antagonists": [
+        {
+          "plantId": "leek",
+          "evidence": "traditional",
+          "note": "Same allium-vs-legume folklore again, applied to leek and broad bean — one of the most repeated \"bad companion\" pairings in gardening guides, on the same rhizobium-suppression reasoning that lab chemistry supports but garden-scale trials have not confirmed. Recorded traditional."
+        }
+      ],
+      "provenance": {
+        "sources": [
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/vegetables/broad-beans/grow-your-own",
+            "retrievedAt": "2026-07-26",
+            "note": "Sunny, sheltered site; fertile, moist but well-drained soil; 15-23cm apart in double rows 23cm apart, 60cm between double rows."
+          },
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/advice/grow-your-own/features/sowing-broad-beans",
+            "retrievedAt": "2026-07-26",
+            "note": "Hardy varieties can be autumn/November-sown (surviving down to -10°C); spring sowing March-May is the main, less weather-dependent window."
+          },
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/plants/105463/vicia-faba/details",
+            "retrievedAt": "2026-07-26",
+            "note": "H4 hardiness (\"hardy in most of the UK, -10 to -5°C\") is the rating shared across RHS's individual Vicia faba cultivar pages (e.g. 'Express', 'Vroma', 'Meteor')."
+          },
+          {
+            "source": "Old Farmer's Almanac",
+            "url": "https://www.almanac.com/plant/fava-beans",
+            "retrievedAt": "2026-07-22",
+            "note": "~8 in apart in double rows, 60–75 cm between double rows"
+          },
+          {
+            "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
+            "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
+          }
+        ],
+        "fields": {
+          "spacing": [
+            {
+              "source": "RHS",
+              "url": "https://www.rhs.org.uk/vegetables/broad-beans/grow-your-own",
+              "retrievedAt": "2026-07-22",
+              "note": "15–23 cm apart; double rows 23 cm, 60 cm between double rows"
+            },
+            {
+              "source": "Old Farmer's Almanac",
+              "url": "https://www.almanac.com/plant/fava-beans",
+              "retrievedAt": "2026-07-22",
+              "note": "~8 in apart in double rows, 60–75 cm between double rows"
+            }
+          ],
+          "companions": [
+            {
+              "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
+              "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
+            }
+          ]
+        }
       }
     },
     {
@@ -2583,6 +2692,71 @@
       }
     },
     {
+      "id": "jerusalem-artichoke",
+      "commonName": "Jerusalem artichoke",
+      "scientificName": "Helianthus tuberosus",
+      "gbifId": null,
+      "category": "vegetable",
+      "edibleParts": ["tuber"],
+      "light": "full-sun",
+      "spacing": {
+        "row": {
+          "inRowCm": 30,
+          "betweenRowCm": 90
+        }
+      },
+      "hardiness": {
+        "minTempC": -30
+      },
+      "soil": {
+        "textures": ["sand", "loam", "clay"],
+        "ph": ["neutral", "alkaline"],
+        "moisture": ["moist"]
+      },
+      "seasons": {
+        "sow": [
+          {
+            "start": 3,
+            "end": 4
+          }
+        ],
+        "harvest": [
+          {
+            "start": 10,
+            "end": 1
+          }
+        ]
+      },
+      "provenance": {
+        "sources": [
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/vegetables/jerusalem-artichokes/grow-your-own",
+            "retrievedAt": "2026-07-26",
+            "note": "Full sun; moderately fertile, moist but well-drained soil; tubers 30cm apart, rows at least 1m apart."
+          },
+          {
+            "source": "Old Farmer's Almanac",
+            "url": "https://www.almanac.com/plant/jerusalem-artichokes-how-grow-and-harvest-hardy-perennial",
+            "retrievedAt": "2026-07-26",
+            "note": "12-18in apart, rows 36in apart — wider in-row spacing than RHS's figure; RHS's tighter in-row figure is used here, paired with its own row gap."
+          },
+          {
+            "source": "North Carolina Extension Gardener Plant Toolbox",
+            "url": "https://plants.ces.ncsu.edu/plants/helianthus-tuberosus/",
+            "retrievedAt": "2026-07-26",
+            "note": "Suitable for sandy, loamy and clay soils; prefers well-drained, slightly alkaline soil (pH 7-7.5); hardy USDA zones 2b-8b."
+          },
+          {
+            "source": "Deep Green Permaculture",
+            "url": "https://deepgreenpermaculture.com/2025/12/06/jerusalem-artichokes-growing-guide/",
+            "retrievedAt": "2026-07-26",
+            "note": "Tubers survive in-ground winter soil temperatures down to about -30°C under a mulch layer; top growth is frost-tender well above that."
+          }
+        ]
+      }
+    },
+    {
       "id": "kale",
       "commonName": "Kale",
       "scientificName": "Brassica oleracea (acephala)",
@@ -2781,6 +2955,13 @@
           "plantId": "spinach",
           "evidence": "traditional",
           "note": "OpenFarm's \"Leek\" page lists \"spinach\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
+        }
+      ],
+      "antagonists": [
+        {
+          "plantId": "broad-bean",
+          "evidence": "traditional",
+          "note": "Same allium-vs-legume folklore again, applied to leek and broad bean — one of the most repeated \"bad companion\" pairings in gardening guides, on the same rhizobium-suppression reasoning that lab chemistry supports but garden-scale trials have not confirmed. Recorded traditional."
         }
       ],
       "provenance": {
