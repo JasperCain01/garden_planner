@@ -44,9 +44,11 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type Konva from 'konva';
 import { useDroppable } from '@dnd-kit/core';
-import { Circle, Group, Layer, Line, Stage, Text } from 'react-konva';
+import { Circle, Group, Image, Layer, Line, Stage, Text } from 'react-konva';
 import type { EdibleCategory, PlotRegion, WarningSeverity } from '@garden-planner/engine';
-import { usePlacementsStore } from '../state/placements-store.ts';
+import { resolveIcon } from '../icons/index.ts';
+import { useIconImage } from '../icons/useIconImage.ts';
+import { usePlacementsStore, type PlacedPlant } from '../state/placements-store.ts';
 import { severityColor } from '../warnings/severity.ts';
 import { CANVAS_DROPPABLE_ID } from './drop.ts';
 import { canvasSizePx, cmToPx, pxToCm } from './geometry.ts';
@@ -61,9 +63,10 @@ const BADGE_RADIUS_PX = 7;
 const NO_SEVERITIES: ReadonlyMap<string, WarningSeverity> = new Map();
 
 /**
- * A colour per edible category, so placed plants are visually distinguishable
- * before real icons exist (Stage 4.1/4.2). Not a suitability cue — unrelated
- * to the palette's band colours.
+ * A colour per edible category, rendered as the background circle behind each
+ * icon (Stage 4.2). Provides immediate, at-a-glance category indication even
+ * while the icon image is loading. Not a suitability cue — unrelated to the
+ * palette's band colours.
  */
 const CATEGORY_COLORS: Readonly<Record<EdibleCategory, string>> = {
   vegetable: '#4c8c2b',
@@ -76,6 +79,94 @@ export interface PlotCanvasProps {
   readonly region: PlotRegion;
   /** Worst severity per placement id (`warnings/evaluate-canvas.ts`'s `CanvasWarnings.severityByPlacementId`), for the badge each marker shows. Defaults to no warnings for anyone. */
   readonly severityByPlacementId?: ReadonlyMap<string, WarningSeverity>;
+}
+
+/**
+ * A placed-plant marker: a colored background circle with an icon rendered on
+ * top (once loaded), plus a warning badge if present. The icon is loaded async,
+ * so the background renders immediately for instant visual feedback.
+ */
+interface PlacementMarkerProps {
+  readonly placement: PlacedPlant;
+  readonly px: { x: number; y: number };
+  readonly isSelected: boolean;
+  readonly severityByPlacementId: ReadonlyMap<string, WarningSeverity>;
+  readonly onDragEnd: (event: Konva.KonvaEventObject<DragEvent>) => void;
+  readonly onSelect: () => void;
+  readonly onRemove: () => void;
+}
+
+function PlacementMarker({
+  placement,
+  px,
+  isSelected,
+  severityByPlacementId,
+  onDragEnd,
+  onSelect,
+  onRemove,
+}: PlacementMarkerProps) {
+  const icon = resolveIcon(placement.plant);
+  const iconImage = useIconImage(icon.url);
+
+  return (
+    <Group
+      x={px.x}
+      y={px.y}
+      draggable
+      onDragEnd={onDragEnd}
+      onClick={onSelect}
+      onTap={onSelect}
+      onDblClick={onRemove}
+      onDblTap={onRemove}
+    >
+      {/* Background circle, always visible for immediate category feedback */}
+      <Circle
+        radius={MARKER_RADIUS_PX}
+        fill={CATEGORY_COLORS[placement.plant.category]}
+        stroke={isSelected ? '#111827' : '#ffffff'}
+        strokeWidth={isSelected ? 3 : 1.5}
+      />
+      {/* Icon image, rendered once loaded */}
+      {iconImage && (
+        <Image
+          image={iconImage}
+          x={-MARKER_RADIUS_PX}
+          y={-MARKER_RADIUS_PX}
+          width={MARKER_RADIUS_PX * 2}
+          height={MARKER_RADIUS_PX * 2}
+          listening={false}
+        />
+      )}
+      {/* Warning badge, if present */}
+      {(() => {
+        const severity = severityByPlacementId.get(placement.id);
+        if (severity === undefined) return null;
+        const badgeOffset = MARKER_RADIUS_PX * 0.75;
+        return (
+          <Group x={badgeOffset} y={-badgeOffset} listening={false}>
+            <Circle
+              radius={BADGE_RADIUS_PX}
+              fill={severityColor(severity)}
+              stroke="#ffffff"
+              strokeWidth={1}
+            />
+            <Text
+              text="!"
+              fontStyle="bold"
+              fontSize={10}
+              fill="#ffffff"
+              width={BADGE_RADIUS_PX * 2}
+              height={BADGE_RADIUS_PX * 2}
+              offsetX={BADGE_RADIUS_PX}
+              offsetY={BADGE_RADIUS_PX}
+              align="center"
+              verticalAlign="middle"
+            />
+          </Group>
+        );
+      })()}
+    </Group>
+  );
 }
 
 export function PlotCanvas({ region, severityByPlacementId = NO_SEVERITIES }: PlotCanvasProps) {
@@ -147,64 +238,16 @@ export function PlotCanvas({ region, severityByPlacementId = NO_SEVERITIES }: Pl
             const px = cmToPx(placement, region);
             const isSelected = placement.id === selectedId;
             return (
-              <Group
+              <PlacementMarker
                 key={placement.id}
-                x={px.x}
-                y={px.y}
-                draggable
+                placement={placement}
+                px={px}
+                isSelected={isSelected}
+                severityByPlacementId={severityByPlacementId}
                 onDragEnd={(event) => handlePlantDragEnd(placement.id, event)}
-                onClick={() => selectPlacement(placement.id)}
-                onTap={() => selectPlacement(placement.id)}
-                onDblClick={() => removePlacement(placement.id)}
-                onDblTap={() => removePlacement(placement.id)}
-              >
-                <Circle
-                  radius={MARKER_RADIUS_PX}
-                  fill={CATEGORY_COLORS[placement.plant.category]}
-                  stroke={isSelected ? '#111827' : '#ffffff'}
-                  strokeWidth={isSelected ? 3 : 1.5}
-                />
-                <Text
-                  text={placement.plant.commonName.slice(0, 1).toUpperCase()}
-                  fontStyle="bold"
-                  fontSize={14}
-                  fill="#ffffff"
-                  width={MARKER_RADIUS_PX * 2}
-                  height={MARKER_RADIUS_PX * 2}
-                  offsetX={MARKER_RADIUS_PX}
-                  offsetY={MARKER_RADIUS_PX}
-                  align="center"
-                  verticalAlign="middle"
-                  listening={false}
-                />
-                {(() => {
-                  const severity = severityByPlacementId.get(placement.id);
-                  if (severity === undefined) return null;
-                  const badgeOffset = MARKER_RADIUS_PX * 0.75;
-                  return (
-                    <Group x={badgeOffset} y={-badgeOffset} listening={false}>
-                      <Circle
-                        radius={BADGE_RADIUS_PX}
-                        fill={severityColor(severity)}
-                        stroke="#ffffff"
-                        strokeWidth={1}
-                      />
-                      <Text
-                        text="!"
-                        fontStyle="bold"
-                        fontSize={10}
-                        fill="#ffffff"
-                        width={BADGE_RADIUS_PX * 2}
-                        height={BADGE_RADIUS_PX * 2}
-                        offsetX={BADGE_RADIUS_PX}
-                        offsetY={BADGE_RADIUS_PX}
-                        align="center"
-                        verticalAlign="middle"
-                      />
-                    </Group>
-                  );
-                })()}
-              </Group>
+                onSelect={() => selectPlacement(placement.id)}
+                onRemove={() => removePlacement(placement.id)}
+              />
             );
           })}
         </Layer>
