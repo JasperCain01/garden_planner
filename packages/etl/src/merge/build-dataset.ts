@@ -15,6 +15,8 @@ import type { GbifResolver } from '../resolve/gbif-resolver.ts';
 import type { OpenFarmCropRaw } from '../sources/openfarm/types.ts';
 import type { SpacingRecord } from '../spacing/schema.ts';
 import { HAND_VERIFIED_SPACING } from '../spacing/table.ts';
+import type { MoistureRecord } from '../moisture/schema.ts';
+import { CURATED_MOISTURE } from '../moisture/table.ts';
 import { toPlantLinksById, type PlantLinksByKind } from '../companions/relationships.ts';
 import { CURATED_PLANTS } from '../curated/plants.ts';
 import { collectOpenFarmPlants, type CollectOpenFarmResult } from './collect-openfarm.ts';
@@ -34,6 +36,8 @@ export interface BuildDatasetInputs {
   readonly curatedPlants?: readonly Plant[];
   /** Spacing rows; defaults to the hand-verified table. */
   readonly spacingRecords?: readonly SpacingRecord[];
+  /** Soil-moisture rows; defaults to the curated moisture table. */
+  readonly moistureRecords?: readonly MoistureRecord[];
   /** Companion links by pre-merge id; defaults to the full relationship set. */
   readonly linksById?: ReadonlyMap<string, PlantLinksByKind>;
   /** ISO date for the artifact header; omit to leave it off. */
@@ -59,6 +63,7 @@ export async function buildDataset(inputs: BuildDatasetInputs): Promise<BuildDat
   const log = inputs.log ?? (() => {});
   const curatedPlants = inputs.curatedPlants ?? CURATED_PLANTS;
   const spacingRecords = inputs.spacingRecords ?? HAND_VERIFIED_SPACING;
+  const moistureRecords = inputs.moistureRecords ?? CURATED_MOISTURE;
   const linksById = inputs.linksById ?? toPlantLinksById();
 
   log('Stage 1.5 dataset build — gathering OpenFarm plants…');
@@ -73,6 +78,7 @@ export async function buildDataset(inputs: BuildDatasetInputs): Promise<BuildDat
     openFarmPlants: collect.plants,
     curatedPlants,
     spacingRecords,
+    moistureRecords,
     linksById,
   });
   log(
@@ -88,6 +94,13 @@ export async function buildDataset(inputs: BuildDatasetInputs): Promise<BuildDat
   );
   for (const u of report.spacingUnattached)
     log(`    · spacing "${u.spacingId}" unattached: ${u.reason}`);
+  log(
+    `  Soil moisture attached to ${report.moistureAttached.length} plant(s); ` +
+      `${report.moistureSkipped.length} skipped (plant states its own), ` +
+      `${report.moistureUnattached.length} row(s) had no home.`,
+  );
+  for (const u of report.moistureUnattached)
+    log(`    · moisture "${u.moistureId}" unattached: ${u.reason}`);
   if (report.plantsDroppedForSanity.length > 0) {
     log(`  Dropped ${report.plantsDroppedForSanity.length} plant(s) for absurd spacing:`);
     for (const d of report.plantsDroppedForSanity) {

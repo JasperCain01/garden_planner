@@ -27,12 +27,13 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 0.2 Data schema ⭐                              | ✅         | ADR [0004](./docs/adr/0004-plant-schema.md); `packages/engine/src/schema/`                                                                                                                                                                                                                 |
 | 0.3 Schema amendment: user crops ⭐             | ✅         | ADR [0011](./docs/adr/0011-user-defined-crop-schema.md); `schema/user-plant.ts`                                                                                                                                                                                                            |
 | 1.1 ETL scaffolding & name resolution           | ✅         | ADR [0005](./docs/adr/0005-gbif-name-resolver.md); GBIF resolver (offline-cached)                                                                                                                                                                                                          |
-| 1.2 Source adapters                             | ⚠️ partial | ADR [0006](./docs/adr/0006-openfarm-source-adapter.md); **OpenFarm only** — PFAF and Permapeople still to follow the same pattern; **scheduled as Stage 6.0**                                                                                                                              |
+| 1.2 Source adapters                             | ⚠️ partial | ADR [0006](./docs/adr/0006-openfarm-source-adapter.md); **OpenFarm only.** PFAF/Permapeople adapters are **no longer planned** — Stage 6.0 fills the gaps by curation instead, and records why                                                                                             |
 | 1.3 Hand-verified spacing table ⭐              | ✅         | ADR [0007](./docs/adr/0007-hand-verified-spacing.md); `packages/etl/src/spacing/`                                                                                                                                                                                                          |
 | 1.4 Companion-planting data                     | ✅         | ADR [0008](./docs/adr/0008-companion-planting-data.md); 85 companion + 6 antagonist links (8 antagonist links ship today — Stage 1.7 added two)                                                                                                                                            |
 | 1.5 Dataset build, merge & validation ⭐        | ✅         | ADR [0009](./docs/adr/0009-dataset-merge-and-licensing.md); `data/plants.json` (160 crops then; **162 today** — Stage 1.7)                                                                                                                                                                 |
 | 1.6 Location & climate static data              | ✅         | ADR [0010](./docs/adr/0010-location-climate-static-data.md); `packages/engine/src/climate/`                                                                                                                                                                                                |
 | 1.7 Curated full-plant input                    | ✅         | ADR [0021](./docs/adr/0021-curated-plant-input.md); `packages/etl/src/curated/` (`broad-bean`, `jerusalem-artichoke`); `data/plants.json` now 162 crops                                                                                                                                    |
+| 1.8 Curated soil-moisture table                 | ✅         | `packages/etl/src/moisture/`; 72 crops gained `soil.moisture`, taking soil coverage from 2/162 to 74/162 — the engine's second working dimension (see Stage 6.0)                                                                                                                           |
 | 2.1 Suitability scoring engine ⭐               | ✅         | ADR [0012](./docs/adr/0012-suitability-scoring.md); `src/suitability/`, `rankPlants`                                                                                                                                                                                                       |
 | 2.2 Spacing / density calculator ⭐             | ✅         | ADR [0013](./docs/adr/0013-spacing-density-calculator.md); `src/spacing/`, `fitPlant`, `PlotRegionSchema`                                                                                                                                                                                  |
 | 2.3 Warnings & companion suggestions            | ✅         | ADR [0014](./docs/adr/0014-warnings-and-companion-suggestions.md); `src/warnings/`, `evaluatePlot`                                                                                                                                                                                         |
@@ -90,9 +91,17 @@ sources carrying hardiness and soil, so 160 of the 162 shipped records have
 light data and nothing else, and three of the suitability engine's four
 dimensions report `unknown-plant` for almost the whole catalogue (see
 [`docs/review-pre-deployment.md`](./docs/review-pre-deployment.md) §3.9).
-Finishing those adapters is now scheduled as **Stage 6.0**, ahead of the
-documentation pass, so v1 isn't documented and signed off around a data gap.
-CI, deferred since Stage 0.1 by §1.4, is scheduled last as **Stage 6.4**.
+**Stage 6.0** now closes that gap by curation rather than by ingesting another
+source — the reasoning, and the measurements behind it, are recorded in the
+stage itself. Its first half has landed: a **curated soil-moisture table**
+(`packages/etl/src/moisture/`) gave 72 core British crops a `soil.moisture`
+preference, taking soil coverage from 2/162 to 74/162 and giving the app a
+second working axis — on a plot that names its moisture, drought-tolerant crops
+now genuinely outrank thirsty ones, where before every full-sun crop tied. Its
+second half — adding the missing British staples (apple, pear, raspberry,
+Brussels sprouts, swede) and pruning the ~32 crops that can't grow outdoors
+here — is still to do. CI, deferred since Stage 0.1 by §1.4, is scheduled last
+as **Stage 6.4**.
 Phase 5 (Offline & deployment) is under way:
 Stage 5.1 adds **PWA / offline support** (ADR 0022) — a service worker and
 web app manifest via `vite-plugin-pwa`'s `generateSW` strategy
@@ -729,67 +738,87 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 
 ### Phase 6 — Community readiness & polish
 
-#### Stage 6.0 — Finish the source adapters (PFAF, Permapeople) ⭐ data-critical
+#### Stage 6.0 — Fill the data gaps that actually matter ⭐ data-critical
 
-- **Goal:** Complete **Stage 1.2**, the one stage still ⚠️ partial, so the
-  suitability engine scores on the data it was built for instead of on light
-  alone.
-- **Depends on:** 1.1 (the adapter pattern and the GBIF resolver), 1.5 (the
-  merge and the hard-fail gate). Both are built and tested — this stage adds
-  inputs to them, it does not redesign them.
-- **Why it sits in Phase 6, and why it comes first in it:** it is data work,
-  not polish, and it properly belongs to Phase 1. It is scheduled here because
-  it is the last thing still outstanding from the data phase and because
-  **everything after it describes or validates a finished system**: Stage 6.1
-  documents the project, 6.2 polishes the UI, 6.3 signs off v1. Doing this
-  after those means documenting and signing off a system whose headline feature
-  is running on a fraction of its intended data.
-- **What's actually wrong today:** OpenFarm is the only source adapter that
-  ever landed. PFAF carries hardiness and soil; Permapeople carries light and
-  growth characteristics. Without them, **160 of the 162 shipped records carry
-  light data and nothing else** (the two exceptions are Stage 1.7's curated
-  crops), so three of the engine's four scoring dimensions report
-  `unknown-plant` for almost the whole catalogue and the ranked palette is
-  close to a two-tier sort. The engine is honest about this — confidence
-  figures and "Scored on light alone" reasoning — but it is a data gap, and
-  this is the stage that closes it. See
-  [`docs/review-pre-deployment.md`](./docs/review-pre-deployment.md) §3.9.
-- **Deliverables:** A PFAF adapter and a Permapeople adapter, each following
-  the pattern ADR [0006](./docs/adr/0006-openfarm-source-adapter.md)
-  established (injectable transport, cached source data committed in-repo for
-  offline builds, records emitted schema-shaped with provenance tags); their
-  wiring into the Stage 1.5 merge as further inputs; a rebuilt
-  `data/plants.json`; and an ADR per adapter recording what each source could
-  and could not supply. Update `NOTICE`, `data/README.md`, the ETL README and
-  the Progress table (**flip 1.2 to ✅**).
-- **Settle the join key first.** ADR 0005 has a status update spelling this
-  out: **0 of 162 records have a `gbifId`** because GBIF is unreachable from
-  the build sandbox, so the merge currently falls through to a hand-maintained
-  slug/alias table (`merge/aliases.ts`). That is adequate for one source and
-  weak for three — the failure mode is silent duplication ("onion" three ways),
-  not a loud error. If GBIF is reachable in your environment, run the resolver
-  and commit the populated cache **before** wiring the second adapter. If it is
-  not, say so in the ADR, expect to grow the alias table considerably, and add
-  a merge-report assertion that flags suspected duplicate identities rather
-  than trusting silence.
-- **Licensing becomes real.** The dataset is already held at **CC BY-NC-SA**
-  (ADR 0009, `NOTICE`) in anticipation of PFAF, and `NOTICE` is explicit that
-  today's shipped content does not by itself compel it. Ingesting PFAF is what
-  makes those terms actually binding — update `NOTICE` from "anticipated" to
-  "in force" and check the attribution requirements are met per-record.
-- **Model:** **Sonnet** for the first of the two adapters (it re-establishes a
-  pattern nobody has exercised since Stage 1.2); **Haiku or local
-  qwen3-coder** for the second, which is mechanical field mapping against a
-  settled pattern and a validating schema — exactly the split Stage 1.2 already
-  specified.
-- **Verification:** Each adapter's output validates against the schema and the
-  Stage 1.5 gate passes on the real merged data; spot-check fixtures confirm
-  known crops map correctly; referential integrity holds across the enlarged
-  dataset. **Expect `packages/engine/src/suitability/dataset.test.ts` to fail
-  and need updating — that is the point.** It pins today's coverage
-  deliberately (162 records, 2 with hardiness, the exact set of distinct
-  ranking scores), so it is the tripwire that tells you the new data actually
-  reached the engine. Re-pin it to the new reality rather than loosening it.
+- **Goal:** make the suitability engine mean something on the crops people
+  actually grow, by curating the missing fields rather than ingesting another
+  source.
+- **Depends on:** 1.5 (the merge and the hard-fail gate). Nothing else.
+- **Status:** **partially done.** The soil-moisture half has landed (see below);
+  the crop-list half has not.
+
+##### Why this replaced "finish the PFAF/Permapeople adapters"
+
+This stage was originally written as "complete Stage 1.2's outstanding source
+adapters". That was the wrong shape, and the evidence is worth keeping because
+it is the kind of thing a fresh session would otherwise re-derive:
+
+- **The adapter work is mostly not acquisition.** Of the OpenFarm adapter's 730
+  lines, only ~15% is transport and caching. The rest is mapping and
+  classification — and much of _that_ wouldn't apply, because the goal here is
+  to **enrich 162 existing records**, not create new ones.
+- **The join would have been the real cost.** Only 95 of 162 records join
+  uniquely by scientific name; **67 (41%) sit in 16 ambiguous species groups** —
+  _Brassica oleracea_ alone covers 11 crops. And PFAF has one row per species,
+  so its hardiness could honestly be broadcast to all 11 while its _sowing
+  season_ could not. That is an editorial problem no adapter solves.
+- **The scope didn't need it.** This is a personal, non-commercial planner for
+  a residential garden or allotment. It needs to say how much space peas want
+  versus potatoes and whether they'll suffer somewhere dry — not to be a
+  taxonomic authority.
+
+##### Done: the curated soil-moisture table
+
+`packages/etl/src/moisture/` — a thin enrichment slice in the Stage 1.3 spacing
+table's mould (original curation keyed to a crop id, folded into the 1.5 merge,
+not a `SourceAdapter`). **72 core British crops** gained a `soil.moisture`
+preference; the dataset went from 2 to 74 records with soil data.
+
+What it bought, precisely — and the small print is half the point:
+
+- On a plot whose soil the user **hasn't** described, nothing changes. Soil
+  scores `unknown-plot` rather than `unknown-plant`: the gap moved from the crop
+  to the plot. Confidence stays at 0.35.
+- On a plot that **does** name its moisture, 72 crops rise to 0.55 confidence and
+  the palette genuinely re-orders — on dry ground rosemary and carrot now
+  outrank peas and celery, with reasoning a gardener can act on ("Prefers moist
+  conditions, not dry — soil is amendable, so treat this as a job rather than a
+  barrier").
+
+Both halves are pinned in `suitability/dataset.test.ts`. The plot form's "Soil
+moisture" dropdown, which previously asked a question nothing could use, now
+does something.
+
+Deliberately **moisture only** — no texture, no pH. Those matter far less for
+annual veg, a gardener rarely knows their pH, and skipping them cut the job by
+two-thirds without costing anything the app needed.
+
+##### Still to do: the crop list
+
+The 162 shipped crops overstate what's actually there. Roughly **32 can't be
+grown outdoors in Britain** (dragon fruit, papaya, pineapple, star fruit, two
+strawberry guavas, olive, grapefruit, lemongrass, okra, peanut…) and a good deal
+of the rest is cultivar padding (4 onions, 3 cauliflowers, 3 carrots, 4
+radishes, 7 squashes, 6 peppers). Meanwhile **apple, pear, raspberry, Brussels
+sprouts, swede and pumpkin are all absent** — a British allotmenteer notices
+that in the first five minutes.
+
+- **Deliverables:** add the missing staples through the Stage 1.7 curated input
+  (`packages/etl/src/curated/plants.ts`), and prune or de-prioritise the crops
+  that can't grow here. Decide explicitly whether pruning means deleting records
+  or flagging them — the in-app add-crop form (Stage 3.6) means a user can
+  always restore anything you remove, which is what makes pruning safe.
+- **Watch the icon set.** `app/src/icons/` holds one icon per shipped id and a
+  test enforces the correspondence exactly; adding or removing a crop means
+  adding or removing an icon in the same change.
+- **Expect `suitability/dataset.test.ts` and `spacing/dataset.test.ts` to fail
+  and need re-pinning.** They pin today's coverage on purpose — that is how you
+  know the change reached the engine. Re-pin them; don't loosen them.
+- **Model:** **Sonnet.** Horticultural judgement about what a British plot
+  actually grows, plus mechanical curation against a settled schema.
+- **Verification:** the hard-fail gate passes on the rebuilt dataset; every
+  shipped id still has an icon; the coverage tests are re-pinned rather than
+  relaxed.
 
 #### Stage 6.1 — Documentation pass ⭐ (directly serves "easy to clone")
 
@@ -881,7 +910,8 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 (3.4 · 4.2) ─────────────► 3.7   export plot as image
 Phase 1 crop list ─► 4.1 ─► 4.2
 MVP ─► 5.1 ─► 5.2
-(1.1 · 1.5) ─────────────► 6.0   finishes Stage 1.2's outstanding adapters
+1.5 ─────────────────────► 1.8   curated soil-moisture slice (done)
+1.5 ─────────────────────► 6.0   fills the remaining data gaps by curation
 6.0 ─► 6.1, 6.2, 6.3 ─► 6.4      6.4 (CI) is deliberately last
 ```
 

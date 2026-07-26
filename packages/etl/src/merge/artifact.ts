@@ -94,7 +94,18 @@ export function buildArtifact(
   };
 }
 
-/** Write the artifact to disk as pretty-printed JSON with a trailing newline. */
+/**
+ * Write the artifact to disk as pretty-printed JSON with a trailing newline.
+ *
+ * `JSON.stringify(_, null, 2)` and Prettier disagree about short arrays —
+ * Prettier keeps `["seed"]` on one line, `JSON.stringify` expands it — so the
+ * raw output here does **not** satisfy `npm run format:check`. Rather than
+ * reach for Prettier from inside this module (which would drag a formatter
+ * into an otherwise dependency-light writer), the `build:data` script runs
+ * `prettier --write` over the emitted file straight afterwards. If you call
+ * `writeArtifact` from somewhere new, format the result too, or the repo goes
+ * red on a check that has nothing to do with your change.
+ */
 export function writeArtifact(path: string, artifact: DatasetArtifact): void {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(artifact, null, 2)}\n`, 'utf-8');

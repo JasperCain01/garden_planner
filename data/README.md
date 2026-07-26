@@ -44,7 +44,7 @@ pipeline):
   to. Stage 1.7 closes this: it now ships as a curated crop (ADR 0021), and
   both the spacing row and the companion link attach to it as normal.
 
-## The dataset's four inputs
+## The dataset's five inputs
 
 1. **OpenFarm** — the community-rescued crop dump (Stage 1.2).
 2. **The hand-verified spacing table** (Stage 1.3) — spacing wins on conflict.
@@ -57,6 +57,16 @@ pipeline):
    like any other plant, with no relaxation. Distinct from the in-app
    add-crop form (Stage 3.6, ADR 0011): that path is session-only and
    relaxed-schema; this one is permanent and held to the full shipped bar.
+5. **The curated soil-moisture table** (`packages/etl/src/moisture/table.ts`) —
+   a thin enrichment slice giving ~72 core British crops a `soil.moisture`
+   preference (`dry` | `moist` | `wet`, as an array, so a crop can tolerate a
+   range). It **enriches, never overwrites**: a plant already stating its own
+   moisture keeps it. Deliberately covers the garden/allotment core rather than
+   all 162 crops — a crop with no row keeps `soil` absent and scores
+   `unknown-plant`, which is honest, where a guess would not be. Unlike the
+   spacing table it carries no per-figure citations, and its schema explains
+   why: a moisture preference is three-value horticultural consensus, not a
+   contested measurement. Treat it as guidance, not authority.
 
 ## The artifact shape
 

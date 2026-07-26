@@ -252,6 +252,50 @@ these are spacing figures hand-verified against authoritative charts.
    validates every row, enforces the ≥2-source and unique-id rules, and checks
    each intensive figure has a real SFG citation.
 
+## Curated soil-moisture table (`src/moisture/`)
+
+A thin enrichment slice, added because the shipped dataset had soil data on 2
+of 162 records — so the suitability engine's `soil` dimension was inert and the
+plot form's "Soil moisture" dropdown asked a question nothing could use. With
+148 of 162 crops `full-sun`, that left spacing as the app's only working axis.
+
+It follows the spacing table's pattern exactly: original curation keyed to a
+crop id, folded into the Stage 1.5 merge, **not** a `SourceAdapter`.
+
+Three rules worth knowing before you edit it:
+
+- **It enriches, never overwrites.** A plant that already states its own
+  moisture (a Stage 1.7 curated record, say) keeps it; the row is recorded in
+  the merge report as skipped, not silently dropped.
+- **It joins on the exact plant id and nothing else** — no scientific-name or
+  alias fallback, unlike a spacing row. `moisture/table.test.ts` asserts every
+  id resolves against `data/plants.json`, so a typo fails a test rather than
+  quietly enriching nothing.
+- **It carries no per-figure citations, on purpose.** The spacing table
+  requires ≥2 sources per figure because a spacing figure is genuinely
+  contested. A moisture preference is not: "peas suffer in dry soil" is
+  universal, the vocabulary is a three-value enum, and there is no decimal to
+  misplace. What each row carries instead is a **required `note`** giving the
+  reason — that is the reviewable artifact here. `MOISTURE_PROVENANCE` records
+  in the shipped artifact that these were hand-authored rather than retrieved,
+  so nothing downstream overstates them.
+
+### Adding a moisture row
+
+Append to `CURATED_MOISTURE` in `src/moisture/table.ts`:
+
+```ts
+{
+  id: 'parsnip',                 // must be an exact Plant.id that ships
+  moisture: ['dry', 'moist'],    // what it is happy in, not what it survives
+  note: 'Deep tap root reaches its own water and dislikes waterlogged ground.',
+},
+```
+
+Then `npm run build:data` from this package and commit the regenerated
+`data/plants.json`. If you'd rather say nothing about a crop, **omit the row** —
+absent scores as `unknown-plant`, which is the honest answer.
+
 ## Companion-planting data (`src/companions/`)
 
 Evidence-tagged companion/antagonist relationships (Stage 1.4 — full design
@@ -392,6 +436,13 @@ src/
     openfarm-derived.ts       Mechanical extraction from OpenFarm's companions field.
     relationships.ts          Combines both; PlantLink-shaped output for Stage 1.5.
                               Not a source adapter — see docs/adr/0008.
+  moisture/                 Curated soil-moisture enrichment slice.
+    schema.ts                MoistureRecord schema: reuses the engine's
+                             SoilMoistureSchema; requires a reason per row
+                             instead of citations, and says why.
+    table.ts                 The curated data (CURATED_MOISTURE), ~72 British
+                             core crops. Not a source adapter — original
+                             curation, same shape as spacing/ above.
   curated/                  Maintainer-curated full-plant input (Stage 1.7).
     plants.ts                CURATED_PLANTS: a plain, hand-authored Plant[].
                               Not a source adapter — see docs/adr/0021.
