@@ -28,19 +28,37 @@
  * (ADR 0016) via `geometry.ts`'s `cmToPx`/`pxToCm`, with its own scale and
  * padding rather than PlotOutlineEditor's — plant markers need to stay
  * legible at a size a handful of corner handles never had to justify.
+ *
+ * **Warning badges (Workplan Stage 3.5).** A small severity-coloured circle
+ * at a marker's top-right corner, present only for a placement `evaluate-
+ * canvas.ts` flagged. This component does no warning logic itself — it only
+ * looks up `severityByPlacementId` (computed by `warnings/evaluate-canvas.ts`
+ * and threaded down from `PlotDefinitionPage.tsx` via `PlotCanvasSection.tsx`)
+ * and asks `warnings/severity.ts` for that severity's colour, keeping this
+ * file's own job exactly what it was before — a thin, untested render of
+ * already-computed data (see `docs/adr/0017` for why `PlotCanvas.tsx` has no
+ * dedicated component test, and `docs/adr/0018` for the warnings-derivation
+ * decision behind the map this reads).
  */
 
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type Konva from 'konva';
 import { useDroppable } from '@dnd-kit/core';
 import { Circle, Group, Layer, Line, Stage, Text } from 'react-konva';
-import type { EdibleCategory, PlotRegion } from '@garden-planner/engine';
+import type { EdibleCategory, PlotRegion, WarningSeverity } from '@garden-planner/engine';
 import { usePlacementsStore } from '../state/placements-store.ts';
+import { severityColor } from '../warnings/severity.ts';
 import { CANVAS_DROPPABLE_ID } from './drop.ts';
 import { canvasSizePx, cmToPx, pxToCm } from './geometry.ts';
 
 /** Radius of a placed-plant marker, in canvas pixels. */
 const MARKER_RADIUS_PX = 16;
+
+/** Radius of a warning badge, in canvas pixels — small enough to read as a corner accent, not a second marker. */
+const BADGE_RADIUS_PX = 7;
+
+/** No warnings for anyone — the default so callers that haven't computed warnings yet (or whose conditions don't currently resolve) can pass nothing rather than build an empty map themselves. */
+const NO_SEVERITIES: ReadonlyMap<string, WarningSeverity> = new Map();
 
 /**
  * A colour per edible category, so placed plants are visually distinguishable
@@ -56,9 +74,11 @@ const CATEGORY_COLORS: Readonly<Record<EdibleCategory, string>> = {
 export interface PlotCanvasProps {
   /** The outline to draw and place plants within — `usePlotStore`'s current `region`. */
   readonly region: PlotRegion;
+  /** Worst severity per placement id (`warnings/evaluate-canvas.ts`'s `CanvasWarnings.severityByPlacementId`), for the badge each marker shows. Defaults to no warnings for anyone. */
+  readonly severityByPlacementId?: ReadonlyMap<string, WarningSeverity>;
 }
 
-export function PlotCanvas({ region }: PlotCanvasProps) {
+export function PlotCanvas({ region, severityByPlacementId = NO_SEVERITIES }: PlotCanvasProps) {
   const placements = usePlacementsStore((state) => state.placements);
   const selectedId = usePlacementsStore((state) => state.selectedId);
   const movePlacement = usePlacementsStore((state) => state.movePlacement);
@@ -157,6 +177,33 @@ export function PlotCanvas({ region }: PlotCanvasProps) {
                   verticalAlign="middle"
                   listening={false}
                 />
+                {(() => {
+                  const severity = severityByPlacementId.get(placement.id);
+                  if (severity === undefined) return null;
+                  const badgeOffset = MARKER_RADIUS_PX * 0.75;
+                  return (
+                    <Group x={badgeOffset} y={-badgeOffset} listening={false}>
+                      <Circle
+                        radius={BADGE_RADIUS_PX}
+                        fill={severityColor(severity)}
+                        stroke="#ffffff"
+                        strokeWidth={1}
+                      />
+                      <Text
+                        text="!"
+                        fontStyle="bold"
+                        fontSize={10}
+                        fill="#ffffff"
+                        width={BADGE_RADIUS_PX * 2}
+                        height={BADGE_RADIUS_PX * 2}
+                        offsetX={BADGE_RADIUS_PX}
+                        offsetY={BADGE_RADIUS_PX}
+                        align="center"
+                        verticalAlign="middle"
+                      />
+                    </Group>
+                  );
+                })()}
               </Group>
             );
           })}

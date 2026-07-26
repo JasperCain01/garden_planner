@@ -45,6 +45,9 @@ describe('computePlacementTally', () => {
     expect(rows[0].placedCount).toBe(2);
     expect(rows[0].fit.count).toBe(60);
     expect(rows[0].fit.plantId).toBe('onion');
+    // The first-placed instance's own id, not a synthesised group key — see
+    // `PlacementTallyRow.representativePlacementId`'s doc comment.
+    expect(rows[0].representativePlacementId).toBe('onion-10-10');
   });
 
   it('keeps distinct crops as separate rows, in first-placed order', () => {

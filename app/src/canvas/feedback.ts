@@ -27,6 +27,14 @@ export interface PlacementTallyRow {
   readonly placedCount: number;
   /** `fitPlant(plant, region)` — the plot's total capacity for this crop, independent of what else is placed. */
   readonly fit: SpacingCalculation;
+  /**
+   * The `id` of the first-placed instance of this plant (Workplan Stage 3.5:
+   * `warnings/placement-derivation.ts` uses this as the whole-bed
+   * `CropPlacement.id` it feeds to `overcrowdingWarning` — a real placement id
+   * rather than a synthesised one, so an overcrowding warning still names a
+   * marker the canvas can locate).
+   */
+  readonly representativePlacementId: string;
 }
 
 /**
@@ -38,22 +46,27 @@ export function computePlacementTally(
   placements: readonly PlacedPlant[],
   region: PlotRegion,
 ): PlacementTallyRow[] {
-  const counts: { plant: Plant; placedCount: number }[] = [];
+  const counts: { plant: Plant; placedCount: number; representativePlacementId: string }[] = [];
   const indexByPlantId = new Map<string, number>();
 
   for (const placement of placements) {
     const index = indexByPlantId.get(placement.plant.id);
     if (index === undefined) {
       indexByPlantId.set(placement.plant.id, counts.length);
-      counts.push({ plant: placement.plant, placedCount: 1 });
+      counts.push({
+        plant: placement.plant,
+        placedCount: 1,
+        representativePlacementId: placement.id,
+      });
     } else {
       counts[index].placedCount += 1;
     }
   }
 
-  return counts.map(({ plant, placedCount }) => ({
+  return counts.map(({ plant, placedCount, representativePlacementId }) => ({
     plant,
     placedCount,
     fit: fitPlant(plant, region),
+    representativePlacementId,
   }));
 }

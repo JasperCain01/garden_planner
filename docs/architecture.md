@@ -277,6 +277,42 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   journey (`app/e2e/plot-canvas.spec.ts`) using genuine pointer events rather
   than Playwright's native-HTML5 `dragAndDrop()` helper (which dnd-kit's
   `PointerSensor` doesn't listen for).
+  Stage 3.5 ([`adr/0018`](./adr/0018-placement-derivation-for-warnings.md))
+  adds the **warnings overlay & companion suggestions** (`app/src/warnings/`)
+  — `DESIGN.md`'s last core-loop step, "validate continuously", closing
+  describe → discover → arrange → validate. The stage's real work, before any
+  UI: `evaluatePlot`'s `CropPlacement` (a bed — plant, region, count) doesn't
+  match Stage 3.4's point placements (`{ id, plant, x, y }`), and the two
+  warning rules that use it want the coercion done differently.
+  `placement-derivation.ts` resolves this with **two derivations**, chosen by
+  rule family: `deriveOvercrowdingPlacements` groups placements by plant id
+  with `region` = the whole plot (reusing `canvas/feedback.ts`'s
+  `computePlacementTally` grouping directly, extended with a
+  `representativePlacementId` field) for `overcrowdingWarning` and
+  `companionSuggestions`; `derivePerInstancePlacements` gives every placed
+  instance its own small footprint region (sized from the crop's own
+  `resolveLatticeSpacing`) for `suitabilityWarningsFor` and
+  `antagonistWarnings`, which need real per-instance geometry to mean
+  anything. `evaluate-canvas.ts`'s `evaluateCanvasWarnings` calls the four
+  engine rule functions directly rather than `evaluatePlot` itself (each
+  against the one derivation it actually needs) and indexes every resulting
+  `Warning` by placement id — broadening an `overcrowded` warning to _every_
+  current instance of the overcrowded crop, not just the one representative
+  placement its `subjects` names, so every marker of an overcrowded bed shows
+  the badge. `PlotCanvas.tsx` gained a `severityByPlacementId` prop and draws
+  a small severity-coloured badge on any marker present in it — no new
+  warning logic in the Konva scene itself, following ADR 0017's "keep
+  `PlotCanvas.tsx` thin" precedent; `severity.ts` holds the pure
+  severity-ranking and severity→colour logic instead. `WarningsPanel.tsx` (a
+  plain-DOM, component-tested "4. Check for problems" list of every warning
+  and companion suggestion, evidence tags and all) and `WarningsSection.tsx`
+  (its store-wiring wrapper) are new; `PlotDefinitionPage.tsx` computes
+  `useCanvasWarnings` once and threads the result to both it and
+  `PlotCanvasSection`, so the five rules run once per render rather than once
+  per consumer. The E2E journey (`app/e2e/warnings-overlay.spec.ts`) places a
+  real shipped antagonist pair (potato/tomato, the dataset's one
+  `well-supported` link) close together, confirms the warning, then drags one
+  away and confirms it clears.
 
 ## Why a monorepo with these boundaries
 
@@ -320,28 +356,30 @@ above:
 
 ## Where to look next
 
-| Topic                                                         | File                                       |
-| ------------------------------------------------------------- | ------------------------------------------ |
-| Concept, data-source assessment, licensing rationale          | [`DESIGN.md`](../DESIGN.md)                |
-| Staged build plan, per-stage models, verification             | [`WORKPLAN.md`](../WORKPLAN.md)            |
-| Specific decisions and their alternatives                     | [`adr/`](./adr/)                           |
-| The plant-record schema (types + validation)                  | `packages/engine/src/schema/`              |
-| User-crop input schema and its upcast to a `Plant`            | `packages/engine/src/schema/user-plant.ts` |
-| Location/climate static data and `resolveClimate`             | `packages/engine/src/climate/`             |
-| Suitability scoring, its reasoning, and `rankPlants`          | `packages/engine/src/suitability/`         |
-| The plot-region polygon, packing geometry, `fitPlant`         | `packages/engine/src/spacing/`             |
-| Warnings, companion suggestions, `evaluatePlot`               | `packages/engine/src/warnings/`            |
-| App shell, routing, GitHub Pages basename                     | `app/src/routes/`                          |
-| Dataset-loading layer (loads + validates the shipped list)    | `app/src/dataset/shipped-plants.ts`        |
-| The user-plant overlay store and merged `usePlantList`        | `app/src/state/`                           |
-| The plot-definition page, shape picker, outline editor        | `app/src/plot/`                            |
-| The plot store (current region + conditions input)            | `app/src/state/plot-store.ts`              |
-| The ranked/searchable/filterable plant palette                | `app/src/palette/`                         |
-| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff) | `app/src/canvas/`                          |
-| The placements store (what's placed on the canvas)            | `app/src/state/placements-store.ts`        |
-| The drag-and-drop E2E journey                                 | `app/e2e/plot-canvas.spec.ts`              |
-| The ETL pipeline shell, GBIF resolver, adding a source        | `packages/etl/README.md`                   |
-| The hand-verified spacing table (curation, not ingest)        | `packages/etl/src/spacing/`                |
-| Evidence-tagged companion/antagonist data                     | `packages/etl/src/companions/`             |
-| The Stage 1.5 merge, validation gate, and artifact            | `packages/etl/src/merge/`                  |
-| The committed dataset artifact and its caveats                | `data/README.md`                           |
+| Topic                                                             | File                                       |
+| ----------------------------------------------------------------- | ------------------------------------------ |
+| Concept, data-source assessment, licensing rationale              | [`DESIGN.md`](../DESIGN.md)                |
+| Staged build plan, per-stage models, verification                 | [`WORKPLAN.md`](../WORKPLAN.md)            |
+| Specific decisions and their alternatives                         | [`adr/`](./adr/)                           |
+| The plant-record schema (types + validation)                      | `packages/engine/src/schema/`              |
+| User-crop input schema and its upcast to a `Plant`                | `packages/engine/src/schema/user-plant.ts` |
+| Location/climate static data and `resolveClimate`                 | `packages/engine/src/climate/`             |
+| Suitability scoring, its reasoning, and `rankPlants`              | `packages/engine/src/suitability/`         |
+| The plot-region polygon, packing geometry, `fitPlant`             | `packages/engine/src/spacing/`             |
+| Warnings, companion suggestions, `evaluatePlot`                   | `packages/engine/src/warnings/`            |
+| App shell, routing, GitHub Pages basename                         | `app/src/routes/`                          |
+| Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`        |
+| The user-plant overlay store and merged `usePlantList`            | `app/src/state/`                           |
+| The plot-definition page, shape picker, outline editor            | `app/src/plot/`                            |
+| The plot store (current region + conditions input)                | `app/src/state/plot-store.ts`              |
+| The ranked/searchable/filterable plant palette                    | `app/src/palette/`                         |
+| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)     | `app/src/canvas/`                          |
+| The placements store (what's placed on the canvas)                | `app/src/state/placements-store.ts`        |
+| The drag-and-drop E2E journey                                     | `app/e2e/plot-canvas.spec.ts`              |
+| The warnings overlay, companion suggestions, placement derivation | `app/src/warnings/`                        |
+| The warnings-overlay E2E journey                                  | `app/e2e/warnings-overlay.spec.ts`         |
+| The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                   |
+| The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                |
+| Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`             |
+| The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                  |
+| The committed dataset artifact and its caveats                    | `data/README.md`                           |

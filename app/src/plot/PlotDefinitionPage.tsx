@@ -22,6 +22,13 @@
  * shared `DndContext` ancestor, and this page is where they're both already
  * composed, so it owns that context and the drop handler
  * (`useCanvasDropHandler`) rather than either feature reaching for its own.
+ *
+ * **Warnings (Workplan Stage 3.5).** `useCanvasWarnings` is called once,
+ * here, and the result threaded down to both `PlotCanvasSection` (badges the
+ * markers) and the new `WarningsSection` (the "4. Check for problems" list) —
+ * the same "compute once at the composing page, thread down" reasoning this
+ * page already applies to `handleDragEnd`, so evaluating the five warning
+ * rules doesn't happen twice per render.
  */
 
 import { DndContext } from '@dnd-kit/core';
@@ -29,6 +36,8 @@ import { usePlotStore } from '../state/plot-store.ts';
 import { PlantPalette } from '../palette/PlantPalette.tsx';
 import { PlotCanvasSection } from '../canvas/PlotCanvasSection.tsx';
 import { useCanvasDropHandler } from '../canvas/useCanvasDropHandler.ts';
+import { useCanvasWarnings } from '../warnings/useCanvasWarnings.ts';
+import { WarningsSection } from '../warnings/WarningsSection.tsx';
 import { PlotConditionsForm } from './PlotConditionsForm.tsx';
 import { PlotOutlineEditor } from './PlotOutlineEditor.tsx';
 import { ShapePicker } from './ShapePicker.tsx';
@@ -39,6 +48,7 @@ export function PlotDefinitionPage() {
   const conditionsInput = usePlotStore((state) => state.conditionsInput);
   const setConditionsInput = usePlotStore((state) => state.setConditionsInput);
   const handleDragEnd = useCanvasDropHandler(region);
+  const canvasWarnings = useCanvasWarnings(region);
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
@@ -53,7 +63,8 @@ export function PlotDefinitionPage() {
         <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
       </section>
       <PlantPalette />
-      <PlotCanvasSection />
+      <PlotCanvasSection canvasWarnings={canvasWarnings} />
+      <WarningsSection canvasWarnings={canvasWarnings} />
     </DndContext>
   );
 }
