@@ -44,7 +44,7 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 3.6 User-defined crops                          | ✅             | `app/src/user-crops/`; icon-picker scoping decision (fallback icon, no picker — Stage 4.1 hasn't landed) recorded in `docs/architecture.md`; E2E in `app/e2e/add-custom-crop.spec.ts`                                  |
 | 3.7 Plot-image export                           | ⬜ not started | Ready to start — icons now wired in (4.2). See [`docs/stage-3.7-brief.md`](./docs/stage-3.7-brief.md)                                                                                                                  |
 | 4.1 SVG crop icon set                           | ✅             | ADR [0019](./docs/adr/0019-icon-set-archetypes-and-resolution.md); `app/src/icons/` (160 crop icons + 1 fallback, `resolveIcon`); `tools/icons/` (generator); [`docs/icon-style-guide.md`](./docs/icon-style-guide.md) |
-| 4.2 Wire icons into palette & canvas            | ✅             | `app/src/icons/useIconImage.ts` (image loader); `PlantPalette.tsx` renders icons; `PlotCanvas.tsx` layers icons over category circles; component + E2E tests cover resolved and fallback cases                          |
+| 4.2 Wire icons into palette & canvas            | ✅             | `app/src/icons/useIconImage.ts` (image loader); `PlantPalette.tsx` renders icons; `PlotCanvas.tsx` layers icons over category circles; component + E2E tests cover resolved and fallback cases                         |
 
 **In one line:** the data layer and the engine's whole brain — suitability
 scoring, spacing/density, and warnings & companion suggestions — are built and

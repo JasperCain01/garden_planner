@@ -74,7 +74,7 @@ And a new small module:
    Konva `Text` node if the design calls for positioning).
 
 3. **The export pipeline** (`export.ts`): a function `exportPlotImage(
-   stageRef, placements, conditions)` that:
+stageRef, placements, conditions)` that:
    - Awaits `document.fonts.ready` (ensures exported text renders correctly).
    - Awaits all visible icons to load (simple check: wait for all `<img>` elements
      currently in the Konva scene to have `.complete === true` or promise their
@@ -93,10 +93,10 @@ And a new small module:
      attribute, then `click()` it).
    - Open it in a new tab (set `window.open(dataUrl)`).
    - Copy it to clipboard (via the Clipboard API if the browser supports it).
-   Pick one, but decide and note it rather than leaving it half-implemented.
-   _Recommendation: download is simplest and least surprising for users._
+     Pick one, but decide and note it rather than leaving it half-implemented.
+     _Recommendation: download is simplest and least surprising for users._
 
-5. **Tests**: 
+5. **Tests**:
    - Component test for the button (just verify it renders and its click triggers
      a callback; the callback's details are testable separately).
    - Unit test for the legend composition: pass a set of placements and conditions,
