@@ -7,9 +7,19 @@ see "The one thing to get right" below) and the Stage 5.2 entry first; this
 brief concentrates the requirements so you don't have to reconstruct them
 from the diff.
 
-Stages 0.1–1.7, all of Phase 2, all of Phase 3 (3.1–3.7), all of Phase 4
-(4.1–4.2), and Stage 5.1 (PWA/offline support) are merged into `main` —
-**branch from `main`**.
+Stages 0.1–1.7 (**except 1.2, which is still ⚠️ partial — OpenFarm only**),
+all of Phase 2, all of Phase 3 (3.1–3.7), all of Phase 4 (4.1–4.2), and Stage
+5.1 (PWA/offline support) are merged into `main` — **branch from `main`**.
+
+**Read [`docs/review-pre-deployment.md`](./review-pre-deployment.md) first.**
+A full review of Stages 0.1–5.1 landed just before this stage. Everything it
+found has been fixed, but two of its conclusions bear directly on 5.2:
+
+- `npm run verify` now exists and is the check to run (see "Constraints"
+  below).
+- §3.9 records that the shipped dataset only feeds one of the suitability
+  engine's four dimensions, and the README now says so publicly. If you add a
+  live-site link, don't oversell what a visitor will see.
 
 ## Why this stage
 
@@ -134,12 +144,18 @@ app`) with a service worker and manifest (Stage 5.1) — nothing server-side
   already built") — don't rewrite it; if it needs a tweak (e.g. the actual
   repo name differs from `garden_planner`), that's a one-line change, not a
   redesign.
-- **Run before finishing:** `npm run lint`, `npm run typecheck`, `npm test`,
-  `npm run build`, `npm run format:check` from the repo root, plus
-  `GITHUB_PAGES=true npm run build -w app` specifically (confirm the Pages
-  build itself still succeeds and emits the right base path) — check
-  `app/dist/index.html` and `app/dist/manifest.webmanifest` by hand for the
-  `/garden_planner/` prefix, the same check Stage 5.1 already did once.
+- **Run before finishing: `npm run verify`** from the repo root. That is new
+  since this brief was first written — it runs lint → typecheck →
+  format:check → test → build → **e2e** in one command, and §1.4 now names it
+  explicitly. Don't substitute `npm test`: it covers only the unit and
+  component suites, and running it alone is how a racy E2E spec previously
+  reached `main` unnoticed. If Playwright can't find a browser, set
+  `PW_EXECUTABLE_PATH` (see the README).
+- **Also run `GITHUB_PAGES=true npm run build -w app`** specifically, and
+  check `app/dist/index.html` and `app/dist/manifest.webmanifest` by hand for
+  the `/garden_planner/` prefix. Confirmed working as recently as the
+  pre-deployment review: asset URLs, `start_url` and `scope` all come out
+  correct.
 
 ## Deliverables
 

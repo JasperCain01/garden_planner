@@ -64,7 +64,7 @@ core loop with user-defined crops (Stage 3.6: an add-crop form validated via
 `safeValidateUserPlantInput`, an id-collision check, edit/remove gated on
 `isUserPlant`, and a generic fallback icon in place of a real picker since
 Stage 4.1's icon set hadn't landed yet). Phase 4 (Content & assets) is
-complete: Stage 4.1 ships the bundled SVG icon set — 160 crop icons plus a
+complete: Stage 4.1 ships the bundled SVG icon set — 162 crop icons plus a
 generic fallback, generated from a small reusable shape library rather than
 hand-drawn (`tools/icons/`) — and Stage 4.2 wires the tested `resolveIcon(plant)`
 lookup (`app/src/icons/`) into both the palette (`PlantPalette.tsx`) and the
@@ -83,7 +83,14 @@ the Stage 1.5 merge as a fourth input where a curated crop colliding with an
 OpenFarm one replaces it outright (curated wins, ADR 0021). Two crops ship
 today — `broad-bean` (closing a gap ADR 0009 had left open) and
 `jerusalem-artichoke` — bringing the shipped dataset to 162 plants. **Phases
-1–4 are now all complete.** Phase 5 (Offline & deployment) is under way:
+2, 3 and 4 are complete; Phase 1 is complete apart from Stage 1.2**, which
+remains ⚠️ partial — OpenFarm is still the only source adapter, and PFAF and
+Permapeople have never landed. That is not a bookkeeping detail: they are the
+sources carrying hardiness and soil, so 160 of the 162 shipped records have
+light data and nothing else, and three of the suitability engine's four
+dimensions report `unknown-plant` for almost the whole catalogue (see
+[`docs/review-pre-deployment.md`](./docs/review-pre-deployment.md) §3.9).
+Phase 5 (Offline & deployment) is under way:
 Stage 5.1 adds **PWA / offline support** (ADR 0022) — a service worker and
 web app manifest via `vite-plugin-pwa`'s `generateSW` strategy
 (`app/vite.config.ts`), confirming (by inspecting a production build) that
@@ -669,7 +676,8 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   partly a **design task** a human may prefer to own or commission. **Haiku /
   local** can handle batch normalization/optimization once the style is set.
 - **Verification:** Every crop has an icon; icons pass an SVG optimizer;
-  total icon payload stays within an agreed size budget (checked in CI).
+  total icon payload stays within an agreed size budget (enforced by
+  `app/src/icons/budget.test.ts`, since §1.4 defers CI).
 
 #### Stage 4.2 — Wire icons into palette & canvas
 
@@ -704,7 +712,8 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   all CI/CD automation, including this one, until the project is complete;
   this entry originally called for a GitHub Actions workflow before that
   ground rule was written down, and §1.4 wins); correct base-path config
-  (already wired in Stage 5.1 via the `GITHUB_PAGES` env flag); a documented,
+  (already wired in Stage 0.1 via the `GITHUB_PAGES` env flag, and extended
+  in Stage 5.1 so the PWA manifest's `start_url`/`scope` follow it); a documented,
   repeatable local/maintainer command (e.g. an npm script wrapping `gh-pages`
   or an equivalent manual publish step); README badge/link to the live site.
 - **Model:** **Sonnet**, or **Haiku** if following a standard Vite-to-Pages
