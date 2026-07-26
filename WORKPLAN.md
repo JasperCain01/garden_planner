@@ -21,26 +21,27 @@ whole plan, and a stale entry costs the next session more than it saves this
 one. A stage counts as ✅ only when it meets the definition of done (§0.3):
 green, commented, ADR written, docs updated, and the next brief handed off.
 
-| Stage                                    | Status         | Left behind                                                                                                                                                        |
-| ---------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0.1 Repo scaffolding & tooling           | ✅             | ADRs [0001](./docs/adr/0001-tech-stack.md)–[0003](./docs/adr/0003-static-client-side-architecture.md)                                                              |
-| 0.2 Data schema ⭐                       | ✅             | ADR [0004](./docs/adr/0004-plant-schema.md); `packages/engine/src/schema/`                                                                                         |
-| 0.3 Schema amendment: user crops ⭐      | ✅             | ADR [0011](./docs/adr/0011-user-defined-crop-schema.md); `schema/user-plant.ts`                                                                                    |
-| 1.1 ETL scaffolding & name resolution    | ✅             | ADR [0005](./docs/adr/0005-gbif-name-resolver.md); GBIF resolver (offline-cached)                                                                                  |
-| 1.2 Source adapters                      | ⚠️ partial     | ADR [0006](./docs/adr/0006-openfarm-source-adapter.md); **OpenFarm only** — PFAF and Permapeople still to follow the same pattern                                  |
-| 1.3 Hand-verified spacing table ⭐       | ✅             | ADR [0007](./docs/adr/0007-hand-verified-spacing.md); `packages/etl/src/spacing/`                                                                                  |
-| 1.4 Companion-planting data              | ✅             | ADR [0008](./docs/adr/0008-companion-planting-data.md); 85 companion + 6 antagonist links                                                                          |
-| 1.5 Dataset build, merge & validation ⭐ | ✅             | ADR [0009](./docs/adr/0009-dataset-merge-and-licensing.md); `data/plants.json` (160 crops)                                                                         |
-| 1.6 Location & climate static data       | ✅             | ADR [0010](./docs/adr/0010-location-climate-static-data.md); `packages/engine/src/climate/`                                                                        |
-| 1.7 Curated full-plant input             | ⬜ not started | Independent of Phase 2; the one thing that lifts scoring confidence above 0.35                                                                                     |
-| 2.1 Suitability scoring engine ⭐        | ✅             | ADR [0012](./docs/adr/0012-suitability-scoring.md); `src/suitability/`, `rankPlants`                                                                               |
-| 2.2 Spacing / density calculator ⭐      | ✅             | ADR [0013](./docs/adr/0013-spacing-density-calculator.md); `src/spacing/`, `fitPlant`, `PlotRegionSchema`                                                          |
-| 2.3 Warnings & companion suggestions     | ✅             | ADR [0014](./docs/adr/0014-warnings-and-companion-suggestions.md); `src/warnings/`, `evaluatePlot`                                                                 |
-| 3.1 App shell, state & routing           | ✅             | ADR [0015](./docs/adr/0015-app-state-management.md); `app/src/routes/`, `app/src/state/`, `app/src/dataset/shipped-plants.ts`                                      |
-| 3.2 Plot definition UI                   | ✅             | ADR [0016](./docs/adr/0016-outline-editor-svg-not-konva.md); `app/src/plot/`, `app/src/state/plot-store.ts`                                                        |
-| 3.3 Plant palette (filtered & ranked)    | ✅             | `app/src/palette/` (`PlantPalette.tsx`, `filters.ts`); layout decision recorded in `docs/architecture.md` (no ADR — follows directly from `DESIGN.md`'s core loop) |
-| 3.4 Drag-and-drop plot canvas ⭐         | ✅             | ADR [0017](./docs/adr/0017-plot-canvas-konva-and-dnd-kit.md); `app/src/canvas/`, `app/src/state/placements-store.ts`; E2E in `app/e2e/plot-canvas.spec.ts`         |
-| 3.5–3.x Frontend MVP (remainder)         | ⬜ not started | 3.5 is next. Brief: [`docs/stage-3.5-brief.md`](./docs/stage-3.5-brief.md)                                                                                         |
+| Stage                                           | Status         | Left behind                                                                                                                                                        |
+| ----------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0.1 Repo scaffolding & tooling                  | ✅             | ADRs [0001](./docs/adr/0001-tech-stack.md)–[0003](./docs/adr/0003-static-client-side-architecture.md)                                                              |
+| 0.2 Data schema ⭐                              | ✅             | ADR [0004](./docs/adr/0004-plant-schema.md); `packages/engine/src/schema/`                                                                                         |
+| 0.3 Schema amendment: user crops ⭐             | ✅             | ADR [0011](./docs/adr/0011-user-defined-crop-schema.md); `schema/user-plant.ts`                                                                                    |
+| 1.1 ETL scaffolding & name resolution           | ✅             | ADR [0005](./docs/adr/0005-gbif-name-resolver.md); GBIF resolver (offline-cached)                                                                                  |
+| 1.2 Source adapters                             | ⚠️ partial     | ADR [0006](./docs/adr/0006-openfarm-source-adapter.md); **OpenFarm only** — PFAF and Permapeople still to follow the same pattern                                  |
+| 1.3 Hand-verified spacing table ⭐              | ✅             | ADR [0007](./docs/adr/0007-hand-verified-spacing.md); `packages/etl/src/spacing/`                                                                                  |
+| 1.4 Companion-planting data                     | ✅             | ADR [0008](./docs/adr/0008-companion-planting-data.md); 85 companion + 6 antagonist links                                                                          |
+| 1.5 Dataset build, merge & validation ⭐        | ✅             | ADR [0009](./docs/adr/0009-dataset-merge-and-licensing.md); `data/plants.json` (160 crops)                                                                         |
+| 1.6 Location & climate static data              | ✅             | ADR [0010](./docs/adr/0010-location-climate-static-data.md); `packages/engine/src/climate/`                                                                        |
+| 1.7 Curated full-plant input                    | ⬜ not started | Independent of Phase 2; the one thing that lifts scoring confidence above 0.35                                                                                     |
+| 2.1 Suitability scoring engine ⭐               | ✅             | ADR [0012](./docs/adr/0012-suitability-scoring.md); `src/suitability/`, `rankPlants`                                                                               |
+| 2.2 Spacing / density calculator ⭐             | ✅             | ADR [0013](./docs/adr/0013-spacing-density-calculator.md); `src/spacing/`, `fitPlant`, `PlotRegionSchema`                                                          |
+| 2.3 Warnings & companion suggestions            | ✅             | ADR [0014](./docs/adr/0014-warnings-and-companion-suggestions.md); `src/warnings/`, `evaluatePlot`                                                                 |
+| 3.1 App shell, state & routing                  | ✅             | ADR [0015](./docs/adr/0015-app-state-management.md); `app/src/routes/`, `app/src/state/`, `app/src/dataset/shipped-plants.ts`                                      |
+| 3.2 Plot definition UI                          | ✅             | ADR [0016](./docs/adr/0016-outline-editor-svg-not-konva.md); `app/src/plot/`, `app/src/state/plot-store.ts`                                                        |
+| 3.3 Plant palette (filtered & ranked)           | ✅             | `app/src/palette/` (`PlantPalette.tsx`, `filters.ts`); layout decision recorded in `docs/architecture.md` (no ADR — follows directly from `DESIGN.md`'s core loop) |
+| 3.4 Drag-and-drop plot canvas ⭐                | ✅             | ADR [0017](./docs/adr/0017-plot-canvas-konva-and-dnd-kit.md); `app/src/canvas/`, `app/src/state/placements-store.ts`; E2E in `app/e2e/plot-canvas.spec.ts`         |
+| 3.5 Warnings overlay & companion suggestions UI | ✅             | ADR [0018](./docs/adr/0018-placement-derivation-for-warnings.md); `app/src/warnings/`; E2E in `app/e2e/warnings-overlay.spec.ts`                                   |
+| 3.6–3.x Frontend MVP (remainder)                | ⬜ not started | 3.6 is next. Brief: [`docs/stage-3.6-brief.md`](./docs/stage-3.6-brief.md)                                                                                         |
 
 **In one line:** the data layer and the engine's whole brain — suitability
 scoring, spacing/density, and warnings & companion suggestions — are built and
@@ -50,8 +51,11 @@ management, routing, dataset-loading layer (Stage 3.1), plot-definition UI
 and the plot store), a ranked, searchable, filterable plant palette (Stage
 3.3), and — the app's signature interaction — a drag-and-drop plot canvas
 (Stage 3.4: react-konva scene, dnd-kit palette handoff, live `fitPlant`
-density feedback, and select/move/remove for placed plants) all composed on
-the one plot-definition page.
+density feedback, and select/move/remove for placed plants), all composed on
+the one plot-definition page, which now closes `DESIGN.md`'s core loop with a
+warnings overlay & companion-suggestion UI (Stage 3.5: severity-badged
+placement markers, a "4. Check for problems" panel, and the two-derivation
+placement modelling ADR 0018 records).
 
 ---
 
