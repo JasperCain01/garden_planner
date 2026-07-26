@@ -27,7 +27,7 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 0.2 Data schema ⭐                              | ✅         | ADR [0004](./docs/adr/0004-plant-schema.md); `packages/engine/src/schema/`                                                                                                                                                                                                                 |
 | 0.3 Schema amendment: user crops ⭐             | ✅         | ADR [0011](./docs/adr/0011-user-defined-crop-schema.md); `schema/user-plant.ts`                                                                                                                                                                                                            |
 | 1.1 ETL scaffolding & name resolution           | ✅         | ADR [0005](./docs/adr/0005-gbif-name-resolver.md); GBIF resolver (offline-cached)                                                                                                                                                                                                          |
-| 1.2 Source adapters                             | ⚠️ partial | ADR [0006](./docs/adr/0006-openfarm-source-adapter.md); **OpenFarm only** — PFAF and Permapeople still to follow the same pattern                                                                                                                                                          |
+| 1.2 Source adapters                             | ⚠️ partial | ADR [0006](./docs/adr/0006-openfarm-source-adapter.md); **OpenFarm only** — PFAF and Permapeople still to follow the same pattern; **scheduled as Stage 6.0**                                                                                                                              |
 | 1.3 Hand-verified spacing table ⭐              | ✅         | ADR [0007](./docs/adr/0007-hand-verified-spacing.md); `packages/etl/src/spacing/`                                                                                                                                                                                                          |
 | 1.4 Companion-planting data                     | ✅         | ADR [0008](./docs/adr/0008-companion-planting-data.md); 85 companion + 6 antagonist links (8 antagonist links ship today — Stage 1.7 added two)                                                                                                                                            |
 | 1.5 Dataset build, merge & validation ⭐        | ✅         | ADR [0009](./docs/adr/0009-dataset-merge-and-licensing.md); `data/plants.json` (160 crops then; **162 today** — Stage 1.7)                                                                                                                                                                 |
@@ -90,6 +90,9 @@ sources carrying hardiness and soil, so 160 of the 162 shipped records have
 light data and nothing else, and three of the suitability engine's four
 dimensions report `unknown-plant` for almost the whole catalogue (see
 [`docs/review-pre-deployment.md`](./docs/review-pre-deployment.md) §3.9).
+Finishing those adapters is now scheduled as **Stage 6.0**, ahead of the
+documentation pass, so v1 isn't documented and signed off around a data gap.
+CI, deferred since Stage 0.1 by §1.4, is scheduled last as **Stage 6.4**.
 Phase 5 (Offline & deployment) is under way:
 Stage 5.1 adds **PWA / offline support** (ADR 0022) — a service worker and
 web app manifest via `vite-plugin-pwa`'s `generateSW` strategy
@@ -314,9 +317,11 @@ how a racy `plot-export.spec.ts` reached `main` unnoticed (see
 list in the paragraph above says "E2E" for a reason; `npm run verify` is the
 single command that honours it.
 
-When Actions do land at the end of the build, they should automate exactly
-`npm run verify` plus the offline, a11y and Lighthouse runs the later stages
-describe — nothing that isn't already a check a contributor can run by hand.
+**Stage 6.4 is the stage that finally lands them**, last in the plan. When it
+does, it should automate exactly `npm run verify` plus the offline, a11y and
+Lighthouse runs the later stages describe — nothing that isn't already a check
+a contributor can run by hand. Until then every stage, including 6.1–6.3, runs
+these by hand and must not depend on CI in its verification.
 
 ---
 
@@ -724,6 +729,68 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 
 ### Phase 6 — Community readiness & polish
 
+#### Stage 6.0 — Finish the source adapters (PFAF, Permapeople) ⭐ data-critical
+
+- **Goal:** Complete **Stage 1.2**, the one stage still ⚠️ partial, so the
+  suitability engine scores on the data it was built for instead of on light
+  alone.
+- **Depends on:** 1.1 (the adapter pattern and the GBIF resolver), 1.5 (the
+  merge and the hard-fail gate). Both are built and tested — this stage adds
+  inputs to them, it does not redesign them.
+- **Why it sits in Phase 6, and why it comes first in it:** it is data work,
+  not polish, and it properly belongs to Phase 1. It is scheduled here because
+  it is the last thing still outstanding from the data phase and because
+  **everything after it describes or validates a finished system**: Stage 6.1
+  documents the project, 6.2 polishes the UI, 6.3 signs off v1. Doing this
+  after those means documenting and signing off a system whose headline feature
+  is running on a fraction of its intended data.
+- **What's actually wrong today:** OpenFarm is the only source adapter that
+  ever landed. PFAF carries hardiness and soil; Permapeople carries light and
+  growth characteristics. Without them, **160 of the 162 shipped records carry
+  light data and nothing else** (the two exceptions are Stage 1.7's curated
+  crops), so three of the engine's four scoring dimensions report
+  `unknown-plant` for almost the whole catalogue and the ranked palette is
+  close to a two-tier sort. The engine is honest about this — confidence
+  figures and "Scored on light alone" reasoning — but it is a data gap, and
+  this is the stage that closes it. See
+  [`docs/review-pre-deployment.md`](./docs/review-pre-deployment.md) §3.9.
+- **Deliverables:** A PFAF adapter and a Permapeople adapter, each following
+  the pattern ADR [0006](./docs/adr/0006-openfarm-source-adapter.md)
+  established (injectable transport, cached source data committed in-repo for
+  offline builds, records emitted schema-shaped with provenance tags); their
+  wiring into the Stage 1.5 merge as further inputs; a rebuilt
+  `data/plants.json`; and an ADR per adapter recording what each source could
+  and could not supply. Update `NOTICE`, `data/README.md`, the ETL README and
+  the Progress table (**flip 1.2 to ✅**).
+- **Settle the join key first.** ADR 0005 has a status update spelling this
+  out: **0 of 162 records have a `gbifId`** because GBIF is unreachable from
+  the build sandbox, so the merge currently falls through to a hand-maintained
+  slug/alias table (`merge/aliases.ts`). That is adequate for one source and
+  weak for three — the failure mode is silent duplication ("onion" three ways),
+  not a loud error. If GBIF is reachable in your environment, run the resolver
+  and commit the populated cache **before** wiring the second adapter. If it is
+  not, say so in the ADR, expect to grow the alias table considerably, and add
+  a merge-report assertion that flags suspected duplicate identities rather
+  than trusting silence.
+- **Licensing becomes real.** The dataset is already held at **CC BY-NC-SA**
+  (ADR 0009, `NOTICE`) in anticipation of PFAF, and `NOTICE` is explicit that
+  today's shipped content does not by itself compel it. Ingesting PFAF is what
+  makes those terms actually binding — update `NOTICE` from "anticipated" to
+  "in force" and check the attribution requirements are met per-record.
+- **Model:** **Sonnet** for the first of the two adapters (it re-establishes a
+  pattern nobody has exercised since Stage 1.2); **Haiku or local
+  qwen3-coder** for the second, which is mechanical field mapping against a
+  settled pattern and a validating schema — exactly the split Stage 1.2 already
+  specified.
+- **Verification:** Each adapter's output validates against the schema and the
+  Stage 1.5 gate passes on the real merged data; spot-check fixtures confirm
+  known crops map correctly; referential integrity holds across the enlarged
+  dataset. **Expect `packages/engine/src/suitability/dataset.test.ts` to fail
+  and need updating — that is the point.** It pins today's coverage
+  deliberately (162 records, 2 with hardiness, the exact set of distinct
+  ranking scores), so it is the tripwire that tells you the new data actually
+  reached the engine. Re-pin it to the new reality rather than loosening it.
+
 #### Stage 6.1 — Documentation pass ⭐ (directly serves "easy to clone")
 
 - **Goal:** Make the project genuinely easy for others to clone, run, understand,
@@ -748,8 +815,11 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Deliverables:** Keyboard-operable drag-drop alternative, colour-contrast and
   ARIA passes, responsive layout for small screens.
 - **Model:** **Sonnet.**
-- **Verification:** Automated a11y checks (e.g. axe) in CI; manual keyboard-only
-  walkthrough of the core journey.
+- **Verification:** Automated a11y checks (e.g. axe) as a **locally-runnable
+  command**, with its result recorded — the same shape Stage 5.1's Lighthouse
+  audit takes, because CI does not exist until Stage 6.4. Plus a manual
+  keyboard-only walkthrough of the core journey. Stage 6.4 is what later wires
+  this command into a workflow.
 
 #### Stage 6.3 — Final validation & coverage pass
 
@@ -758,8 +828,43 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Deliverables:** Fill test-coverage gaps on engine and data; a full E2E
   regression run; a documented manual QA checklist for release.
 - **Model:** **Sonnet**; **Opus** if a deep bug hunt across the engine is needed.
-- **Verification:** Full CI green including offline + a11y + PWA audits; manual
-  QA checklist completed.
+- **Verification:** `npm run verify` green, plus the offline, a11y and
+  Lighthouse runs, **all run by hand** — CI does not exist until Stage 6.4, so
+  this stage cannot depend on it. The manual QA checklist completed.
+
+#### Stage 6.4 — Continuous integration (the deferred automation, finally)
+
+- **Goal:** Automate the checks §1.4 has been deferring since Stage 0.1, now
+  that "until the project is complete" has arrived.
+- **Depends on:** everything — this is deliberately **last**. §1.4's ground
+  rule is that no stage adds `.github/workflows/`, and that rule holds right up
+  until this stage; Stage 0.1 originally shipped a CI workflow and it was
+  removed again precisely to keep it.
+- **Deliverables:** A `.github/workflows/` directory containing a checks
+  workflow that runs **`npm run verify`** (lint → typecheck → format:check →
+  test → build → e2e) on push and pull request, plus the offline, a11y and
+  Lighthouse runs the later stages describe. §1.4 is the specification and it
+  is a tight one: **automate exactly that list and nothing else** — "nothing
+  that isn't already a check a contributor can run by hand." A check that only
+  exists in CI is a check nobody can reproduce locally, which is the failure
+  mode this deferral was protecting against.
+- **Optionally, deploy-on-merge.** Stage 5.2 ships a _manual_ Pages deploy
+  only because §1.4 forbade the workflow. That constraint lifts here, so
+  automating the deploy is now available — but it is a separate decision from
+  automating the checks, and the manual command must keep working either way.
+- **Gotchas to expect:** the runner needs Node 20+ and a browser for
+  Playwright (`npx playwright install --with-deps chromium`) — note that this
+  repo's own config supports a `PW_EXECUTABLE_PATH` override for environments
+  that ship their own Chromium, which a standard runner will not need. Cache
+  `~/.npm` and the Playwright browsers or the E2E job dominates the run time.
+  Expect to pin the workflow to the same Node version `engines` declares.
+- **Model:** **Sonnet**, or **Haiku** following a standard Node-workspace
+  Actions recipe. The judgement call is scope discipline — resisting the pull
+  to add checks CI could run but a contributor can't.
+- **Verification:** The workflow goes green on a real pull request, and fails
+  on a deliberately-broken one (break a test, confirm the run goes red, revert)
+  — the same "prove the gate actually gates" standard Stage 1.5 set for the
+  dataset gate.
 
 ---
 
@@ -776,21 +881,22 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 (3.4 · 4.2) ─────────────► 3.7   export plot as image
 Phase 1 crop list ─► 4.1 ─► 4.2
 MVP ─► 5.1 ─► 5.2
-all ─► 6.1, 6.2, 6.3
+(1.1 · 1.5) ─────────────► 6.0   finishes Stage 1.2's outstanding adapters
+6.0 ─► 6.1, 6.2, 6.3 ─► 6.4      6.4 (CI) is deliberately last
 ```
 
 Natural critical path: **0.1 → 0.2 → 0.3 → (data phase) → engine → frontend →
-offline → deploy → docs.** Phases 1 (data) and 3 (frontend scaffolding) can proceed in
+offline → deploy → finish the data → docs → CI.** Phases 1 (data) and 3 (frontend scaffolding) can proceed in
 parallel by different sessions once 0.2 exists, since the frontend can start
 against sample data before the full dataset is built.
 
 ## 4. Model-tier summary
 
-| Tier                                       | Stages                                                                                   |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| **Opus** (keystone / algorithmic)          | 0.2, 0.3, 1.5, 2.1, 2.2 (+ optionally 3.4, 6.3)                                          |
-| **Sonnet** (bulk of the build)             | 0.1, 1.1, 1.2 (first adapter), 1.3, 1.4, 1.6, 1.7, 2.3, 3.1–3.7, 4.1, 5.1, 5.2, 6.1, 6.2 |
-| **Haiku / local qwen3-coder** (mechanical) | 1.2 (later adapters), 1.7 (later crop rows), 4.2, parts of 4.1 & 5.2                     |
+| Tier                                       | Stages                                                                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| **Opus** (keystone / algorithmic)          | 0.2, 0.3, 1.5, 2.1, 2.2 (+ optionally 3.4, 6.3)                                                                    |
+| **Sonnet** (bulk of the build)             | 0.1, 1.1, 1.2 (first adapter), 1.3, 1.4, 1.6, 1.7, 2.3, 3.1–3.7, 4.1, 5.1, 5.2, 6.0 (first adapter), 6.1, 6.2, 6.4 |
+| **Haiku / local qwen3-coder** (mechanical) | 1.2 (later adapters), 1.7 (later crop rows), 4.2, parts of 4.1 & 5.2, 6.0 (second adapter), 6.4 (standard recipe)  |
 
 Rule of thumb: **Opus where a wrong decision is expensive to unwind; Sonnet for
 well-scoped feature work; Haiku/local for mechanical work against a settled
