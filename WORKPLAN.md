@@ -45,6 +45,7 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 3.7 Plot-image export                           | ✅         | ADR [0020](./docs/adr/0020-plot-export-canvas-compositing.md); `app/src/canvas/export.ts` (legend builder + export pipeline), "Export image" button in `PlotCanvasSection.tsx`; E2E in `app/e2e/plot-export.spec.ts`   |
 | 4.1 SVG crop icon set                           | ✅         | ADR [0019](./docs/adr/0019-icon-set-archetypes-and-resolution.md); `app/src/icons/` (160 crop icons + 1 fallback, `resolveIcon`); `tools/icons/` (generator); [`docs/icon-style-guide.md`](./docs/icon-style-guide.md) |
 | 4.2 Wire icons into palette & canvas            | ✅         | `app/src/icons/useIconImage.ts` (image loader); `PlantPalette.tsx` renders icons; `PlotCanvas.tsx` layers icons over category circles; component + E2E tests cover resolved and fallback cases                         |
+| 5.1 PWA / offline support                       | ✅         | ADR [0022](./docs/adr/0022-pwa-offline-support.md); `vite-plugin-pwa` in `app/vite.config.ts`; manifest icons in `app/public/`; E2E in `app/e2e/offline.spec.ts`; Lighthouse PWA audit command + score in `README.md`  |
 
 **In one line:** the data layer and the engine's whole brain — suitability
 scoring, spacing/density, and warnings & companion suggestions — are built and
@@ -82,7 +83,19 @@ the Stage 1.5 merge as a fourth input where a curated crop colliding with an
 OpenFarm one replaces it outright (curated wins, ADR 0021). Two crops ship
 today — `broad-bean` (closing a gap ADR 0009 had left open) and
 `jerusalem-artichoke` — bringing the shipped dataset to 162 plants. **Phases
-1–4 are now all complete.**
+1–4 are now all complete.** Phase 5 (Offline & deployment) is under way:
+Stage 5.1 adds **PWA / offline support** (ADR 0022) — a service worker and
+web app manifest via `vite-plugin-pwa`'s `generateSW` strategy
+(`app/vite.config.ts`), confirming (by inspecting a production build) that
+the default precache already covers the bundled dataset and icon set with no
+bespoke runtime-caching logic needed, plus two new manifest icons derived
+from the existing fallback icon's style (`app/public/`). The explicit offline
+E2E test §1.3 has required since the verification strategy was written now
+exists (`app/e2e/offline.spec.ts`): load the app online, confirm the service
+worker takes control, go offline, and re-run the core drag-a-crop-onto-the-
+canvas journey with the network off. A locally-runnable Lighthouse PWA audit
+command and today's score are recorded in `README.md`. Stage 5.2 (GitHub
+Pages deployment) is next.
 
 ---
 
@@ -264,8 +277,9 @@ by different stages.
   non-blank PNG with icons and legend (Stage 3.7).
 - **Offline test.** An E2E run that loads the app, goes offline, and confirms it
   still functions — this is a _requirement_, so it gets an explicit test.
-- **PWA / performance audit.** A Lighthouse check in CI for installability and
-  offline readiness.
+- **PWA / performance audit.** A Lighthouse check for installability and
+  offline readiness — a documented, locally-runnable command (§1.4: no CI
+  workflow exists yet, so this stays a manual check until Actions land).
 
 ### 1.4 Continuous validation (the safety net)
 
@@ -667,20 +681,27 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Deliverables:** Service worker caching app shell + dataset + icons; web app
   manifest; offline-first data loading.
 - **Model:** **Sonnet.**
-- **Verification:** The **offline E2E test** (§1.3) passes; Lighthouse PWA audit
-  passes in CI.
+- **Verification:** The **offline E2E test** (§1.3) passes; a locally-run
+  Lighthouse PWA audit's score is recorded (no CI workflow exists — §1.4 — so
+  this stays a documented manual command, not a gate).
 
 #### Stage 5.2 — GitHub Pages deployment
 
 - **Goal:** A hosted, always-current working version.
 - **Depends on:** 3.x (a deployable app), ideally 5.1.
-- **Deliverables:** A GitHub Actions workflow building the static site and
-  deploying to Pages; correct base-path config; deploy-on-merge; README badge /
-  link to the live site.
+- **Deliverables:** A **manual** deploy path building the static site and
+  publishing it to Pages (no GitHub Actions workflow — §1.4 explicitly defers
+  all CI/CD automation, including this one, until the project is complete;
+  this entry originally called for a GitHub Actions workflow before that
+  ground rule was written down, and §1.4 wins); correct base-path config
+  (already wired in Stage 5.1 via the `GITHUB_PAGES` env flag); a documented,
+  repeatable local/maintainer command (e.g. an npm script wrapping `gh-pages`
+  or an equivalent manual publish step); README badge/link to the live site.
 - **Model:** **Sonnet**, or **Haiku** if following a standard Vite-to-Pages
   recipe closely.
 - **Verification:** The deployed URL loads and works; a post-deploy smoke check
-  (even a simple Playwright hit against the live URL) confirms it.
+  (even a simple Playwright hit against the live URL) confirms it — run by
+  hand, not as a CI gate.
 
 ### Phase 6 — Community readiness & polish
 
