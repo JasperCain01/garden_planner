@@ -38,3 +38,4 @@ old one and mark the old one `Superseded`.
 - [0016 — Outline editor: plain SVG + pointer events, not react-konva yet](./0016-outline-editor-svg-not-konva.md)
 - [0017 — Plot canvas: react-konva's scene, dnd-kit's handoff, and how (little) it's component-tested](./0017-plot-canvas-konva-and-dnd-kit.md)
 - [0018 — Placement derivation for warnings: two shapes for two rule families, not one](./0018-placement-derivation-for-warnings.md)
+- [0019 — Icon set: programmatic archetypes instead of 160 bespoke illustrations, and the icon-resolution rule](./0019-icon-set-archetypes-and-resolution.md)

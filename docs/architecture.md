@@ -368,6 +368,37 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   needs to change for that later picker to slot in, since `icon` was already
   an optional `SlugSchema` key on `UserPlantInputSchema` from Stage 0.3.
 
+  Stage 4.1 fills the gap the paragraph above left open: the **bundled SVG
+  icon set** (`app/src/icons/`, the first stage in Phase 4 — Content &
+  assets). 160 crop icons (one per `data/plants.json` id) plus one generic
+  fallback, all generated — not hand-drawn — from a small reusable shape
+  library (`tools/icons/archetypes.ts`, ~19 archetypes such as `leaf`,
+  `rootLong`, `bulbAllium`, `pod`, `roundFruit`) composed with a category fill
+  colour (vegetable/fruit/herb) and one shared ink stroke, via
+  `tools/icons/classification.ts`'s explicit crop-id → archetype map and
+  `tools/icons/generate.ts` (a developer-only script outside the npm
+  workspaces, run with `node --experimental-strip-types tools/icons/generate.ts`,
+  mirroring `packages/etl`'s own build-time-tool convention). The generator
+  hard-fails if the classification map and `data/plants.json` disagree about
+  which ids exist — the same "no silent gap" posture as the ETL's dataset
+  gate, applied to keeping 160 files in lockstep with 160 dataset records.
+  Every icon is SVGO-optimized; the whole set is ~121 KB (161 files, ~751
+  bytes average), well inside the budget `app/src/icons/budget.test.ts`
+  enforces on every test run. The interface Stage 4.2 will call is
+  `resolveIcon(plant): IconAsset` (`app/src/icons/resolveIcon.ts`, exported
+  from `app/src/icons/index.ts`): resolves `plant.icon ?? plant.id` against
+  the bundled set (via `import.meta.glob`, not a hand-maintained import list),
+  falling back to the generic icon — which is exactly what every shipped crop
+  (no `icon` set yet) and every user-defined crop (Stage 3.6 never sets one
+  either) does today, respectively via its `id` and via the fallback. See
+  [`docs/icon-style-guide.md`](./icon-style-guide.md) for the visual
+  conventions and how to add or replace an icon, and
+  [`adr/0019`](./adr/0019-icon-set-archetypes-and-resolution.md) for why this
+  approach was chosen over hand-illustrating 160 crops. **This stage
+  deliberately does not touch the palette or canvas** — both still render
+  their Stage-3.4-era coloured-circle-plus-initial placeholder; wiring
+  `resolveIcon` into them is Stage 4.2 (`docs/stage-4.2-brief.md`).
+
 ## Why a monorepo with these boundaries
 
 Keeping `engine` and `etl` free of any UI-framework dependency means the
@@ -378,48 +409,56 @@ boundaries rather than by discipline alone. See `adr/0003`.
 ## Planned additions (not yet built — see `WORKPLAN.md`)
 
 Three capabilities were added to the plan after Phase 1. User-defined crops
-(Stage 3.6) are now built; the other two remain staged in `WORKPLAN.md`:
+(Stage 3.6) and the icon set (Stage 4.1) are now built; the other two remain
+staged in `WORKPLAN.md`:
 
 - **Maintainer-authored crops in the dataset (Stage 1.7).** A curated
   full-`Plant` input feeding the same Stage 1.5 merge and hard-fail gate, so the
   shipped crop list can grow by hand without a new external source. Distinct from
   user crops: these are permanent, fully attributed, and go through the build.
+- **Wiring icons into the palette and canvas (Stage 4.2).** Mechanical wiring
+  of `resolveIcon` (Stage 4.1) into `PlantPalette.tsx` and `PlotCanvas.tsx`,
+  replacing today's coloured-circle-plus-initial placeholder. See
+  `docs/stage-4.2-brief.md`.
 - **Plot-image export (Stage 3.7).** The user can export a PNG of their finished
   plot plus a legend of chosen crops and the soil/climate settings, via the canvas
   library's own image export. A terminal picture, not a re-loadable save — which
   is precisely why no plan-serialisation or persistence subsystem is needed. The
-  self-owned, same-origin icon set (Stage 4.1) is what keeps the export canvas
-  untainted and the feature possible. Blocked on Stage 4.1/4.2 (icons); see
+  self-owned, same-origin icon set (Stage 4.1, now built) is what keeps the
+  export canvas untainted and the feature possible. Still blocked on Stage 4.2
+  (icons need to be wired into the canvas before the export shows them); see
   `docs/stage-4.1-brief.md`.
 
 ## Where to look next
 
-| Topic                                                             | File                                       |
-| ----------------------------------------------------------------- | ------------------------------------------ |
-| Concept, data-source assessment, licensing rationale              | [`DESIGN.md`](../DESIGN.md)                |
-| Staged build plan, per-stage models, verification                 | [`WORKPLAN.md`](../WORKPLAN.md)            |
-| Specific decisions and their alternatives                         | [`adr/`](./adr/)                           |
-| The plant-record schema (types + validation)                      | `packages/engine/src/schema/`              |
-| User-crop input schema and its upcast to a `Plant`                | `packages/engine/src/schema/user-plant.ts` |
-| Location/climate static data and `resolveClimate`                 | `packages/engine/src/climate/`             |
-| Suitability scoring, its reasoning, and `rankPlants`              | `packages/engine/src/suitability/`         |
-| The plot-region polygon, packing geometry, `fitPlant`             | `packages/engine/src/spacing/`             |
-| Warnings, companion suggestions, `evaluatePlot`                   | `packages/engine/src/warnings/`            |
-| App shell, routing, GitHub Pages basename                         | `app/src/routes/`                          |
-| Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`        |
-| The user-plant overlay store and merged `usePlantList`            | `app/src/state/`                           |
-| The plot-definition page, shape picker, outline editor            | `app/src/plot/`                            |
-| The plot store (current region + conditions input)                | `app/src/state/plot-store.ts`              |
-| The ranked/searchable/filterable plant palette                    | `app/src/palette/`                         |
-| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)     | `app/src/canvas/`                          |
-| The placements store (what's placed on the canvas)                | `app/src/state/placements-store.ts`        |
-| The drag-and-drop E2E journey                                     | `app/e2e/plot-canvas.spec.ts`              |
-| The warnings overlay, companion suggestions, placement derivation | `app/src/warnings/`                        |
-| The warnings-overlay E2E journey                                  | `app/e2e/warnings-overlay.spec.ts`         |
-| The add-crop form, id-collision check, edit/remove                | `app/src/user-crops/`                      |
-| The add-custom-crop E2E journey                                   | `app/e2e/add-custom-crop.spec.ts`          |
-| The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                   |
-| The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                |
-| Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`             |
-| The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                  |
-| The committed dataset artifact and its caveats                    | `data/README.md`                           |
+| Topic                                                             | File                                                                  |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Concept, data-source assessment, licensing rationale              | [`DESIGN.md`](../DESIGN.md)                                           |
+| Staged build plan, per-stage models, verification                 | [`WORKPLAN.md`](../WORKPLAN.md)                                       |
+| Specific decisions and their alternatives                         | [`adr/`](./adr/)                                                      |
+| The plant-record schema (types + validation)                      | `packages/engine/src/schema/`                                         |
+| User-crop input schema and its upcast to a `Plant`                | `packages/engine/src/schema/user-plant.ts`                            |
+| Location/climate static data and `resolveClimate`                 | `packages/engine/src/climate/`                                        |
+| Suitability scoring, its reasoning, and `rankPlants`              | `packages/engine/src/suitability/`                                    |
+| The plot-region polygon, packing geometry, `fitPlant`             | `packages/engine/src/spacing/`                                        |
+| Warnings, companion suggestions, `evaluatePlot`                   | `packages/engine/src/warnings/`                                       |
+| App shell, routing, GitHub Pages basename                         | `app/src/routes/`                                                     |
+| Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`                                   |
+| The user-plant overlay store and merged `usePlantList`            | `app/src/state/`                                                      |
+| The plot-definition page, shape picker, outline editor            | `app/src/plot/`                                                       |
+| The plot store (current region + conditions input)                | `app/src/state/plot-store.ts`                                         |
+| The ranked/searchable/filterable plant palette                    | `app/src/palette/`                                                    |
+| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)     | `app/src/canvas/`                                                     |
+| The placements store (what's placed on the canvas)                | `app/src/state/placements-store.ts`                                   |
+| The drag-and-drop E2E journey                                     | `app/e2e/plot-canvas.spec.ts`                                         |
+| The warnings overlay, companion suggestions, placement derivation | `app/src/warnings/`                                                   |
+| The warnings-overlay E2E journey                                  | `app/e2e/warnings-overlay.spec.ts`                                    |
+| The add-crop form, id-collision check, edit/remove                | `app/src/user-crops/`                                                 |
+| The add-custom-crop E2E journey                                   | `app/e2e/add-custom-crop.spec.ts`                                     |
+| The icon set, `resolveIcon`, and its style guide                  | `app/src/icons/`, [`docs/icon-style-guide.md`](./icon-style-guide.md) |
+| The icon generator (developer tool, not shipped)                  | `tools/icons/`                                                        |
+| The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                                              |
+| The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                                           |
+| Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`                                        |
+| The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                                             |
+| The committed dataset artifact and its caveats                    | `data/README.md`                                                      |
