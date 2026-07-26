@@ -1,18 +1,23 @@
 /**
- * The plot-definition page (Workplan Stage 3.2) — `DESIGN.md` §1 step 1 of
- * the core loop. Composes the three pieces of this stage against the plot
- * store (`state/plot-store.ts`): pick a preset shape, adjust its outline
- * free-form, and describe the growing conditions. This is what `routes/Home`
- * now renders as the app's index route (Stage 3.1 left `Home` as a
- * placeholder specifically for this stage to replace — see that route's
+ * The plot-definition page (Workplan Stage 3.2, extended in 3.3) —
+ * `DESIGN.md` §1 steps 1–2 of the core loop. Composes the plot-definition
+ * pieces against the plot store (`state/plot-store.ts`): pick a preset
+ * shape, adjust its outline free-form, describe the growing conditions —
+ * and, as of Stage 3.3, the ranked plant palette right below it. This is
+ * what `routes/Home` renders as the app's index route (Stage 3.1 left `Home`
+ * as a placeholder specifically for this to replace — see that route's
  * history in `docs/stage-3.1-brief.md`).
  *
- * Nothing here calls into the plant list or the suitability engine — scoring
- * and the palette are Stage 3.3's job. This page's whole output is the two
- * values the store already holds: a `PlotRegion` and a `PlotConditionsInput`.
+ * **Why the palette lives on this page rather than a separate route:** see
+ * `docs/architecture.md`'s Stage 3.3 note. Short version — `DESIGN.md`'s
+ * "describe → discover → arrange → validate" loop reads as one continuous
+ * flow, not four separate pages, and Stage 3.4's canvas will want the
+ * palette visible *alongside* placement (drag a plant from the palette onto
+ * the canvas) rather than navigated away from.
  */
 
 import { usePlotStore } from '../state/plot-store.ts';
+import { PlantPalette } from '../palette/PlantPalette.tsx';
 import { PlotConditionsForm } from './PlotConditionsForm.tsx';
 import { PlotOutlineEditor } from './PlotOutlineEditor.tsx';
 import { ShapePicker } from './ShapePicker.tsx';
@@ -33,6 +38,7 @@ export function PlotDefinitionPage() {
       <ShapePicker onApply={setRegion} />
       <PlotOutlineEditor region={region} onChange={setRegion} />
       <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
+      <PlantPalette />
     </section>
   );
 }

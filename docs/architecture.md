@@ -206,6 +206,38 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   pixel-per-centimetre ratio via the SVG's own `viewBox` scaling, needing no
   `getBoundingClientRect`/`getScreenCTM` call — both are awkward-to-nonexistent
   under the jsdom test environment).
+  Stage 3.3 adds the **plant palette** (`app/src/palette/`) — `DESIGN.md` §1
+  step 2 of the core loop. `PlantPalette.tsx` reads `usePlantList()` and the
+  plot store's `conditionsInput` directly (no props passed down from
+  `PlotDefinitionPage`), resolves the latter via `resolvePlotConditions`
+  defensively (falling back to an inline alert rather than throwing, mirroring
+  `PlotConditionsForm`'s own pattern), and ranks the result with `rankPlants`.
+  Because both the palette and the plot form read the same Zustand store, the
+  palette re-ranks live the moment either the light level or any other
+  condition changes — no event wiring beyond the shared store subscription.
+  `filters.ts` holds the palette's own pure logic (search-text and category
+  matching), kept separate from the component for the same reason
+  `plot/outline-ops.ts` is: testable with plain data, no rendering involved.
+  Search and category are **display-only** narrowings applied after
+  `rankPlants` has already scored and ordered the list; a third control, a
+  "hide unsuitable crops" checkbox, instead maps onto `rankPlants`' own
+  `excludeUnsuitable` option and actually changes what got ranked in. Every
+  rendered entry shows the engine's own `summary`, `confidence`, and
+  per-dimension `reason` strings verbatim — never a bare score — because
+  `rankPlants`' own documentation warns that most of today's shipped dataset
+  carries no hardiness/soil/season data, so a lone percentage would read as
+  more certain than the model actually is.
+  **The layout call the brief asked this stage to make explicitly:** the
+  palette renders _on the plot-definition page_, directly below the
+  growing-conditions form, rather than behind a second route/nav link. This
+  is recorded here rather than as an ADR because the reasoning follows
+  directly from ground already staked out in `DESIGN.md` (§1's "describe →
+  discover → arrange → validate" is framed as one continuous loop, not four
+  navigations) and restated in the Stage 3.3 brief itself — there was no real
+  second option once Stage 3.4 is considered: that stage's canvas needs the
+  palette visible _alongside_ placement (drag a plant from the palette onto
+  the plot) rather than a click away, so introducing a nav boundary now would
+  only have to be undone next stage.
 
 ## Why a monorepo with these boundaries
 
@@ -265,6 +297,7 @@ above:
 | The user-plant overlay store and merged `usePlantList`     | `app/src/state/`                           |
 | The plot-definition page, shape picker, outline editor     | `app/src/plot/`                            |
 | The plot store (current region + conditions input)         | `app/src/state/plot-store.ts`              |
+| The ranked/searchable/filterable plant palette             | `app/src/palette/`                         |
 | The ETL pipeline shell, GBIF resolver, adding a source     | `packages/etl/README.md`                   |
 | The hand-verified spacing table (curation, not ingest)     | `packages/etl/src/spacing/`                |
 | Evidence-tagged companion/antagonist data                  | `packages/etl/src/companions/`             |
