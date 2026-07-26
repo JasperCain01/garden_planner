@@ -39,9 +39,15 @@
  * already-computed data (see `docs/adr/0017` for why `PlotCanvas.tsx` has no
  * dedicated component test, and `docs/adr/0018` for the warnings-derivation
  * decision behind the map this reads).
+ *
+ * **Stage ref (Workplan Stage 3.7).** The optional `stageRef` prop is forwarded
+ * straight onto react-konva's `<Stage>`, so `PlotCanvasSection.tsx` can hand
+ * the mounted Konva `Stage` instance to `canvas/export.ts`'s `exportPlotImage`
+ * for rasterisation. This component still does nothing export-related itself —
+ * it only exposes the ref.
  */
 
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react';
 import type Konva from 'konva';
 import { useDroppable } from '@dnd-kit/core';
 import { Circle, Group, Image, Layer, Line, Stage, Text } from 'react-konva';
@@ -79,6 +85,8 @@ export interface PlotCanvasProps {
   readonly region: PlotRegion;
   /** Worst severity per placement id (`warnings/evaluate-canvas.ts`'s `CanvasWarnings.severityByPlacementId`), for the badge each marker shows. Defaults to no warnings for anyone. */
   readonly severityByPlacementId?: ReadonlyMap<string, WarningSeverity>;
+  /** Forwarded onto the underlying Konva `Stage` (Workplan Stage 3.7) so `PlotCanvasSection` can rasterise it for export (`canvas/export.ts`) without this component knowing anything about exporting. */
+  readonly stageRef?: RefObject<Konva.Stage | null>;
 }
 
 /**
@@ -169,7 +177,11 @@ function PlacementMarker({
   );
 }
 
-export function PlotCanvas({ region, severityByPlacementId = NO_SEVERITIES }: PlotCanvasProps) {
+export function PlotCanvas({
+  region,
+  severityByPlacementId = NO_SEVERITIES,
+  stageRef,
+}: PlotCanvasProps) {
   const placements = usePlacementsStore((state) => state.placements);
   const selectedId = usePlacementsStore((state) => state.selectedId);
   const movePlacement = usePlacementsStore((state) => state.movePlacement);
@@ -221,6 +233,7 @@ export function PlotCanvas({ region, severityByPlacementId = NO_SEVERITIES }: Pl
       }}
     >
       <Stage
+        ref={stageRef}
         width={size.width}
         height={size.height}
         onMouseDown={handleStageBackgroundPress}

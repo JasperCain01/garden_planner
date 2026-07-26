@@ -42,7 +42,7 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 3.4 Drag-and-drop plot canvas ⭐                | ✅             | ADR [0017](./docs/adr/0017-plot-canvas-konva-and-dnd-kit.md); `app/src/canvas/`, `app/src/state/placements-store.ts`; E2E in `app/e2e/plot-canvas.spec.ts`                                                             |
 | 3.5 Warnings overlay & companion suggestions UI | ✅             | ADR [0018](./docs/adr/0018-placement-derivation-for-warnings.md); `app/src/warnings/`; E2E in `app/e2e/warnings-overlay.spec.ts`                                                                                       |
 | 3.6 User-defined crops                          | ✅             | `app/src/user-crops/`; icon-picker scoping decision (fallback icon, no picker — Stage 4.1 hasn't landed) recorded in `docs/architecture.md`; E2E in `app/e2e/add-custom-crop.spec.ts`                                  |
-| 3.7 Plot-image export                           | ⬜ not started | Ready to start — icons now wired in (4.2). See [`docs/stage-3.7-brief.md`](./docs/stage-3.7-brief.md)                                                                                                                  |
+| 3.7 Plot-image export                           | ✅             | ADR [0020](./docs/adr/0020-plot-export-canvas-compositing.md); `app/src/canvas/export.ts` (legend builder + export pipeline), "Export image" button in `PlotCanvasSection.tsx`; E2E in `app/e2e/plot-export.spec.ts`   |
 | 4.1 SVG crop icon set                           | ✅             | ADR [0019](./docs/adr/0019-icon-set-archetypes-and-resolution.md); `app/src/icons/` (160 crop icons + 1 fallback, `resolveIcon`); `tools/icons/` (generator); [`docs/icon-style-guide.md`](./docs/icon-style-guide.md) |
 | 4.2 Wire icons into palette & canvas            | ✅             | `app/src/icons/useIconImage.ts` (image loader); `PlantPalette.tsx` renders icons; `PlotCanvas.tsx` layers icons over category circles; component + E2E tests cover resolved and fallback cases                         |
 
@@ -62,11 +62,19 @@ placement modelling ADR 0018 records), and goes one capability beyond the
 core loop with user-defined crops (Stage 3.6: an add-crop form validated via
 `safeValidateUserPlantInput`, an id-collision check, edit/remove gated on
 `isUserPlant`, and a generic fallback icon in place of a real picker since
-Stage 4.1's icon set hadn't landed yet). Phase 4 (Content & assets) has now
-started: Stage 4.1 ships the bundled SVG icon set — 160 crop icons plus a
+Stage 4.1's icon set hadn't landed yet). Phase 4 (Content & assets) is
+complete: Stage 4.1 ships the bundled SVG icon set — 160 crop icons plus a
 generic fallback, generated from a small reusable shape library rather than
-hand-drawn (`tools/icons/`), and the tested `resolveIcon(plant)` lookup
-(`app/src/icons/`) that Stage 4.2 will wire into the palette and canvas.
+hand-drawn (`tools/icons/`) — and Stage 4.2 wires the tested `resolveIcon(plant)`
+lookup (`app/src/icons/`) into both the palette (`PlantPalette.tsx`) and the
+canvas (`PlotCanvas.tsx`), replacing the coloured-circle-plus-initial
+placeholder. Phase 3 (Frontend MVP) now closes out too: Stage 3.7 adds
+**plot-image export** — an "Export image" button (`PlotCanvasSection.tsx`)
+that rasterises the Konva scene via `stage.toCanvas()` and composites a
+plain-text legend (placed crops, resolved conditions) beside it with the 2D
+Canvas API rather than a Konva node (ADR 0020, avoiding a `konva`-runtime
+import that would crash under Vitest), then downloads the result as a PNG —
+a terminal picture, not a re-loadable save.
 
 ---
 

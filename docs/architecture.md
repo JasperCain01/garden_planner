@@ -409,6 +409,28 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   common case. Component tests cover both resolved and fallback cases; E2E
   verification confirms every placed dataset plant renders an icon or the defined fallback.
 
+  Stage 3.7 ([`adr/0020`](./adr/0020-plot-export-canvas-compositing.md)) adds
+  **plot-image export** (`app/src/canvas/export.ts`, an "Export image" button
+  in `PlotCanvasSection.tsx`): the user downloads a PNG of the finished plot —
+  the rasterised Konva scene plus a legend naming every placed crop and the
+  plot's resolved conditions (light, soil texture if known, location, hardiness
+  band). Konva's `stage.toCanvas({ pixelRatio: 2 })` rasterises the plot itself;
+  the legend is composited beside it with the plain 2D Canvas API rather than a
+  Konva `Group`, specifically so `export.ts` only needs `konva`'s _types_, never
+  its runtime — importing the real package at module scope is what
+  `app/src/test/setup.ts` already documents as crashing under Vitest (ADR 0017).
+  `PlotCanvas.tsx` gained one small addition to make this possible: an optional
+  `stageRef` prop forwarded onto react-konva's `<Stage>`, so `PlotCanvasSection.tsx`
+  can hand the mounted `Konva.Stage` to the export pipeline without `PlotCanvas.tsx`
+  knowing anything about exporting. The export awaits `document.fonts.ready` and
+  every visible icon `<Image>`'s load before rasterising — both documented gotchas
+  in `docs/stage-3.7-brief.md` — then triggers a browser download (chosen over
+  opening a new tab, per the brief's own recommendation). A terminal picture, not
+  a re-loadable save: no serialisation or persistence subsystem was needed. The
+  legend builder is unit-tested directly; the button's wiring is component-tested
+  with the real pipeline mocked out; the full rasterise-and-download flow is
+  covered by `app/e2e/plot-export.spec.ts`, the only place it actually runs.
+
 ## Why a monorepo with these boundaries
 
 Keeping `engine` and `etl` free of any UI-framework dependency means the
@@ -418,26 +440,16 @@ boundaries rather than by discipline alone. See `adr/0003`.
 
 ## Planned additions (not yet built — see `WORKPLAN.md`)
 
-Three capabilities were added to the plan after Phase 1. User-defined crops
-(Stage 3.6) and the icon set (Stage 4.1) are now built; the other two remain
-staged in `WORKPLAN.md`:
+Three capabilities were added to the plan after Phase 1: user-defined crops
+(Stage 3.6), the icon set plus wiring (Stages 4.1–4.2), and plot-image export
+(Stage 3.7). All three are now built; one addition remains staged in
+`WORKPLAN.md`:
 
 - **Maintainer-authored crops in the dataset (Stage 1.7).** A curated
   full-`Plant` input feeding the same Stage 1.5 merge and hard-fail gate, so the
   shipped crop list can grow by hand without a new external source. Distinct from
   user crops: these are permanent, fully attributed, and go through the build.
-- **Wiring icons into the palette and canvas (Stage 4.2).** Mechanical wiring
-  of `resolveIcon` (Stage 4.1) into `PlantPalette.tsx` and `PlotCanvas.tsx`,
-  replacing today's coloured-circle-plus-initial placeholder. See
-  `docs/stage-4.2-brief.md`.
-- **Plot-image export (Stage 3.7).** The user can export a PNG of their finished
-  plot plus a legend of chosen crops and the soil/climate settings, via the canvas
-  library's own image export. A terminal picture, not a re-loadable save — which
-  is precisely why no plan-serialisation or persistence subsystem is needed. The
-  self-owned, same-origin icon set (Stage 4.1, now built) is what keeps the
-  export canvas untainted and the feature possible. Still blocked on Stage 4.2
-  (icons need to be wired into the canvas before the export shows them); see
-  `docs/stage-4.1-brief.md`.
+  See `docs/stage-1.7-brief.md`.
 
 ## Where to look next
 
@@ -467,6 +479,8 @@ staged in `WORKPLAN.md`:
 | The add-custom-crop E2E journey                                   | `app/e2e/add-custom-crop.spec.ts`                                     |
 | The icon set, `resolveIcon`, and its style guide                  | `app/src/icons/`, [`docs/icon-style-guide.md`](./icon-style-guide.md) |
 | The icon generator (developer tool, not shipped)                  | `tools/icons/`                                                        |
+| The plot-image export pipeline and legend builder                 | `app/src/canvas/export.ts`                                            |
+| The plot-export E2E journey                                       | `app/e2e/plot-export.spec.ts`                                         |
 | The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                                              |
 | The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                                           |
 | Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`                                        |
