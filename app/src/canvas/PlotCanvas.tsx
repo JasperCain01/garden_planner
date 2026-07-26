@@ -1,0 +1,167 @@
+/**
+ * The plot canvas (Workplan Stage 3.4 ⭐ signature feature) — `DESIGN.md`
+ * §1 step 3: draws the plot outline and every placed plant, and owns
+ * select/move/remove once a plant has landed on it.
+ *
+ * **The first real react-konva work in this codebase.** ADR 0016 deferred
+ * Konva to exactly this stage: a handful of draggable polygon corners
+ * (`PlotOutlineEditor.tsx`) didn't need a retained-canvas scene, but "dozens
+ * of plant markers, placed, dragged, layered, redrawn on every density
+ * recalculation" (that ADR's own description of this stage's job) does. See
+ * `docs/adr/0017-plot-canvas-konva-and-dnd-kit.md` for the fuller reasoning,
+ * including why this component is not component-tested the way
+ * `PlotOutlineEditor.test.tsx` is (a Konva `<Stage>` renders to `<canvas>`,
+ * which jsdom can't query — the pure logic this component leans on
+ * (`geometry.ts`, `drop.ts`, `feedback.ts`, `state/placements-store.ts`) is
+ * tested instead, and this component itself is covered by the Playwright
+ * E2E journey per the ADR).
+ *
+ * **Where dnd-kit's job ends and Konva's begins:** this component is the
+ * *drop target* (`useDroppable`, matched against `drop.ts`'s
+ * `CANVAS_DROPPABLE_ID` — the palette's `useDraggable` entries are the drag
+ * source, wired up in `PlotDefinitionPage.tsx`). Once a plant is on the
+ * canvas, dnd-kit is out of the picture entirely: Konva's own `draggable`
+ * prop and `onDragEnd` handle moving a placed plant, because that is a
+ * continuous in-scene coordinate update, not another drop-zone handoff.
+ *
+ * **Coordinate conversion** reuses `PlotOutlineEditor`'s fixed-scale trick
+ * (ADR 0016) via `geometry.ts`'s `cmToPx`/`pxToCm`, with its own scale and
+ * padding rather than PlotOutlineEditor's — plant markers need to stay
+ * legible at a size a handful of corner handles never had to justify.
+ */
+
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import type Konva from 'konva';
+import { useDroppable } from '@dnd-kit/core';
+import { Circle, Group, Layer, Line, Stage, Text } from 'react-konva';
+import type { EdibleCategory, PlotRegion } from '@garden-planner/engine';
+import { usePlacementsStore } from '../state/placements-store.ts';
+import { CANVAS_DROPPABLE_ID } from './drop.ts';
+import { canvasSizePx, cmToPx, pxToCm } from './geometry.ts';
+
+/** Radius of a placed-plant marker, in canvas pixels. */
+const MARKER_RADIUS_PX = 16;
+
+/**
+ * A colour per edible category, so placed plants are visually distinguishable
+ * before real icons exist (Stage 4.1/4.2). Not a suitability cue — unrelated
+ * to the palette's band colours.
+ */
+const CATEGORY_COLORS: Readonly<Record<EdibleCategory, string>> = {
+  vegetable: '#4c8c2b',
+  herb: '#00796b',
+  fruit: '#c0392b',
+};
+
+export interface PlotCanvasProps {
+  /** The outline to draw and place plants within — `usePlotStore`'s current `region`. */
+  readonly region: PlotRegion;
+}
+
+export function PlotCanvas({ region }: PlotCanvasProps) {
+  const placements = usePlacementsStore((state) => state.placements);
+  const selectedId = usePlacementsStore((state) => state.selectedId);
+  const movePlacement = usePlacementsStore((state) => state.movePlacement);
+  const removePlacement = usePlacementsStore((state) => state.removePlacement);
+  const selectPlacement = usePlacementsStore((state) => state.selectPlacement);
+
+  // Registers this element as the drop target `drop.ts`'s `resolveDrop` looks
+  // for — the palette→canvas handoff half of this stage's drag-and-drop.
+  const { setNodeRef, isOver } = useDroppable({ id: CANVAS_DROPPABLE_ID });
+
+  const size = canvasSizePx(region);
+  const outlinePoints = region.vertices.flatMap((vertex) => {
+    const px = cmToPx(vertex, region);
+    return [px.x, px.y];
+  });
+
+  /** Clicking (or tapping) empty canvas — as opposed to a plant marker — deselects. */
+  function handleStageBackgroundPress(event: Konva.KonvaEventObject<Event>): void {
+    if (event.target === event.target.getStage()) {
+      selectPlacement(null);
+    }
+  }
+
+  /** A placed plant's own drag (moving it within the plot) — Konva's job, not dnd-kit's; see the module doc. */
+  function handlePlantDragEnd(placementId: string, event: Konva.KonvaEventObject<DragEvent>): void {
+    const node = event.target;
+    movePlacement(placementId, pxToCm({ x: node.x(), y: node.y() }, region));
+  }
+
+  /** Delete/Backspace removes the selected plant — the keyboard-accessible half of "remove"; the toolbar button (`PlotCanvasSection.tsx`) is the pointer half. */
+  function handleKeyDown(event: ReactKeyboardEvent<HTMLDivElement>): void {
+    if ((event.key === 'Delete' || event.key === 'Backspace') && selectedId !== null) {
+      event.preventDefault();
+      removePlacement(selectedId);
+    }
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-label="plot canvas — drag plants here to place them; click a placed plant to select it"
+      style={{
+        width: size.width,
+        height: size.height,
+        border: isOver ? '2px dashed #2e7d32' : '1px solid #ccc',
+        outline: 'none',
+      }}
+    >
+      <Stage
+        width={size.width}
+        height={size.height}
+        onMouseDown={handleStageBackgroundPress}
+        onTouchStart={handleStageBackgroundPress}
+      >
+        <Layer>
+          <Line
+            points={outlinePoints}
+            closed
+            fill="rgba(76, 175, 80, 0.15)"
+            stroke="#2e7d32"
+            strokeWidth={2}
+          />
+          {placements.map((placement) => {
+            const px = cmToPx(placement, region);
+            const isSelected = placement.id === selectedId;
+            return (
+              <Group
+                key={placement.id}
+                x={px.x}
+                y={px.y}
+                draggable
+                onDragEnd={(event) => handlePlantDragEnd(placement.id, event)}
+                onClick={() => selectPlacement(placement.id)}
+                onTap={() => selectPlacement(placement.id)}
+                onDblClick={() => removePlacement(placement.id)}
+                onDblTap={() => removePlacement(placement.id)}
+              >
+                <Circle
+                  radius={MARKER_RADIUS_PX}
+                  fill={CATEGORY_COLORS[placement.plant.category]}
+                  stroke={isSelected ? '#111827' : '#ffffff'}
+                  strokeWidth={isSelected ? 3 : 1.5}
+                />
+                <Text
+                  text={placement.plant.commonName.slice(0, 1).toUpperCase()}
+                  fontStyle="bold"
+                  fontSize={14}
+                  fill="#ffffff"
+                  width={MARKER_RADIUS_PX * 2}
+                  height={MARKER_RADIUS_PX * 2}
+                  offsetX={MARKER_RADIUS_PX}
+                  offsetY={MARKER_RADIUS_PX}
+                  align="center"
+                  verticalAlign="middle"
+                  listening={false}
+                />
+              </Group>
+            );
+          })}
+        </Layer>
+      </Stage>
+    </div>
+  );
+}

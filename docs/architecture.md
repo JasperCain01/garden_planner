@@ -238,6 +238,45 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   palette visible _alongside_ placement (drag a plant from the palette onto
   the plot) rather than a click away, so introducing a nav boundary now would
   only have to be undone next stage.
+  Stage 3.4 ([`adr/0017`](./adr/0017-plot-canvas-konva-and-dnd-kit.md)) adds the
+  **plot canvas** (`app/src/canvas/`) — `DESIGN.md`'s signature interaction and
+  the app's first real `react-konva` work (ADR 0016 deferred it here on
+  purpose). `PlotCanvas.tsx` renders the current `PlotRegion` as a Konva
+  `<Line>` and every placed plant as a `<Group>` (a coloured `<Circle>` plus
+  its initial letter — no icon set yet, Stage 4.1/4.2's job) that is
+  selectable, Konva-draggable (moves update the placements store directly —
+  no dnd-kit involved once a plant is on the canvas, see the ADR for why),
+  and removable by double-click, Delete/Backspace, or a toolbar button
+  (`PlotCanvasSection.tsx`). `state/placements-store.ts` is the new
+  per-concern store (ADR 0015's convention) holding what's placed —
+  `{ id, plant, x, y }` in the region's own centimetre frame. The
+  palette→canvas handoff is dnd-kit's job: every `PlantPalette.tsx` entry is
+  now a `useDraggable` source (carrying its `Plant` as drag data), the
+  canvas's container is a single `useDroppable` target, and
+  `PlotDefinitionPage.tsx` owns the shared `DndContext` and drop handler
+  (`canvas/useCanvasDropHandler.ts`, over the pure `canvas/drop.ts`) since
+  that's the one place both features are already composed. Coordinate
+  conversion (`canvas/geometry.ts`) reuses `PlotOutlineEditor`'s ADR-0016
+  fixed-scale trick (the canvas's pixel size is set to exactly
+  `(region bounds + padding) × a scale it picks itself`, so pixel↔centimetre
+  conversion is pure arithmetic, no `getBoundingClientRect` involved) with its
+  own scale rather than reusing the outline editor's literal constant. Live
+  density/count feedback (`canvas/feedback.ts`, rendered by
+  `canvas/PlacementFeedbackPanel.tsx`) calls `fitPlant` per distinct placed
+  crop and shows its `summary` sentence verbatim plus a placed-vs-fits tally —
+  never re-deriving a count or judging whether a placement is "too many": that
+  judgement is explicitly Stage 3.5's job. The ADR is worth reading for the
+  test-strategy call: `PlotCanvas.tsx` itself has no component test (a Konva
+  `<Stage>` renders to a `<canvas>` jsdom can't back or query, and — new
+  wrinkle this stage hit — `konva`'s Node build crashes on import without the
+  native `canvas` package, worked around by a global `vi.mock('react-konva',
+...)` in `app/src/test/setup.ts` so pages _containing_ the canvas still
+  render in tests); every pure piece it's built on (`placements-store.ts`,
+  `geometry.ts`, `drop.ts`, `feedback.ts`) is unit- or component-tested
+  directly, and the real drag-and-drop gesture is covered by a Playwright E2E
+  journey (`app/e2e/plot-canvas.spec.ts`) using genuine pointer events rather
+  than Playwright's native-HTML5 `dragAndDrop()` helper (which dnd-kit's
+  `PointerSensor` doesn't listen for).
 
 ## Why a monorepo with these boundaries
 
@@ -281,25 +320,28 @@ above:
 
 ## Where to look next
 
-| Topic                                                      | File                                       |
-| ---------------------------------------------------------- | ------------------------------------------ |
-| Concept, data-source assessment, licensing rationale       | [`DESIGN.md`](../DESIGN.md)                |
-| Staged build plan, per-stage models, verification          | [`WORKPLAN.md`](../WORKPLAN.md)            |
-| Specific decisions and their alternatives                  | [`adr/`](./adr/)                           |
-| The plant-record schema (types + validation)               | `packages/engine/src/schema/`              |
-| User-crop input schema and its upcast to a `Plant`         | `packages/engine/src/schema/user-plant.ts` |
-| Location/climate static data and `resolveClimate`          | `packages/engine/src/climate/`             |
-| Suitability scoring, its reasoning, and `rankPlants`       | `packages/engine/src/suitability/`         |
-| The plot-region polygon, packing geometry, `fitPlant`      | `packages/engine/src/spacing/`             |
-| Warnings, companion suggestions, `evaluatePlot`            | `packages/engine/src/warnings/`            |
-| App shell, routing, GitHub Pages basename                  | `app/src/routes/`                          |
-| Dataset-loading layer (loads + validates the shipped list) | `app/src/dataset/shipped-plants.ts`        |
-| The user-plant overlay store and merged `usePlantList`     | `app/src/state/`                           |
-| The plot-definition page, shape picker, outline editor     | `app/src/plot/`                            |
-| The plot store (current region + conditions input)         | `app/src/state/plot-store.ts`              |
-| The ranked/searchable/filterable plant palette             | `app/src/palette/`                         |
-| The ETL pipeline shell, GBIF resolver, adding a source     | `packages/etl/README.md`                   |
-| The hand-verified spacing table (curation, not ingest)     | `packages/etl/src/spacing/`                |
-| Evidence-tagged companion/antagonist data                  | `packages/etl/src/companions/`             |
-| The Stage 1.5 merge, validation gate, and artifact         | `packages/etl/src/merge/`                  |
-| The committed dataset artifact and its caveats             | `data/README.md`                           |
+| Topic                                                         | File                                       |
+| ------------------------------------------------------------- | ------------------------------------------ |
+| Concept, data-source assessment, licensing rationale          | [`DESIGN.md`](../DESIGN.md)                |
+| Staged build plan, per-stage models, verification             | [`WORKPLAN.md`](../WORKPLAN.md)            |
+| Specific decisions and their alternatives                     | [`adr/`](./adr/)                           |
+| The plant-record schema (types + validation)                  | `packages/engine/src/schema/`              |
+| User-crop input schema and its upcast to a `Plant`            | `packages/engine/src/schema/user-plant.ts` |
+| Location/climate static data and `resolveClimate`             | `packages/engine/src/climate/`             |
+| Suitability scoring, its reasoning, and `rankPlants`          | `packages/engine/src/suitability/`         |
+| The plot-region polygon, packing geometry, `fitPlant`         | `packages/engine/src/spacing/`             |
+| Warnings, companion suggestions, `evaluatePlot`               | `packages/engine/src/warnings/`            |
+| App shell, routing, GitHub Pages basename                     | `app/src/routes/`                          |
+| Dataset-loading layer (loads + validates the shipped list)    | `app/src/dataset/shipped-plants.ts`        |
+| The user-plant overlay store and merged `usePlantList`        | `app/src/state/`                           |
+| The plot-definition page, shape picker, outline editor        | `app/src/plot/`                            |
+| The plot store (current region + conditions input)            | `app/src/state/plot-store.ts`              |
+| The ranked/searchable/filterable plant palette                | `app/src/palette/`                         |
+| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff) | `app/src/canvas/`                          |
+| The placements store (what's placed on the canvas)            | `app/src/state/placements-store.ts`        |
+| The drag-and-drop E2E journey                                 | `app/e2e/plot-canvas.spec.ts`              |
+| The ETL pipeline shell, GBIF resolver, adding a source        | `packages/etl/README.md`                   |
+| The hand-verified spacing table (curation, not ingest)        | `packages/etl/src/spacing/`                |
+| Evidence-tagged companion/antagonist data                     | `packages/etl/src/companions/`             |
+| The Stage 1.5 merge, validation gate, and artifact            | `packages/etl/src/merge/`                  |
+| The committed dataset artifact and its caveats                | `data/README.md`                           |

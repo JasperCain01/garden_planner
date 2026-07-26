@@ -23,16 +23,27 @@
  * score would overstate certainty — every entry shows the engine's own
  * `summary`, `confidence`, and per-dimension reasoning instead of a lone
  * number.
+ *
+ * **Drag affordance (Workplan Stage 3.4).** Every entry is a dnd-kit
+ * `useDraggable` source (`PaletteEntry` below), carrying its `Plant` as drag
+ * data (`{ plant }`, the shape `canvas/drop.ts`'s `resolveDrop` expects) —
+ * the palette→canvas handoff half of the plot canvas's drag-and-drop. See
+ * `docs/adr/0017-plot-canvas-konva-and-dnd-kit.md` for why dnd-kit owns this
+ * handoff and react-konva owns everything after the plant lands.
  */
 
 import { useMemo, useState } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import {
   BAND_LABELS,
   EdibleCategorySchema,
   rankPlants,
   resolvePlotConditions,
+  type RankedPlant,
   type SuitabilityBand,
 } from '@garden-planner/engine';
+import type { PaletteDragData } from '../canvas/drop.ts';
 import { usePlantList } from '../state/use-plant-list.ts';
 import { usePlotStore } from '../state/plot-store.ts';
 import { filterRanked, type CategoryFilter } from './filters.ts';
@@ -143,41 +154,67 @@ export function PlantPalette() {
             <p>No crops match your plot&rsquo;s conditions and current filters.</p>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0 }}>
-              {visible.map(({ plant, suitability }) => (
-                <li
-                  key={plant.id}
-                  style={{
-                    border: '1px solid #ccc',
-                    borderRadius: '0.5rem',
-                    padding: '0.75rem',
-                    marginBottom: '0.75rem',
-                    opacity: suitability.band === 'unsuitable' ? 0.6 : 1,
-                  }}
-                >
-                  <h3 style={{ margin: 0 }}>
-                    {plant.commonName}{' '}
-                    <span style={{ color: BAND_COLORS[suitability.band], fontSize: '0.85em' }}>
-                      {BAND_LABELS[suitability.band]}
-                    </span>
-                  </h3>
-                  <p style={{ margin: '0.25rem 0', fontStyle: 'italic' }}>{plant.category}</p>
-                  <p style={{ margin: '0.25rem 0' }}>{suitability.summary}</p>
-                  <p style={{ margin: '0.25rem 0', fontSize: '0.85em' }}>
-                    Confidence: {Math.round(suitability.confidence * 100)}%
-                  </p>
-                  <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
-                    {suitability.dimensions.map((dimension) => (
-                      <li key={dimension.dimension}>
-                        <strong>{dimension.dimension}:</strong> {dimension.reason}
-                      </li>
-                    ))}
-                  </ul>
-                </li>
+              {visible.map((entry) => (
+                <PaletteEntry key={entry.plant.id} entry={entry} />
               ))}
             </ul>
           )}
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * One palette row, and this stage's drag source: `useDraggable` carries the
+ * row's `Plant` as drag data and follows the pointer via a CSS transform
+ * while dragging, so `canvas/drop.ts`'s `resolveDrop` can read the dragged
+ * card's own rect as the drop point (see that module's doc for why).
+ */
+function PaletteEntry({ entry }: { readonly entry: RankedPlant }) {
+  const { plant, suitability } = entry;
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: plant.id,
+    data: { plant } satisfies PaletteDragData,
+  });
+
+  return (
+    <li
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      aria-label={`drag ${plant.commonName} onto the plot to place it`}
+      style={{
+        border: '1px solid #ccc',
+        borderRadius: '0.5rem',
+        padding: '0.75rem',
+        marginBottom: '0.75rem',
+        opacity: suitability.band === 'unsuitable' ? 0.6 : isDragging ? 0.4 : 1,
+        cursor: 'grab',
+        touchAction: 'none',
+        transform: CSS.Translate.toString(transform),
+        zIndex: isDragging ? 1 : undefined,
+        position: isDragging ? 'relative' : undefined,
+      }}
+    >
+      <h3 style={{ margin: 0 }}>
+        {plant.commonName}{' '}
+        <span style={{ color: BAND_COLORS[suitability.band], fontSize: '0.85em' }}>
+          {BAND_LABELS[suitability.band]}
+        </span>
+      </h3>
+      <p style={{ margin: '0.25rem 0', fontStyle: 'italic' }}>{plant.category}</p>
+      <p style={{ margin: '0.25rem 0' }}>{suitability.summary}</p>
+      <p style={{ margin: '0.25rem 0', fontSize: '0.85em' }}>
+        Confidence: {Math.round(suitability.confidence * 100)}%
+      </p>
+      <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
+        {suitability.dimensions.map((dimension) => (
+          <li key={dimension.dimension}>
+            <strong>{dimension.dimension}:</strong> {dimension.reason}
+          </li>
+        ))}
+      </ul>
+    </li>
   );
 }
