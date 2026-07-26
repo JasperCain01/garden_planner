@@ -19,19 +19,22 @@ finished plot.
 ### A caveat worth knowing before you judge the rankings
 
 The suitability engine scores four dimensions — **light, hardiness, soil and
-season** — but the shipped dataset can only feed one of them. Of 162 crops,
-all 162 carry light (in just two values: 148 full-sun, 14 partial-shade),
-while only **2** carry hardiness, soil or season data. So in practice the
-ranked palette is close to a two-tier sort on light, and most crops are scored
-on light alone.
+season** — and the shipped dataset feeds two of them. Of 162 crops, all carry
+light (in only two values: 148 full-sun, 14 partial-shade) and **74 carry a
+soil-moisture preference**; just 2 carry hardiness or season data.
 
-This is a **data** gap, not an engine one, and the app says so rather than
-hiding it: every result carries a confidence figure and a plain-English note
-("Scored on light alone — no hardiness, soil or season data for this crop"). It
-closes when Stage 1.2's remaining source adapters land — PFAF carries hardiness
-and soil, Permapeople carries growth characteristics — which is why that stage
-is still marked ⚠️ partial in [`WORKPLAN.md`](./WORKPLAN.md)'s Progress table
-and is the highest-value remaining data work in the plan.
+In practice that means: **describe your plot's soil moisture and the ranking
+does real work** — on dry ground, rosemary and carrots rise above peas and
+celery, with the reason given in plain English. Leave soil unset and you are
+close to a two-tier sort on light, because most gardens are sunny.
+
+The app says so rather than hiding it: every result carries a confidence figure
+and a note explaining what could and couldn't be assessed. The remaining gap is
+**data, not engine** — hardiness and season are still thin, and the shipped crop
+list still carries some crops that won't grow outdoors in Britain while missing
+a few that everyone grows. Stage 6.0 in [`WORKPLAN.md`](./WORKPLAN.md) covers
+what's left and why it's being fixed by curation rather than by ingesting
+another source.
 
 ## Why this exists
 
@@ -142,11 +145,16 @@ developer tool** that is never shipped.
 ## Licensing
 
 - **Code:** MIT (see [`LICENSE`](./LICENSE)).
-- **Dataset (`/data`):** CC BY-NC-SA 4.0, inherited from Plants For A Future.
-  See [`NOTICE`](./NOTICE).
+- **Dataset (`/data`):** **CC0-1.0** — public domain. Take it and do whatever you
+  like with it; no attribution required. See [`NOTICE`](./NOTICE) and
+  [ADR 0023](./docs/adr/0023-dataset-licence-cc0.md).
+- **Crop icons (`app/src/icons/`):** MIT, original work — generated from an
+  in-repo shape library, not adapted from any third-party set.
 
-This project is non-commercial by design and intended to be easily cloned,
-forked, and learned from.
+Everything here is meant to be cloned, forked and learned from. Sources are
+credited in [`NOTICE`](./NOTICE) and per-record in the dataset itself, because
+knowing where a spacing figure came from is what makes it checkable — not
+because a licence demands it.
 
 ## Contributing
 

@@ -91,11 +91,16 @@ To add a maintainer-curated crop permanently, see
 
 ## Licensing
 
-The dataset is licensed **CC BY-NC-SA 4.0** (not MIT like the code). Note that the
-sources shipped _today_ — OpenFarm (CC0) plus original curation — do not by
-themselves require NonCommercial; the dataset is held at CC BY-NC-SA deliberately,
-to match the project's non-commercial stance and to absorb Plants For A Future
-(CC BY-NC-SA) seamlessly once it is ingested. The full reasoning is in
-[`/docs/adr/0009-dataset-merge-and-licensing.md`](../docs/adr/0009-dataset-merge-and-licensing.md).
-Per-record provenance is stored in the artifact itself; see [`/NOTICE`](../NOTICE)
-for the source/attribution roll-up.
+The dataset is dedicated to the public domain under **CC0-1.0** — use it for
+anything, with no obligation to credit this project. Every input is either CC0
+already (the OpenFarm crops rescue) or original curation this project owns
+(spacing figures, companion links, curated plants, the moisture table), so
+nothing compels a restriction. It was previously CC BY-NC-SA, held only to
+absorb Plants For A Future; that ingest is no longer planned. Full reasoning in
+[`/docs/adr/0023-dataset-licence-cc0.md`](../docs/adr/0023-dataset-licence-cc0.md).
+
+Per-record provenance is still stored in the artifact itself, and
+[`/NOTICE`](../NOTICE) still credits every source — under CC0 that is courtesy
+and traceability, not a licence condition. **If you add a share-alike or
+non-commercial source, CC0 stops being honest**: relicense the affected build
+rather than leaving this section as it stands.

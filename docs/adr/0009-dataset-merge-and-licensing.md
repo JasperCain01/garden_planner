@@ -1,6 +1,13 @@
 # 0009 — Dataset merge: join-key policy, conflict resolution, and licensing finalization
 
-- **Status:** Accepted
+> **The licensing decision in this ADR has been superseded.** The dataset is now
+> **CC0-1.0** — see [ADR 0023](./0023-dataset-licence-cc0.md). The CC BY-NC-SA
+> choice recorded below was held only to absorb Plants For A Future without a
+> later flip-flop; that ingest is no longer planned, so the restriction was
+> dropped. **Everything else in this ADR — the join-key policy and the
+> conflict-resolution rules — stands unchanged and is still current.**
+
+- **Status:** Accepted (licensing section superseded by ADR 0023)
 - **Date:** 2026-07-23
 - **Workplan stage:** 1.5 (⭐ keystone) — dataset build, merge & validation
 

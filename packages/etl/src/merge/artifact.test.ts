@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { validatePlant, type Plant } from '@garden-planner/engine';
-import { ARTIFACT_SCHEMA_VERSION, DATASET_LICENSE, buildArtifact } from './artifact.ts';
+import {
+  ARTIFACT_SCHEMA_VERSION,
+  DATASET_LICENSE,
+  DATASET_LICENSE_URL,
+  buildArtifact,
+} from './artifact.ts';
 
 function plant(overrides: Partial<Plant> = {}): Plant {
   return validatePlant({
@@ -62,5 +67,21 @@ describe('buildArtifact', () => {
       }),
     ]);
     expect(artifact.sources.map((s) => s.source)).toContain('RHS');
+  });
+});
+
+describe('the dataset licence', () => {
+  it('is CC0 — pinned by value, not by comparing the constant to itself', () => {
+    // `buildArtifact`'s own test asserts `license: DATASET_LICENSE`, which
+    // would pass for any value at all. This is the assertion that actually
+    // notices if the licence changes (ADR 0023).
+    expect(DATASET_LICENSE).toBe('CC0-1.0');
+    expect(DATASET_LICENSE_URL).toBe('https://creativecommons.org/publicdomain/zero/1.0/');
+  });
+
+  it('states the licence in the artifact a consumer reads', () => {
+    const artifact = buildArtifact([]);
+    expect(artifact.license).toBe('CC0-1.0');
+    expect(artifact.licenseUrl).toBe('https://creativecommons.org/publicdomain/zero/1.0/');
   });
 });

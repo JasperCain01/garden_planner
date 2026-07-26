@@ -223,9 +223,18 @@ Ratified (Stage 0.1 records these as ADRs):
 
 The ETL is a separate Node/TypeScript workspace.
 
-**Licensing (confirmed): non-commercial.** Code under a permissive/copyleft OSS
-licence (MIT or GPL); the shipped **dataset** under **CC BY-NC-SA** to honour
-PFAF's terms, with attribution recorded in a `NOTICE`/provenance file.
+**Licensing (settled): as open as the inputs allow.** Code under **MIT**; the
+shipped **dataset** under **CC0-1.0**, a public-domain dedication, with
+attribution recorded in `NOTICE` and per-record provenance for traceability
+rather than compliance.
+
+> This entry originally read "non-commercial … dataset under CC BY-NC-SA to
+> honour PFAF's terms". That was written when PFAF was expected to be ingested;
+> it isn't (Stage 6.0), and every input that actually ships is CC0 or original
+> curation. Relicensed in ADR
+> [0023](./docs/adr/0023-dataset-licence-cc0.md), which supersedes ADR 0009's
+> licensing section. If a share-alike source is ever ingested, that build gets
+> relicensed then — the restriction is not held speculatively in the meantime.
 
 ### 0.6 Write the next stage's brief before finishing (hand-off discipline)
 
@@ -350,8 +359,8 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   (`/app` frontend, `/engine` framework-free logic, `/etl` build-time pipeline,
   `/data` committed artifacts, `/docs` + `/docs/adr`); lint + format + typecheck
   - test runner configured; `README` skeleton; `LICENSE` for code (MIT or GPL;
-    dataset licence is CC BY-NC-SA, finalized with attribution in Stage 1.5 per
-    PFAF terms); `CONTRIBUTING.md`; ADRs recording the stack and framework
+    dataset licence settled as CC0-1.0 — see §0.5 and ADR 0023);
+    `CONTRIBUTING.md`; ADRs recording the stack and framework
     choices (§0.5). _(This stage originally shipped a CI workflow too; it has
     since been removed — GitHub Actions wait until the project is complete,
     §1.4.)_
@@ -468,8 +477,8 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   (with a documented conflict-resolution policy — e.g. hand-verified spacing wins
   over scraped); the **hard-fail validation gate** (§1.1); the emitted artifact
   in `/data`; finalized **dataset licensing** decision + `NOTICE`/attribution
-  file (PFAF is CC BY-NC-SA → dataset inherits non-commercial share-alike; record
-  this in an ADR).
+  file (recorded in ADR 0009, and relicensed to CC0-1.0 by ADR 0023 once PFAF
+  was dropped — see §0.5).
 - **Model:** **Opus.** Reconciliation policy and the validation gate are
   cross-cutting and easy to get subtly wrong.
 - **Verification:** Build fails loudly on an intentionally-broken record (test

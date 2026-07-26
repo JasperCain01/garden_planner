@@ -8,7 +8,8 @@
  * `PlantSchema` does two jobs at once. It is the shape everything downstream
  * consumes, *and* it is the ETL's hard-fail gate for **shipped** data — the thing
  * that guarantees every record we publish carries a botanical name and a source
- * attribution (the CC BY-NC-SA / provenance promise of ADR 0009). A user typing a
+ * attribution (the provenance promise of ADR 0009 — a traceability guarantee,
+ * not a licence one, since ADR 0023 released the dataset as CC0). A user typing a
  * crop off a seed packet has neither: they have "Cherry Belle", not _Raphanus
  * sativus_, and no citation to offer.
  *
