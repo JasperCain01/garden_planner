@@ -7,21 +7,14 @@ spacing, and how to arrange them — with drag-and-drop and live warnings. You c
 also **add your own crops** from a seed packet and **export a picture** of the
 finished plot.
 
-> **Status: Stages 0.1–1.6, 0.3, 2.1 and 2.2 complete.** The plant-record schema,
-> the build-time ETL and the validated dataset (`data/plants.json`, 160 crops) are
-> built and green, and so are the framework-free engine's two calculations:
-> **suitability scoring** — rank any crop against a plot's light, hardiness, soil
-> and season, with the reasoning exposed
-> ([`docs/adr/0012`](./docs/adr/0012-suitability-scoring.md)) — and the
-> **spacing / density calculator**, which answers "how many onions can I fit?" for
-> an arbitrary polygon plot, respecting its shape rather than just its area
-> ([`docs/adr/0013`](./docs/adr/0013-spacing-density-calculator.md)). The warnings
-> engine (2.3) and the drag-and-drop UI (Phase 3+) come next. Stage 0.3 has also
-> added the schema half of **user-added crops** — a seed packet's fields validate
-> and upcast into a full plant record, while shipped data stays fully attributed
-> ([`docs/adr/0011`](./docs/adr/0011-user-defined-crop-schema.md)); the add-crop UI
-> itself, and plot-image export, are planned in [`WORKPLAN.md`](./WORKPLAN.md),
-> whose Progress table is the up-to-date picture.
+> **Status: Phases 1–4 complete; Phase 5 (offline & deployment) under way.**
+> The data pipeline, the framework-free suitability/spacing/warnings engine,
+> and the full drag-and-drop React UI (plot definition, ranked palette,
+> canvas, warnings overlay, user-defined crops, plot-image export, a bundled
+> SVG icon set) are all built and green — see [`WORKPLAN.md`](./WORKPLAN.md)'s
+> Progress table for the stage-by-stage detail. Stage 5.1 now adds **PWA /
+> offline support**: the app installs and works with the network off (see
+> below). Stage 5.2 (GitHub Pages deployment) is next.
 
 ## Why this exists
 
@@ -50,6 +43,53 @@ npm run lint        # lint the whole repo
 npm run format      # auto-format with Prettier
 npm run e2e         # run Playwright end-to-end tests (builds + previews the app)
 ```
+
+## Progressive Web App / offline support
+
+The app is installable and works fully offline after one online visit — a
+service worker (`vite-plugin-pwa`, `app/vite.config.ts`) precaches the whole
+build, and the bundled dataset and crop icon set are covered by that same
+precache with no extra runtime-caching logic needed (see
+[`docs/adr/0022`](./docs/adr/0022-pwa-offline-support.md) for how that was
+confirmed rather than assumed). `app/e2e/offline.spec.ts` is the automated
+proof: it loads the app once online, goes offline
+(`context.setOffline(true)`), and confirms the core plot → palette → drag-a-
+crop-onto-the-canvas journey still works with no network at all.
+
+To try it by hand: `npm run build -w app && npm run preview -w app`, open
+the printed local URL, reload once (so the service worker installs), then
+disconnect from the network (or use your browser devtools' "Offline"
+throttling) and reload again — the app keeps working.
+
+### Lighthouse PWA audit (manual — no CI workflow exists yet, per `WORKPLAN.md` §1.4)
+
+```bash
+npm run build -w app && npm run preview -w app   # serve the production build at :4173, in one terminal
+# in another terminal:
+npx lighthouse@11 http://localhost:4173/ --only-categories=pwa \
+  --chrome-flags="--headless=new" --view
+```
+
+**Today's recorded score: 0.88 / 1.00** (7 of 8 weighted points). Breakdown:
+
+| Audit                      | Result  | Notes                                                                                                                                                                            |
+| -------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Installable manifest       | ✅ Pass | Manifest + service worker meet installability requirements.                                                                                                                      |
+| Viewport meta tag          | ✅ Pass |                                                                                                                                                                                  |
+| Content sized for viewport | ✅ Pass |                                                                                                                                                                                  |
+| Maskable icon              | ✅ Pass | `app/public/maskable-icon.svg`.                                                                                                                                                  |
+| Themed address bar         | ✅ Pass | `<meta name="theme-color">` in `app/index.html`.                                                                                                                                 |
+| Custom splash screen       | ❌ Fail | This specific legacy audit hard-requires a **PNG** icon ≥512px; this project's icons are all SVG (see ADR 0022's "why SVG" reasoning) — a known, accepted gap rather than a bug. |
+
+Why `lighthouse@11` and not plain `npx lighthouse`: the `lighthouse` npm
+package's current major version has **removed the scored "PWA" category
+entirely** (`npx lighthouse --only-categories=pwa` now errors with
+"unrecognized category") — a real, upstream tooling change, not something
+this project's build broke. Pinning the last major version that still has
+the category is the honest way to get a runnable, numeric PWA audit locally
+until an equivalent replacement exists. `--view` opens the HTML report in a
+browser; drop it (and add `--output=json --output-path=<file>` instead) for
+a scriptable result.
 
 ## Repository layout
 
