@@ -185,3 +185,38 @@ giving Stage 1.1 something real to run.
   `gbifId` is proven schema-valid rather than merely plausible — and the etl
   package now depends on `@garden-planner/engine` to get there, reusing the
   Stage 0.2 schema rather than re-declaring any part of it.
+
+## Status update (2026-07-26): the join key is designed but unexercised
+
+Recorded during the pre-deployment review
+([`docs/review-pre-deployment.md`](../review-pre-deployment.md) §3.8), because
+it is the kind of thing the next source adapter will otherwise discover the
+hard way.
+
+**Every record in `data/plants.json` has `gbifId: null` — 0 of 162 resolved.**
+GBIF is unreachable from the build sandbox's egress policy (the same block that
+keeps PFAF out — see ADR 0006 and `NOTICE`), so the committed cache holds no
+confident answers and `apply-resolution.ts` has never had one to apply against
+real data.
+
+**This costs nothing today.** OpenFarm is the only full-`Plant` source, so
+there is no cross-source reconciliation to do: `merge/join.ts` falls straight
+through to the shared-slug/alias path, and `unifyPlantsByIdentity` says as much
+in its own comment. The merge is correct — it is simply not using the key this
+ADR designed.
+
+**It starts to matter the moment Stage 1.2's remaining adapters land.** PFAF
+and Permapeople exist precisely to be merged _with_ OpenFarm, and merging two
+independent sources on slug aliases alone is a far weaker guarantee than
+merging on a taxonomic id — aliases are a hand-maintained table
+(`merge/aliases.ts`), and the failure mode is silent duplication ("onion" three
+ways) rather than a loud error. Whoever picks up Stage 1.2 should therefore
+treat "get GBIF reachable, or accept and document a weaker join" as part of
+that stage, not as a solved problem inherited from Stage 1.1:
+
+- If GBIF is reachable in that environment, run the resolver and commit the
+  populated cache **before** wiring the second adapter, so the join key is real
+  when it is first relied on.
+- If it is not, say so explicitly in that stage's ADR and expect to grow
+  `SLUG_ALIASES` considerably — and add a merge-report assertion that flags
+  suspected duplicate identities rather than trusting silence.

@@ -37,7 +37,7 @@ All commands from a clean `npm install` at the repo root.
 | `npm run lint`             | ✅ pass      | clean                                                                  |
 | `npm run typecheck`        | ✅ pass      | all three workspaces                                                   |
 | `npm run format:check`     | ✅ pass      | clean                                                                  |
-| `npm test`                 | ✅ pass      | engine + etl: 29 files / **230 tests**; app: 30 files / **150 tests**  |
+| `npm test`                 | ✅ pass      | engine **362**, etl **230**, app **150** — 742 tests, 88 files         |
 | `npm run build`            | ✅ pass      | with a Vite chunk-size warning — see §3.6                              |
 | `npm run e2e` (Playwright) | ⚠️ **flaky** | 7 tests. **Failed on the first full-suite run**, passed on four reruns |
 
@@ -92,9 +92,23 @@ four crops (`Kale`, `Lacinato Kale`, `Red Russian Kale`, `Sea Kale`) and
 happens to put first — so a future change to `rankPlants`' tie-break could
 silently change which crop this test places, without the test noticing.
 
-**Fix.** Make the locator name the crop, which fixes both problems at once —
-it is unique, and Playwright will genuinely wait for it because a stale Kale
-entry no longer matches:
+**A second, deeper cause, found while fixing the first.** Instrumenting the
+page showed the plot canvas sitting at **y ≈ 3525–3695** in a viewport only
+**3500** px tall — i.e. the drop target was about 110 px _below the fold_.
+`page.mouse` works in viewport coordinates and does not scroll, so the drag was
+landing outside the viewport entirely and only succeeding when dnd-kit's
+auto-scroll happened to rescue it in time. That is why the failure looked
+load-dependent, and it affects **every** spec using this tall-viewport idiom,
+not just the export one. The 3500 px figure was chosen when the palette was
+shorter; the dataset has grown since.
+
+This second cause is the one that actually made the suite flaky. The wildcard
+locator explains the specific "Kale: 2 placed" symptom; the short viewport
+explains why drags intermittently did nothing at all.
+
+**Fix.** Make the locator name the crop, which fixes the first problem — it is
+unique, and Playwright will genuinely wait for it because a stale Kale entry no
+longer matches:
 
 ```ts
 async function dragOntoCanvas(page: Page, crop: string, targetX: number, targetY: number) {
@@ -108,8 +122,17 @@ async function dragOntoCanvas(page: Page, crop: string, targetX: number, targetY
 — `PlantPalette.tsx:189` — so an anchored regex distinguishes `Kale` from
 `Lacinato Kale` cleanly.)
 
-**Also worth doing:** add a root `test:all` script that runs unit + E2E, so
-§0.3's "the test suite passes" is a single command that means what it says.
+For the viewport, raise it with real headroom **and** assert both ends of the
+drag are actually in view, so the next time it drifts the failure says so
+instead of manifesting as a mysterious "nothing placed yet".
+
+Worth noting: `warnings-overlay.spec.ts` already used the anchored,
+crop-specific locator and documented exactly this reasoning. The fix is
+therefore bringing three specs into line with the one that got it right, not
+inventing a new convention.
+
+**Also worth doing:** add a root script that runs unit + E2E, so §0.3's "the
+test suite passes" is a single command that means what it says.
 
 ### 3.2 — `vite.config.ts` states the opposite of what the build does ⚠️ **fix before deploy**
 
@@ -437,3 +460,86 @@ architecturally sound with sound ADRs; unusually well commented; and honest
 about its own data gaps almost everywhere — the exceptions being one code
 comment that contradicts its own ADR, and a legend specification that its test
 locks in rather than checks.
+
+---
+
+## 8. What was applied
+
+All nine findings were acted on in the same branch as this review. Verified
+with `npm run verify` (lint → typecheck → format:check → test → build → e2e),
+exit 0, and the E2E suite run four further times to confirm the flake is gone.
+
+| §   | Finding                                | What changed                                                                                                                                                                                                      |
+| --- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1 | Racy / flaky export E2E                | New `app/e2e/drag.ts` — one shared `dragCropOntoCanvas` replacing five hand-rolled copies. **Four** distinct races closed (see below). Viewport raised 3500 → 4000 in all five specs.                             |
+| 3.2 | `vite.config.ts` contradicted ADR 0022 | Comment rewritten to match what the build actually emits (icons inline as `data:` URIs; the `svg` glob is a safety net, not a present need).                                                                      |
+| 3.3 | Export legend repeated instances       | `buildLegendText` now groups by crop with a count (`- Onion × 12`); tests rewritten, including one pinning that the legend's line count no longer grows with the number of plants placed.                         |
+| 3.4 | Overcrowding never cumulative          | "Known limitation" section added to ADR 0018 with three costed options; `placement-derivation.ts` points at it and warns against the tempting wrong fix.                                                          |
+| 3.5 | Stale 160/151 figures                  | Corrected to 162/153 across `method.ts`, six suitability/warnings modules, three test files, `resolveIcon.ts`, two E2E specs and `docs/architecture.md`. WORKPLAN's Progress table annotated with today's totals. |
+| 3.6 | No budget on the shipped bundle        | Deliberate `chunkSizeWarningLimit: 1200` in `app/vite.config.ts` with the reasoning recorded; `budget.test.ts` docstring now states plainly that it measures source bytes, not shipped bytes.                     |
+| 3.7 | Property test could go vacuous         | `upperBound` resolves spacing through `resolveLatticeSpacing` and throws on a non-positive area per plant. An intensive-only spacing added to `SPACINGS` so the path is actually exercised.                       |
+| 3.8 | GBIF join key inert (0/162)            | "Status update" section appended to ADR 0005 telling the next Stage 1.2 session to treat the join key as unproven, with two concrete branches depending on GBIF reachability.                                     |
+| 3.9 | 3 of 4 scoring dimensions inert        | README gained a "caveat worth knowing before you judge the rankings" section stating the coverage honestly and pointing at Stage 1.2 as the unblocker.                                                            |
+
+Process changes alongside them:
+
+- **`npm run verify`** (root `package.json`) runs the whole §1.4 list including
+  E2E. WORKPLAN §1.4 now names it and says explicitly why `npm test` alone is
+  not enough; the README says the same and documents `PW_EXECUTABLE_PATH` for
+  environments that ship their own Chromium.
+
+**Test counts after the changes:** engine 362, etl 230, app 152 — 744 across 88
+files, plus 7 E2E.
+
+### Corrections to this review
+
+- §2's table originally reported "engine + etl: 230 tests; app: 150". That
+  misread `npm test`'s three per-workspace summaries as two: engine is 362 and
+  etl is 230, so the real total was 742, not 380. Corrected above.
+- §3.1 originally attributed the flake solely to the wildcard locator. That was
+  incomplete — the short viewport was the larger cause, and was only found by
+  instrumenting the page while fixing the first. Both are recorded above, and
+  both are fixed.
+
+### Deliberately not done
+
+- **No bundle splitting.** §3.6 offered `manualChunks` as an alternative. It was
+  not taken: the palette needs the dataset and the canvas needs the icons, so
+  splitting them trades one request for several without improving first paint.
+  The budget records the size instead of hiding it.
+- **No cumulative-capacity model** (§3.4). Building one honestly means either
+  multi-crop packing or per-crop sub-regions, and the canvas cannot express the
+  latter while placements are points. Documented rather than half-built.
+- **Nothing in Stage 5.2.** Still not started, and untouched by this branch.
+
+### §3.1 in detail: four races, not one
+
+The flake turned out to be layered. Each of these was found only by fixing the
+one above it and re-running, which is worth recording — "fixed the locator" on
+its own would have left the suite red.
+
+1. **Stale drag source.** A wildcard locator plus `.first()` was satisfied by
+   the previous search term's palette entry, so a drag could place the wrong
+   crop twice and the intended one not at all. Fixed by naming the crop, which
+   makes Playwright's auto-waiting do the synchronising.
+2. **Drop target below the fold.** The canvas sat at y ≈ 3525–3695 in a
+   3500 px viewport. `page.mouse` uses viewport coordinates and does not
+   scroll, so drags landed nowhere and only succeeded when dnd-kit's
+   auto-scroll rescued them. Fixed by raising the viewport to 4000 **and**
+   asserting both ends of the drag are in view — the guard was verified by
+   temporarily lowering the viewport, and it reports the offending coordinates
+   and what to do about them.
+3. **Stale drop target.** Callers read the canvas box immediately after
+   `searchBox.fill(...)`, i.e. _before_ the filter re-rendered and moved the
+   canvas. Fixed by having the helper read the box itself, after the palette
+   entry is visible.
+4. **Controlled-input race.** `plot-export.spec.ts` filtered for the next crop
+   while the previous placement's re-render was still in flight, which can drop
+   the typed value from a controlled React input. Fixed by asserting each crop
+   landed before filtering for the next. The same stale-box reasoning applied
+   to `plot-canvas.spec.ts`'s post-drag marker click, which had been failing as
+   an unexplained 30-second click timeout.
+
+**Evidence it is fixed:** 34 consecutive green spec executions after the last
+change (6 full-suite runs plus `--repeat-each=4`), and `npm run verify` exits 0.
+Before the fixes, a full-suite run failed roughly one time in three.

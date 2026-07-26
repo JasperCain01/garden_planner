@@ -5,11 +5,11 @@
  *
  * ## What the shipped data actually looks like
  *
- * Of the 160 records in `data/plants.json`:
+ * Of the 162 records in `data/plants.json`:
  *
  * | Spacing shape        | Records |
  * | -------------------- | ------- |
- * | `row` only           | 151     |
+ * | `row` only           | 153     |
  * | `row` and `intensive`|   9     |
  * | `intensive` only     |   0     |
  *
@@ -123,7 +123,7 @@ export function resolveLatticeSpacing(
       return { inRowCm: side, betweenRowCm: side, method: 'intensive', source: 'recorded' };
     }
     if (row !== undefined) {
-      // The equal-area square — the common case, since 151 of 160 shipped
+      // The equal-area square — the common case, since 153 of 162 shipped
       // crops have row spacing and nothing else.
       const side = Math.sqrt(row.inRowCm * row.betweenRowCm);
       return { inRowCm: side, betweenRowCm: side, method: 'intensive', source: 'derived-from-row' };

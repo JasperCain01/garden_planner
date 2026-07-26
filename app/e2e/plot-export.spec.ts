@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+
+import { dragCropOntoCanvas } from './drag.ts';
 
 // The export journey WORKPLAN.md §1.3 names for Stage 3.7: build a small
 // plot, place a few crops, click Export, and confirm a real PNG downloads.
@@ -11,19 +13,13 @@ import { expect, test, type Page } from '@playwright/test';
 // `toCanvas`/2D-canvas compositing, `docs/adr/0020`) only runs in a real
 // browser, so this is the one place it's actually exercised — no component
 // test drives the real pipeline (`PlotCanvasSection.test.tsx` mocks it).
-test.use({ viewport: { width: 1024, height: 3500 } });
-
-async function dragOntoCanvas(page: Page, sourceLabel: RegExp, targetX: number, targetY: number) {
-  const source = page.getByLabel(sourceLabel).first();
-  const sourceBox = await source.boundingBox();
-  if (sourceBox === null) throw new Error('drag source has no bounding box');
-
-  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(targetX - 40, targetY - 40, { steps: 5 });
-  await page.mouse.move(targetX, targetY, { steps: 5 });
-  await page.mouse.up();
-}
+// A very tall viewport keeps the palette entry and the canvas on-screen at
+// once: `page.mouse` works in viewport coordinates and does not scroll (see
+// `drag.ts`). 4000 is deliberate headroom over the ~3700 a filtered palette
+// plus the canvas actually needs today — at 3500 the canvas sat just below
+// the fold and drags intermittently did nothing. `drag.ts` asserts both ends
+// are in view, so if this ever stops being enough the failure says so.
+test.use({ viewport: { width: 1024, height: 4000 } });
 
 test('exporting the plot downloads a PNG with the placed crops and a legend', async ({ page }) => {
   await page.goto('/');
@@ -43,23 +39,25 @@ test('exporting the plot downloads a PNG with the placed crops and a legend', as
   ];
   for (const [crop, dx, dy] of placements) {
     await searchBox.fill(crop);
-    const canvasBox = await canvas.boundingBox();
-    if (canvasBox === null) throw new Error('canvas has no bounding box');
-    const canvasCentre = {
-      x: canvasBox.x + canvasBox.width / 2,
-      y: canvasBox.y + canvasBox.height / 2,
-    };
-    await dragOntoCanvas(
-      page,
-      /drag .* onto the plot to place it/i,
-      canvasCentre.x + dx,
-      canvasCentre.y + dy,
+    await dragCropOntoCanvas(page, crop, canvas, (box) => ({
+      x: box.x + box.width / 2 + dx,
+      y: box.y + box.height / 2 + dy,
+    }));
+    // Confirm this crop landed before filtering for the next one. Without it,
+    // the next `fill` races this placement's re-render — and a controlled
+    // React input mid-re-render can quietly drop the typed value, leaving the
+    // palette showing the previous crop.
+    await expect(page.locator('li', { hasText: new RegExp(`^${crop}:`) })).toContainText(
+      '1 placed of',
     );
   }
   await searchBox.fill('');
-  await expect(page.locator('li', { hasText: 'Onion:' })).toContainText('1 placed of');
-  await expect(page.locator('li', { hasText: 'Kale:' })).toContainText('1 placed of');
-  await expect(page.locator('li', { hasText: 'Lettuce:' })).toContainText('1 placed of');
+  // Anchored, so "Onion:" can't also match a "Green Onion:" tally row if a
+  // future change to the drag ever places the wrong crop — the assertion has
+  // to name the same exact crop the drag did for it to mean anything.
+  await expect(page.locator('li', { hasText: /^Onion:/ })).toContainText('1 placed of');
+  await expect(page.locator('li', { hasText: /^Kale:/ })).toContainText('1 placed of');
+  await expect(page.locator('li', { hasText: /^Lettuce:/ })).toContainText('1 placed of');
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: /export image/i }).click();

@@ -30,7 +30,7 @@ const FUSSY_CROP: Soil = {
 
 describe('scoreSoil', () => {
   it('reports unknown-plant when the crop says nothing about soil', () => {
-    // The whole shipped dataset's case today (0/160 carry soil).
+    // Nearly the whole shipped dataset's case today (160/162 carry no soil).
     const result = scoreSoil(plantWith(), plotWith({ texture: 'clay' }));
 
     expect(result).toMatchObject({

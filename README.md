@@ -16,6 +16,23 @@ finished plot.
 > offline support**: the app installs and works with the network off (see
 > below). Stage 5.2 (GitHub Pages deployment) is next.
 
+### A caveat worth knowing before you judge the rankings
+
+The suitability engine scores four dimensions — **light, hardiness, soil and
+season** — but the shipped dataset can only feed one of them. Of 162 crops,
+all 162 carry light (in just two values: 148 full-sun, 14 partial-shade),
+while only **2** carry hardiness, soil or season data. So in practice the
+ranked palette is close to a two-tier sort on light, and most crops are scored
+on light alone.
+
+This is a **data** gap, not an engine one, and the app says so rather than
+hiding it: every result carries a confidence figure and a plain-English note
+("Scored on light alone — no hardiness, soil or season data for this crop"). It
+closes when Stage 1.2's remaining source adapters land — PFAF carries hardiness
+and soil, Permapeople carries growth characteristics — which is why that stage
+is still marked ⚠️ partial in [`WORKPLAN.md`](./WORKPLAN.md)'s Progress table
+and is the highest-value remaining data work in the plan.
+
 ## Why this exists
 
 A free, open, easy-to-clone tool for planning a productive garden, built to run
@@ -42,7 +59,23 @@ npm run typecheck   # type-check every workspace
 npm run lint        # lint the whole repo
 npm run format      # auto-format with Prettier
 npm run e2e         # run Playwright end-to-end tests (builds + previews the app)
+npm run verify      # all of the above, in the order WORKPLAN.md §1.4 requires
 ```
+
+Use `npm run verify` before calling any change done. `npm test` deliberately
+covers only the unit and component suites — Playwright is a separate command,
+so `npm test` alone never exercises the end-to-end journeys.
+
+> **If Playwright can't find a browser** (`Executable doesn't exist at …`),
+> you're likely in a sandbox or container that ships its own Chromium rather
+> than Playwright's managed one. Point Playwright at it instead of running
+> `npx playwright install`:
+>
+> ```bash
+> PW_EXECUTABLE_PATH=/path/to/chromium npm run verify
+> ```
+>
+> `app/playwright.config.ts` reads that variable and is otherwise unaffected.
 
 ## Progressive Web App / offline support
 

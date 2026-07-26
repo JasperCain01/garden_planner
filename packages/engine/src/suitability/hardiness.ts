@@ -6,13 +6,15 @@
  * 0010 §1) — which is exactly why no conversion step is needed: `rhsHardinessRank`
  * compares like with like.
  *
- * **No shipped record carries hardiness today** (0/160), so in practice this
- * dimension reports `unknown-plant` for the whole current dataset and drops out
- * of the score. That is the honest answer, and it is visible in the result's
- * confidence and reasoning rather than hidden behind a default. A user-defined
- * crop (ADR 0011) *can* supply hardiness, and Stage 1.7's curated records will,
- * which is why the policy is per-record rather than a blanket "we have no
- * hardiness data".
+ * **Almost no shipped record carries hardiness** (2/162 — Stage 1.7's two
+ * curated crops, `broad-bean` and `jerusalem-artichoke`), so in practice this
+ * dimension reports `unknown-plant` for nearly the whole current dataset and
+ * drops out of the score. That is the honest answer, and it is visible in the
+ * result's confidence and reasoning rather than hidden behind a default. A
+ * user-defined crop (ADR 0011) can also supply hardiness — which is why the
+ * policy is per-record rather than a blanket "we have no hardiness data", and
+ * why those two curated crops now score on three dimensions where every
+ * OpenFarm-sourced record scores on one.
  */
 
 import type { Hardiness, Plant, RhsHardinessRating } from '../schema/plant.ts';

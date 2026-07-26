@@ -18,8 +18,9 @@
  *    the array literal in `plant.ts`. With only three bands, adjacency would buy
  *    little anyway.
  *
- * No shipped record carries soil today (0/160), so this dimension reports
- * `unknown-plant` across the current dataset — visibly, in the reasoning.
+ * Almost no shipped record carries soil (2/162 — Stage 1.7's curated crops),
+ * so this dimension reports `unknown-plant` across nearly the whole current
+ * dataset — visibly, in the reasoning.
  */
 
 import type { Plant } from '../schema/plant.ts';
