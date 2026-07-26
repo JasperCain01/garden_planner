@@ -38,7 +38,7 @@ describe('scoreHardiness', () => {
       weight: 0.3,
     });
     expect(result.reason).toContain('No hardiness data for this crop');
-    // This is the entire shipped dataset's case today (0/160 carry hardiness).
+    // Nearly the entire shipped dataset's case today (160/162 carry no hardiness).
     expect(result.score).toBeNull();
   });
 

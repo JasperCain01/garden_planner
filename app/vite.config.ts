@@ -57,18 +57,28 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // The default `globPatterns` (`**/*.{js,wasm,css,html}`) would miss
-        // two things this app actually ships: the crop icon set, and — in
-        // principle — any future non-JS static asset. The shipped *dataset*
-        // (`app/src/dataset/shipped-plants.ts`) needs no extra entry here: a
-        // JSON module import compiles straight into the JS bundle, so it's
-        // already covered by `.js`. Crop icons
-        // (`app/src/icons/resolveIcon.ts`) are different — they're imported
-        // with Vite's `?url` query, which always emits a separate hashed
-        // asset file rather than inlining, regardless of size — so `dist/`
-        // ends up with real `.svg` files the default pattern doesn't match.
-        // Confirmed by inspecting a production build's `dist/` output and
-        // the generated `sw.js` precache manifest (see the ADR).
+        // Widened from the default (`**/*.{js,wasm,css,html}`) as a **safety
+        // net**, not because today's build needs it. What a production build
+        // actually emits (verified against `dist/` and the generated
+        // `sw.js` precache manifest — see ADR 0022):
+        //
+        //  - The shipped *dataset* (`app/src/dataset/shipped-plants.ts`) is a
+        //    JSON module import, so it compiles straight into the JS bundle
+        //    and is already covered by `.js`.
+        //  - Every crop icon (`app/src/icons/resolveIcon.ts`) is *also* in
+        //    that bundle. `?url` does **not** opt out of Vite's
+        //    `assetsInlineLimit` — only `?no-inline` does — and every icon is
+        //    comfortably under it (`app/src/icons/budget.test.ts` holds them
+        //    there), so they inline as base64 `data:` URIs rather than being
+        //    emitted as separate `.svg` files. `dist/` contains no crop SVGs
+        //    at all.
+        //
+        // So `svg` here currently matches only `public/`'s two PWA manifest
+        // icons, which `includeAssets` above already covers. It earns its
+        // place by covering the day an icon (or any other static asset) grows
+        // past the inline threshold and Vite starts emitting it as a separate
+        // hashed file — at which point precaching it must not depend on
+        // another session rediscovering all of the above.
         globPatterns: ['**/*.{js,css,html,svg,webmanifest}'],
         // Take over existing clients as soon as the new service worker
         // activates, instead of the default "wait until every tab with the
@@ -81,6 +91,24 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    // A deliberate, recorded budget on the shipped bundle rather than a
+    // warning everyone learns to scroll past.
+    //
+    // Today's build is ~1,109 kB raw / ~264 kB gzipped in one chunk, and that
+    // is *by design*: §0.1 says everything the app needs must ship with it, so
+    // the 162-crop dataset (a JSON module) and the whole icon set (inlined as
+    // base64 `data:` URIs — see the workbox comment above) are both in there
+    // alongside React and Konva. Splitting them into separate chunks would not
+    // speed up first paint, because the palette needs the dataset and the
+    // canvas needs the icons: it would just trade one request for several.
+    //
+    // So the limit is set a little above where we actually are. Vite stays
+    // quiet at the known-good size, and crossing ~1,200 kB means something
+    // genuinely new arrived in the bundle and is worth a look — which is what
+    // a budget is for. Raise it only with a reason, not to silence it.
+    chunkSizeWarningLimit: 1200,
+  },
   // Vitest configuration lives here so it shares Vite's transforms. Component
   // tests need a DOM, hence jsdom. `globals: true` exposes a global `afterEach`,
   // which React Testing Library uses to auto-unmount between tests (without it,

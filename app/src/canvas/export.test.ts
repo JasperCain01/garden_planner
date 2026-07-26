@@ -23,18 +23,43 @@ function placed(plant: Plant, x: number, y: number): PlacedPlant {
   return { id: `${plant.id}-${x}-${y}`, plant, x, y };
 }
 
+/** The `- Crop` rows of the legend, trimmed — the "key" part it exists to produce. */
+function cropLinesOf(text: string): string[] {
+  return text
+    .split('\n')
+    .filter((line) => line.trim().startsWith('-'))
+    .map((line) => line.trim());
+}
+
 describe('buildLegendText', () => {
-  it('lists placed crops one per line, in placement order', () => {
+  it('lists one line per distinct crop, in first-placed order, with a count', () => {
+    // A key, not a placement log: two onions are one row saying so. Onion is
+    // listed first because it was placed first, even though the second onion
+    // came after the kale.
     const text = buildLegendText(
       [placed(ONION, 0, 0), placed(KALE, 50, 50), placed(ONION, 10, 10)],
       null,
     );
 
-    const cropLines = text
-      .split('\n')
-      .filter((line) => line.trim().startsWith('-'))
-      .map((line) => line.trim());
-    expect(cropLines).toEqual(['- Onion', '- Kale', '- Onion']);
+    expect(cropLinesOf(text)).toEqual(['- Onion × 2', '- Kale']);
+  });
+
+  it('omits the count for a crop placed once, so the common case reads as a plain name', () => {
+    expect(cropLinesOf(buildLegendText([placed(KALE, 0, 0)], null))).toEqual(['- Kale']);
+  });
+
+  it('stays a fixed number of lines however many of one crop are placed', () => {
+    // The property that matters: `compositeExportCanvas` sizes the legend
+    // panel (and so the exported PNG) from the line count, so a big bed must
+    // not produce a legend hundreds of rows tall.
+    const oneOnion = buildLegendText([placed(ONION, 0, 0)], null);
+    const sixtyOnions = buildLegendText(
+      Array.from({ length: 60 }, (_unused, index) => placed(ONION, index, 0)),
+      null,
+    );
+
+    expect(cropLinesOf(sixtyOnions)).toEqual(['- Onion × 60']);
+    expect(sixtyOnions.split('\n')).toHaveLength(oneOnion.split('\n').length);
   });
 
   it('says nothing is placed yet when the canvas is empty', () => {

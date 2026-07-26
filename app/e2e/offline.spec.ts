@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { dragCropOntoCanvas } from './drag.ts';
+
 // The offline E2E test WORKPLAN.md §1.3 requires: "An E2E run that loads the
 // app, goes offline, and confirms it still functions." Stage 5.1 adds the
 // service worker and manifest (`app/vite.config.ts`'s `VitePWA` plugin,
@@ -19,7 +21,13 @@ import { expect, test } from '@playwright/test';
 // Tall viewport for the same reason as `plot-canvas.spec.ts`: the unfiltered
 // palette makes the page much taller than a normal viewport, and a
 // `page.mouse` drag doesn't auto-scroll the way a `Locator` action would.
-test.use({ viewport: { width: 1024, height: 3500 } });
+// A very tall viewport keeps the palette entry and the canvas on-screen at
+// once: `page.mouse` works in viewport coordinates and does not scroll (see
+// `drag.ts`). 4000 is deliberate headroom over the ~3700 a filtered palette
+// plus the canvas actually needs today — at 3500 the canvas sat just below
+// the fold and drags intermittently did nothing. `drag.ts` asserts both ends
+// are in view, so if this ever stops being enough the failure says so.
+test.use({ viewport: { width: 1024, height: 4000 } });
 
 test('the app works with the network off, once the service worker has installed', async ({
   page,
@@ -54,30 +62,12 @@ test('the app works with the network off, once the service worker has installed'
   await expect(page.getByRole('heading', { name: /garden planner/i })).toBeVisible();
 
   await page.getByLabel(/^search$/i).fill('Onion');
-  const paletteEntry = page.getByLabel(/drag onion onto the plot to place it/i);
-  await expect(paletteEntry).toBeVisible();
 
   const canvas = page.getByLabel(/plot canvas/i);
   await expect(canvas).toBeVisible();
-  const canvasBox = await canvas.boundingBox();
-  if (canvasBox === null) throw new Error('canvas has no bounding box');
-  const canvasCentre = {
-    x: canvasBox.x + canvasBox.width / 2,
-    y: canvasBox.y + canvasBox.height / 2,
-  };
-
   await expect(page.getByText(/nothing placed yet/i)).toBeVisible();
 
-  const sourceBox = await paletteEntry.boundingBox();
-  if (sourceBox === null) throw new Error('drag source has no bounding box');
-  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
-  await page.mouse.down();
-  // Several intermediate moves: dnd-kit's PointerSensor needs actual pointer
-  // movement to register a drag as started (same reasoning as
-  // `plot-canvas.spec.ts`).
-  await page.mouse.move(canvasCentre.x - 40, canvasCentre.y - 40, { steps: 5 });
-  await page.mouse.move(canvasCentre.x, canvasCentre.y, { steps: 5 });
-  await page.mouse.up();
+  await dragCropOntoCanvas(page, 'Onion', canvas);
 
   // Placed entirely offline: a fitPlant summary and tally appear, exactly as
   // they would online.

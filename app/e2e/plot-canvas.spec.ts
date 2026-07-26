@@ -1,4 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+
+import { canvasBoxOf, dragCropOntoCanvas } from './drag.ts';
 
 // The core-journey drag-drop test WORKPLAN.md §1.3 anticipates for Stage 3.4:
 // define a plot (the default one is already valid) → drag a plant from the
@@ -11,27 +13,15 @@ import { expect, test, type Page } from '@playwright/test';
 // helper fires), and Konva renders to a `<canvas>` with no queryable DOM — so
 // this drives real mouse events against a real browser and Konva scene.
 //
-// A tall viewport keeps both the palette entry and the canvas simultaneously
-// on-screen: the unfiltered palette (160 shipped crops) makes the full page
-// many times taller than a normal viewport, and a `page.mouse` drag doesn't
-// auto-scroll the way a `Locator` action would. Filtering the palette by
-// search narrows this further, which also happens to be realistic — a
-// gardener hunting for one crop searches first.
-test.use({ viewport: { width: 1024, height: 3500 } });
-
-async function dragOntoCanvas(page: Page, sourceLabel: RegExp, targetX: number, targetY: number) {
-  const source = page.getByLabel(sourceLabel).first();
-  const sourceBox = await source.boundingBox();
-  if (sourceBox === null) throw new Error('drag source has no bounding box');
-
-  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
-  await page.mouse.down();
-  // Several intermediate moves: dnd-kit's PointerSensor needs actual pointer
-  // movement to register a drag as started.
-  await page.mouse.move(targetX - 40, targetY - 40, { steps: 5 });
-  await page.mouse.move(targetX, targetY, { steps: 5 });
-  await page.mouse.up();
-}
+// A very tall viewport keeps the palette entry and the canvas on-screen at
+// once: `page.mouse` works in viewport coordinates and does not scroll (see
+// `drag.ts`). 4000 is deliberate headroom over the ~3700 a filtered palette
+// plus the canvas actually needs today — at 3500 the canvas sat just below
+// the fold and drags intermittently did nothing. `drag.ts` asserts both ends
+// are in view, so if this ever stops being enough the failure says so.
+// Filtering by search first keeps the page that short, and is realistic
+// besides — a gardener hunting for one crop searches first.
+test.use({ viewport: { width: 1024, height: 4000 } });
 
 test('dragging a plant from the palette onto the plot places it, with live count feedback', async ({
   page,
@@ -41,17 +31,11 @@ test('dragging a plant from the palette onto the plot places it, with live count
 
   const canvas = page.getByLabel(/plot canvas/i);
   await expect(canvas).toBeVisible();
-  const canvasBox = await canvas.boundingBox();
-  if (canvasBox === null) throw new Error('canvas has no bounding box');
-  const canvasCentre = {
-    x: canvasBox.x + canvasBox.width / 2,
-    y: canvasBox.y + canvasBox.height / 2,
-  };
 
   // Before anything is placed, the feedback panel says so.
   await expect(page.getByText(/nothing placed yet/i)).toBeVisible();
 
-  await dragOntoCanvas(page, /drag .* onto the plot to place it/i, canvasCentre.x, canvasCentre.y);
+  await dragCropOntoCanvas(page, 'Onion', canvas);
 
   // A plant landed: the "nothing placed" prompt is gone, replaced by a
   // fitPlant summary sentence ("<Crop> — N plants: ...") and a tally line.
@@ -60,7 +44,14 @@ test('dragging a plant from the palette onto the plot places it, with live count
   await expect(page.getByText(/1 placed of/)).toBeVisible();
 
   // Select it, then remove it via the toolbar button — back to "nothing placed".
-  await page.mouse.click(canvasCentre.x, canvasCentre.y);
+  //
+  // The canvas box is re-read here rather than reused from before the drag:
+  // placing a plant grows the feedback panel, and anything that changes the
+  // page's layout can move the canvas. Clicking a stale centre misses the
+  // Konva marker, no selection happens, and the "Remove" button never appears
+  // — which surfaces as a 30-second click timeout with no hint of the cause.
+  const canvasBox = await canvasBoxOf(canvas);
+  await page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
   await page.getByRole('button', { name: /remove/i }).click();
   await expect(page.getByText(/nothing placed yet/i)).toBeVisible();
 });
@@ -74,15 +65,8 @@ test('placed plants render their resolved icons or the generic fallback (Stage 4
 
   const canvas = page.getByLabel(/plot canvas/i);
   await expect(canvas).toBeVisible();
-  const canvasBox = await canvas.boundingBox();
-  if (canvasBox === null) throw new Error('canvas has no bounding box');
-  const canvasCentre = {
-    x: canvasBox.x + canvasBox.width / 2,
-    y: canvasBox.y + canvasBox.height / 2,
-  };
-
   // Place a shipped crop (onion with an icon).
-  await dragOntoCanvas(page, /drag .* onto the plot to place it/i, canvasCentre.x, canvasCentre.y);
+  await dragCropOntoCanvas(page, 'Onion', canvas);
 
   // Check that the canvas element is present (icon rendering happens inside Konva).
   const canvasElement = page.locator('canvas');

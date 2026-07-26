@@ -341,7 +341,9 @@ export const ProvenanceFieldSchema = z.enum([
 export type ProvenanceField = z.infer<typeof ProvenanceFieldSchema>;
 
 /**
- * A single source attribution. Needed for the dataset's CC BY-NC-SA obligations
+ * A single source attribution. Kept for traceability — the dataset itself is
+ * CC0 (ADR 0023), so this is not a licence obligation but the thing that makes
+ * a horticultural claim checkable
  * and for plain honesty about where a fact came from (PFAF vs. a hand-verified
  * chart vs. a scraped guide). `source` is a free string for now — Stage 1.x will
  * settle a controlled vocabulary once the real sources are wired in.
@@ -354,7 +356,7 @@ export const SourceRefSchema = z
     sourceId: z.string().optional(),
     /** Link to the source record/page, if any. */
     url: z.string().url().optional(),
-    /** SPDX-ish licence string for the source, e.g. "CC-BY-NC-SA-4.0". */
+    /** SPDX-ish licence string for the source, e.g. "CC0-1.0". */
     license: z.string().optional(),
     /** ISO-8601 date the fact was retrieved, e.g. "2026-01-15". */
     retrievedAt: z.string().optional(),

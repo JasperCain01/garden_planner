@@ -42,11 +42,20 @@ const LEGEND_FONT_SIZE_PX = 14;
 const EXPORT_FILENAME = 'garden-plot.png';
 
 /**
- * Build the legend's plain-text content: every placed crop (one per line, in
- * placement order) and the plot's growing conditions (light, soil texture if
- * known, resolved location name, hardiness band). Deliberately not a complete
- * record of every field — `docs/stage-3.7-brief.md` calls the export "a
- * snapshot, not a save file"; readable and compact beats exhaustive.
+ * Build the legend's plain-text content: a **key** to the placed crops (one
+ * line per distinct crop, with how many of it are down) and the plot's growing
+ * conditions (light, soil texture if known, resolved location name, hardiness
+ * band). Deliberately not a complete record of every field —
+ * `docs/stage-3.7-brief.md` calls the export "a snapshot, not a save file";
+ * readable and compact beats exhaustive.
+ *
+ * **One line per crop, not per placed instance.** `DESIGN.md` §1 and the Stage
+ * 3.7 brief both ask for "a key naming the chosen crops", and a bed of sixty
+ * onions is one crop, not sixty legend rows. Listing instances would also make
+ * the panel — and so the exported PNG — grow without bound with the plot's
+ * size, since `compositeExportCanvas` sizes it from the line count. Crops keep
+ * **first-placed order**, matching how the on-screen tally orders itself, so
+ * the key and the feedback panel read the same way round.
  *
  * Pure and framework-free (no Konva, no DOM) so it's unit-testable on its own.
  *
@@ -65,8 +74,8 @@ export function buildLegendText(
   if (placements.length === 0) {
     lines.push('  (none placed)');
   } else {
-    for (const placement of placements) {
-      lines.push(`  - ${placement.plant.commonName}`);
+    for (const { commonName, count } of countByCrop(placements)) {
+      lines.push(count === 1 ? `  - ${commonName}` : `  - ${commonName} × ${count}`);
     }
   }
 
@@ -86,6 +95,31 @@ export function buildLegendText(
   }
 
   return lines.join('\n');
+}
+
+/**
+ * How many of each distinct crop are placed, in first-placed order.
+ *
+ * Deliberately *not* `canvas/feedback.ts#computePlacementTally`, even though
+ * that groups the same way: the tally also calls `fitPlant` for every crop to
+ * work out the plot's capacity, and the legend needs none of that. Grouping is
+ * four lines; running the packing calculator per crop just to throw the answer
+ * away is the kind of reuse that costs more than it saves.
+ */
+function countByCrop(placements: readonly PlacedPlant[]): { commonName: string; count: number }[] {
+  const rows: { commonName: string; count: number }[] = [];
+  const indexByPlantId = new Map<string, number>();
+
+  for (const { plant } of placements) {
+    const index = indexByPlantId.get(plant.id);
+    if (index === undefined) {
+      indexByPlantId.set(plant.id, rows.length);
+      rows.push({ commonName: plant.commonName, count: 1 });
+    } else {
+      rows[index].count += 1;
+    }
+  }
+  return rows;
 }
 
 /**

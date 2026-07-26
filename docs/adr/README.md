@@ -42,3 +42,4 @@ old one and mark the old one `Superseded`.
 - [0020 — Plot export: 2D-canvas legend compositing instead of a Konva `Group`, and how the stage ref reaches it](./0020-plot-export-canvas-compositing.md)
 - [0021 — Curated full-plant input: shape, join-order placement, and the "curated wins" conflict rule](./0021-curated-plant-input.md)
 - [0022 — PWA / offline support: `vite-plugin-pwa`, `generateSW`, and confirming the "free" precache](./0022-pwa-offline-support.md)
+- [0023 — Relicense the dataset to CC0-1.0](./0023-dataset-licence-cc0.md)

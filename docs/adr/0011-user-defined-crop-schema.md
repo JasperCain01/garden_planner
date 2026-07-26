@@ -1,5 +1,9 @@
 # 0011 — User-defined crops: a separate input schema, an upcast, and the `user-` id namespace
 
+> **Note (ADR [0023](./0023-dataset-licence-cc0.md)):** this ADR justifies required provenance partly by the dataset's then CC BY-NC-SA attribution
+> obligation. The dataset is now **CC0-1.0**, so provenance is no longer a licence requirement — but the decision below is unchanged. It is kept for
+> **traceability**: it is what makes a horticultural claim checkable, and what stops a user-entered crop passing itself off as sourced data.
+
 - **Status:** Accepted
 - **Date:** 2026-07-25
 - **Workplan stage:** 0.3 (⭐ keystone) — schema amendment for user-defined crops

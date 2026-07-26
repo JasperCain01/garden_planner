@@ -21,31 +21,32 @@ whole plan, and a stale entry costs the next session more than it saves this
 one. A stage counts as ✅ only when it meets the definition of done (§0.3):
 green, commented, ADR written, docs updated, and the next brief handed off.
 
-| Stage                                           | Status     | Left behind                                                                                                                                                                                                            |
-| ----------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.1 Repo scaffolding & tooling                  | ✅         | ADRs [0001](./docs/adr/0001-tech-stack.md)–[0003](./docs/adr/0003-static-client-side-architecture.md)                                                                                                                  |
-| 0.2 Data schema ⭐                              | ✅         | ADR [0004](./docs/adr/0004-plant-schema.md); `packages/engine/src/schema/`                                                                                                                                             |
-| 0.3 Schema amendment: user crops ⭐             | ✅         | ADR [0011](./docs/adr/0011-user-defined-crop-schema.md); `schema/user-plant.ts`                                                                                                                                        |
-| 1.1 ETL scaffolding & name resolution           | ✅         | ADR [0005](./docs/adr/0005-gbif-name-resolver.md); GBIF resolver (offline-cached)                                                                                                                                      |
-| 1.2 Source adapters                             | ⚠️ partial | ADR [0006](./docs/adr/0006-openfarm-source-adapter.md); **OpenFarm only** — PFAF and Permapeople still to follow the same pattern                                                                                      |
-| 1.3 Hand-verified spacing table ⭐              | ✅         | ADR [0007](./docs/adr/0007-hand-verified-spacing.md); `packages/etl/src/spacing/`                                                                                                                                      |
-| 1.4 Companion-planting data                     | ✅         | ADR [0008](./docs/adr/0008-companion-planting-data.md); 85 companion + 6 antagonist links                                                                                                                              |
-| 1.5 Dataset build, merge & validation ⭐        | ✅         | ADR [0009](./docs/adr/0009-dataset-merge-and-licensing.md); `data/plants.json` (160 crops)                                                                                                                             |
-| 1.6 Location & climate static data              | ✅         | ADR [0010](./docs/adr/0010-location-climate-static-data.md); `packages/engine/src/climate/`                                                                                                                            |
-| 1.7 Curated full-plant input                    | ✅         | ADR [0021](./docs/adr/0021-curated-plant-input.md); `packages/etl/src/curated/` (`broad-bean`, `jerusalem-artichoke`); `data/plants.json` now 162 crops                                                                |
-| 2.1 Suitability scoring engine ⭐               | ✅         | ADR [0012](./docs/adr/0012-suitability-scoring.md); `src/suitability/`, `rankPlants`                                                                                                                                   |
-| 2.2 Spacing / density calculator ⭐             | ✅         | ADR [0013](./docs/adr/0013-spacing-density-calculator.md); `src/spacing/`, `fitPlant`, `PlotRegionSchema`                                                                                                              |
-| 2.3 Warnings & companion suggestions            | ✅         | ADR [0014](./docs/adr/0014-warnings-and-companion-suggestions.md); `src/warnings/`, `evaluatePlot`                                                                                                                     |
-| 3.1 App shell, state & routing                  | ✅         | ADR [0015](./docs/adr/0015-app-state-management.md); `app/src/routes/`, `app/src/state/`, `app/src/dataset/shipped-plants.ts`                                                                                          |
-| 3.2 Plot definition UI                          | ✅         | ADR [0016](./docs/adr/0016-outline-editor-svg-not-konva.md); `app/src/plot/`, `app/src/state/plot-store.ts`                                                                                                            |
-| 3.3 Plant palette (filtered & ranked)           | ✅         | `app/src/palette/` (`PlantPalette.tsx`, `filters.ts`); layout decision recorded in `docs/architecture.md` (no ADR — follows directly from `DESIGN.md`'s core loop)                                                     |
-| 3.4 Drag-and-drop plot canvas ⭐                | ✅         | ADR [0017](./docs/adr/0017-plot-canvas-konva-and-dnd-kit.md); `app/src/canvas/`, `app/src/state/placements-store.ts`; E2E in `app/e2e/plot-canvas.spec.ts`                                                             |
-| 3.5 Warnings overlay & companion suggestions UI | ✅         | ADR [0018](./docs/adr/0018-placement-derivation-for-warnings.md); `app/src/warnings/`; E2E in `app/e2e/warnings-overlay.spec.ts`                                                                                       |
-| 3.6 User-defined crops                          | ✅         | `app/src/user-crops/`; icon-picker scoping decision (fallback icon, no picker — Stage 4.1 hasn't landed) recorded in `docs/architecture.md`; E2E in `app/e2e/add-custom-crop.spec.ts`                                  |
-| 3.7 Plot-image export                           | ✅         | ADR [0020](./docs/adr/0020-plot-export-canvas-compositing.md); `app/src/canvas/export.ts` (legend builder + export pipeline), "Export image" button in `PlotCanvasSection.tsx`; E2E in `app/e2e/plot-export.spec.ts`   |
-| 4.1 SVG crop icon set                           | ✅         | ADR [0019](./docs/adr/0019-icon-set-archetypes-and-resolution.md); `app/src/icons/` (160 crop icons + 1 fallback, `resolveIcon`); `tools/icons/` (generator); [`docs/icon-style-guide.md`](./docs/icon-style-guide.md) |
-| 4.2 Wire icons into palette & canvas            | ✅         | `app/src/icons/useIconImage.ts` (image loader); `PlantPalette.tsx` renders icons; `PlotCanvas.tsx` layers icons over category circles; component + E2E tests cover resolved and fallback cases                         |
-| 5.1 PWA / offline support                       | ✅         | ADR [0022](./docs/adr/0022-pwa-offline-support.md); `vite-plugin-pwa` in `app/vite.config.ts`; manifest icons in `app/public/`; E2E in `app/e2e/offline.spec.ts`; Lighthouse PWA audit command + score in `README.md`  |
+| Stage                                           | Status     | Left behind                                                                                                                                                                                                                                                                                |
+| ----------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0.1 Repo scaffolding & tooling                  | ✅         | ADRs [0001](./docs/adr/0001-tech-stack.md)–[0003](./docs/adr/0003-static-client-side-architecture.md)                                                                                                                                                                                      |
+| 0.2 Data schema ⭐                              | ✅         | ADR [0004](./docs/adr/0004-plant-schema.md); `packages/engine/src/schema/`                                                                                                                                                                                                                 |
+| 0.3 Schema amendment: user crops ⭐             | ✅         | ADR [0011](./docs/adr/0011-user-defined-crop-schema.md); `schema/user-plant.ts`                                                                                                                                                                                                            |
+| 1.1 ETL scaffolding & name resolution           | ✅         | ADR [0005](./docs/adr/0005-gbif-name-resolver.md); GBIF resolver (offline-cached)                                                                                                                                                                                                          |
+| 1.2 Source adapters                             | ⚠️ partial | ADR [0006](./docs/adr/0006-openfarm-source-adapter.md); **OpenFarm only.** PFAF/Permapeople adapters are **no longer planned** — Stage 6.0 fills the gaps by curation instead, and records why                                                                                             |
+| 1.3 Hand-verified spacing table ⭐              | ✅         | ADR [0007](./docs/adr/0007-hand-verified-spacing.md); `packages/etl/src/spacing/`                                                                                                                                                                                                          |
+| 1.4 Companion-planting data                     | ✅         | ADR [0008](./docs/adr/0008-companion-planting-data.md); 85 companion + 6 antagonist links (8 antagonist links ship today — Stage 1.7 added two)                                                                                                                                            |
+| 1.5 Dataset build, merge & validation ⭐        | ✅         | ADR [0009](./docs/adr/0009-dataset-merge-and-licensing.md); `data/plants.json` (160 crops then; **162 today** — Stage 1.7)                                                                                                                                                                 |
+| 1.6 Location & climate static data              | ✅         | ADR [0010](./docs/adr/0010-location-climate-static-data.md); `packages/engine/src/climate/`                                                                                                                                                                                                |
+| 1.7 Curated full-plant input                    | ✅         | ADR [0021](./docs/adr/0021-curated-plant-input.md); `packages/etl/src/curated/` (`broad-bean`, `jerusalem-artichoke`); `data/plants.json` now 162 crops                                                                                                                                    |
+| 1.8 Curated soil-moisture table                 | ✅         | `packages/etl/src/moisture/`; 72 crops gained `soil.moisture`, taking soil coverage from 2/162 to 74/162 — the engine's second working dimension (see Stage 6.0)                                                                                                                           |
+| 2.1 Suitability scoring engine ⭐               | ✅         | ADR [0012](./docs/adr/0012-suitability-scoring.md); `src/suitability/`, `rankPlants`                                                                                                                                                                                                       |
+| 2.2 Spacing / density calculator ⭐             | ✅         | ADR [0013](./docs/adr/0013-spacing-density-calculator.md); `src/spacing/`, `fitPlant`, `PlotRegionSchema`                                                                                                                                                                                  |
+| 2.3 Warnings & companion suggestions            | ✅         | ADR [0014](./docs/adr/0014-warnings-and-companion-suggestions.md); `src/warnings/`, `evaluatePlot`                                                                                                                                                                                         |
+| 3.1 App shell, state & routing                  | ✅         | ADR [0015](./docs/adr/0015-app-state-management.md); `app/src/routes/`, `app/src/state/`, `app/src/dataset/shipped-plants.ts`                                                                                                                                                              |
+| 3.2 Plot definition UI                          | ✅         | ADR [0016](./docs/adr/0016-outline-editor-svg-not-konva.md); `app/src/plot/`, `app/src/state/plot-store.ts`                                                                                                                                                                                |
+| 3.3 Plant palette (filtered & ranked)           | ✅         | `app/src/palette/` (`PlantPalette.tsx`, `filters.ts`); layout decision recorded in `docs/architecture.md` (no ADR — follows directly from `DESIGN.md`'s core loop)                                                                                                                         |
+| 3.4 Drag-and-drop plot canvas ⭐                | ✅         | ADR [0017](./docs/adr/0017-plot-canvas-konva-and-dnd-kit.md); `app/src/canvas/`, `app/src/state/placements-store.ts`; E2E in `app/e2e/plot-canvas.spec.ts`                                                                                                                                 |
+| 3.5 Warnings overlay & companion suggestions UI | ✅         | ADR [0018](./docs/adr/0018-placement-derivation-for-warnings.md); `app/src/warnings/`; E2E in `app/e2e/warnings-overlay.spec.ts`                                                                                                                                                           |
+| 3.6 User-defined crops                          | ✅         | `app/src/user-crops/`; icon-picker scoping decision (fallback icon, no picker — Stage 4.1 hasn't landed) recorded in `docs/architecture.md`; E2E in `app/e2e/add-custom-crop.spec.ts`                                                                                                      |
+| 3.7 Plot-image export                           | ✅         | ADR [0020](./docs/adr/0020-plot-export-canvas-compositing.md); `app/src/canvas/export.ts` (legend builder + export pipeline), "Export image" button in `PlotCanvasSection.tsx`; E2E in `app/e2e/plot-export.spec.ts`                                                                       |
+| 4.1 SVG crop icon set                           | ✅         | ADR [0019](./docs/adr/0019-icon-set-archetypes-and-resolution.md); `app/src/icons/` (160 crop icons + 1 fallback then; **162 + 1 today** — Stage 1.7 added two crops and their icons, `resolveIcon`); `tools/icons/` (generator); [`docs/icon-style-guide.md`](./docs/icon-style-guide.md) |
+| 4.2 Wire icons into palette & canvas            | ✅         | `app/src/icons/useIconImage.ts` (image loader); `PlantPalette.tsx` renders icons; `PlotCanvas.tsx` layers icons over category circles; component + E2E tests cover resolved and fallback cases                                                                                             |
+| 5.1 PWA / offline support                       | ✅         | ADR [0022](./docs/adr/0022-pwa-offline-support.md); `vite-plugin-pwa` in `app/vite.config.ts`; manifest icons in `app/public/`; E2E in `app/e2e/offline.spec.ts`; Lighthouse PWA audit command + score in `README.md`                                                                      |
 
 **In one line:** the data layer and the engine's whole brain — suitability
 scoring, spacing/density, and warnings & companion suggestions — are built and
@@ -64,7 +65,7 @@ core loop with user-defined crops (Stage 3.6: an add-crop form validated via
 `safeValidateUserPlantInput`, an id-collision check, edit/remove gated on
 `isUserPlant`, and a generic fallback icon in place of a real picker since
 Stage 4.1's icon set hadn't landed yet). Phase 4 (Content & assets) is
-complete: Stage 4.1 ships the bundled SVG icon set — 160 crop icons plus a
+complete: Stage 4.1 ships the bundled SVG icon set — 162 crop icons plus a
 generic fallback, generated from a small reusable shape library rather than
 hand-drawn (`tools/icons/`) — and Stage 4.2 wires the tested `resolveIcon(plant)`
 lookup (`app/src/icons/`) into both the palette (`PlantPalette.tsx`) and the
@@ -83,7 +84,25 @@ the Stage 1.5 merge as a fourth input where a curated crop colliding with an
 OpenFarm one replaces it outright (curated wins, ADR 0021). Two crops ship
 today — `broad-bean` (closing a gap ADR 0009 had left open) and
 `jerusalem-artichoke` — bringing the shipped dataset to 162 plants. **Phases
-1–4 are now all complete.** Phase 5 (Offline & deployment) is under way:
+2, 3 and 4 are complete; Phase 1 is complete apart from Stage 1.2**, which
+remains ⚠️ partial — OpenFarm is still the only source adapter, and PFAF and
+Permapeople have never landed. That is not a bookkeeping detail: they are the
+sources carrying hardiness and soil, so 160 of the 162 shipped records have
+light data and nothing else, and three of the suitability engine's four
+dimensions report `unknown-plant` for almost the whole catalogue (see
+[`docs/review-pre-deployment.md`](./docs/review-pre-deployment.md) §3.9).
+**Stage 6.0** now closes that gap by curation rather than by ingesting another
+source — the reasoning, and the measurements behind it, are recorded in the
+stage itself. Its first half has landed: a **curated soil-moisture table**
+(`packages/etl/src/moisture/`) gave 72 core British crops a `soil.moisture`
+preference, taking soil coverage from 2/162 to 74/162 and giving the app a
+second working axis — on a plot that names its moisture, drought-tolerant crops
+now genuinely outrank thirsty ones, where before every full-sun crop tied. Its
+second half — adding the missing British staples (apple, pear, raspberry,
+Brussels sprouts, swede) and pruning the ~32 crops that can't grow outdoors
+here — is still to do. CI, deferred since Stage 0.1 by §1.4, is scheduled last
+as **Stage 6.4**.
+Phase 5 (Offline & deployment) is under way:
 Stage 5.1 adds **PWA / offline support** (ADR 0022) — a service worker and
 web app manifest via `vite-plugin-pwa`'s `generateSW` strategy
 (`app/vite.config.ts`), confirming (by inspecting a production build) that
@@ -204,9 +223,18 @@ Ratified (Stage 0.1 records these as ADRs):
 
 The ETL is a separate Node/TypeScript workspace.
 
-**Licensing (confirmed): non-commercial.** Code under a permissive/copyleft OSS
-licence (MIT or GPL); the shipped **dataset** under **CC BY-NC-SA** to honour
-PFAF's terms, with attribution recorded in a `NOTICE`/provenance file.
+**Licensing (settled): as open as the inputs allow.** Code under **MIT**; the
+shipped **dataset** under **CC0-1.0**, a public-domain dedication, with
+attribution recorded in `NOTICE` and per-record provenance for traceability
+rather than compliance.
+
+> This entry originally read "non-commercial … dataset under CC BY-NC-SA to
+> honour PFAF's terms". That was written when PFAF was expected to be ingested;
+> it isn't (Stage 6.0), and every input that actually ships is CC0 or original
+> curation. Relicensed in ADR
+> [0023](./docs/adr/0023-dataset-licence-cc0.md), which supersedes ADR 0009's
+> licensing section. If a share-alike source is ever ingested, that build gets
+> relicensed then — the restriction is not held speculatively in the meantime.
 
 ### 0.6 Write the next stage's brief before finishing (hand-off discipline)
 
@@ -294,12 +322,24 @@ deploy until then. Run the checks locally, from the repo root, before calling a
 stage done:
 
 ```bash
-npm run lint && npm run typecheck && npm test && npm run build && npm run format:check
+npm run verify
 ```
 
-When Actions do land at the end of the build, they should automate exactly this
-list plus the E2E, offline, a11y and Lighthouse runs the later stages describe —
-nothing that isn't already a check a contributor can run by hand.
+which is exactly `lint → typecheck → format:check → test → build → e2e`.
+
+**Run `verify`, not `npm test` alone.** `npm test` covers only the unit and
+component suites; Playwright lives behind `npm run e2e`. A stage checked with
+`npm test` therefore never exercises the E2E specs at all — which is precisely
+how a racy `plot-export.spec.ts` reached `main` unnoticed (see
+[`docs/review-pre-deployment.md`](./docs/review-pre-deployment.md) §3.1). The
+list in the paragraph above says "E2E" for a reason; `npm run verify` is the
+single command that honours it.
+
+**Stage 6.4 is the stage that finally lands them**, last in the plan. When it
+does, it should automate exactly `npm run verify` plus the offline, a11y and
+Lighthouse runs the later stages describe — nothing that isn't already a check
+a contributor can run by hand. Until then every stage, including 6.1–6.3, runs
+these by hand and must not depend on CI in its verification.
 
 ---
 
@@ -319,8 +359,8 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   (`/app` frontend, `/engine` framework-free logic, `/etl` build-time pipeline,
   `/data` committed artifacts, `/docs` + `/docs/adr`); lint + format + typecheck
   - test runner configured; `README` skeleton; `LICENSE` for code (MIT or GPL;
-    dataset licence is CC BY-NC-SA, finalized with attribution in Stage 1.5 per
-    PFAF terms); `CONTRIBUTING.md`; ADRs recording the stack and framework
+    dataset licence settled as CC0-1.0 — see §0.5 and ADR 0023);
+    `CONTRIBUTING.md`; ADRs recording the stack and framework
     choices (§0.5). _(This stage originally shipped a CI workflow too; it has
     since been removed — GitHub Actions wait until the project is complete,
     §1.4.)_
@@ -437,8 +477,8 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   (with a documented conflict-resolution policy — e.g. hand-verified spacing wins
   over scraped); the **hard-fail validation gate** (§1.1); the emitted artifact
   in `/data`; finalized **dataset licensing** decision + `NOTICE`/attribution
-  file (PFAF is CC BY-NC-SA → dataset inherits non-commercial share-alike; record
-  this in an ADR).
+  file (recorded in ADR 0009, and relicensed to CC0-1.0 by ADR 0023 once PFAF
+  was dropped — see §0.5).
 - **Model:** **Opus.** Reconciliation policy and the validation gate are
   cross-cutting and easy to get subtly wrong.
 - **Verification:** Build fails loudly on an intentionally-broken record (test
@@ -659,7 +699,8 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   partly a **design task** a human may prefer to own or commission. **Haiku /
   local** can handle batch normalization/optimization once the style is set.
 - **Verification:** Every crop has an icon; icons pass an SVG optimizer;
-  total icon payload stays within an agreed size budget (checked in CI).
+  total icon payload stays within an agreed size budget (enforced by
+  `app/src/icons/budget.test.ts`, since §1.4 defers CI).
 
 #### Stage 4.2 — Wire icons into palette & canvas
 
@@ -694,7 +735,8 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   all CI/CD automation, including this one, until the project is complete;
   this entry originally called for a GitHub Actions workflow before that
   ground rule was written down, and §1.4 wins); correct base-path config
-  (already wired in Stage 5.1 via the `GITHUB_PAGES` env flag); a documented,
+  (already wired in Stage 0.1 via the `GITHUB_PAGES` env flag, and extended
+  in Stage 5.1 so the PWA manifest's `start_url`/`scope` follow it); a documented,
   repeatable local/maintainer command (e.g. an npm script wrapping `gh-pages`
   or an equivalent manual publish step); README badge/link to the live site.
 - **Model:** **Sonnet**, or **Haiku** if following a standard Vite-to-Pages
@@ -704,6 +746,88 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   hand, not as a CI gate.
 
 ### Phase 6 — Community readiness & polish
+
+#### Stage 6.0 — Fill the data gaps that actually matter ⭐ data-critical
+
+- **Goal:** make the suitability engine mean something on the crops people
+  actually grow, by curating the missing fields rather than ingesting another
+  source.
+- **Depends on:** 1.5 (the merge and the hard-fail gate). Nothing else.
+- **Status:** **partially done.** The soil-moisture half has landed (see below);
+  the crop-list half has not.
+
+##### Why this replaced "finish the PFAF/Permapeople adapters"
+
+This stage was originally written as "complete Stage 1.2's outstanding source
+adapters". That was the wrong shape, and the evidence is worth keeping because
+it is the kind of thing a fresh session would otherwise re-derive:
+
+- **The adapter work is mostly not acquisition.** Of the OpenFarm adapter's 730
+  lines, only ~15% is transport and caching. The rest is mapping and
+  classification — and much of _that_ wouldn't apply, because the goal here is
+  to **enrich 162 existing records**, not create new ones.
+- **The join would have been the real cost.** Only 95 of 162 records join
+  uniquely by scientific name; **67 (41%) sit in 16 ambiguous species groups** —
+  _Brassica oleracea_ alone covers 11 crops. And PFAF has one row per species,
+  so its hardiness could honestly be broadcast to all 11 while its _sowing
+  season_ could not. That is an editorial problem no adapter solves.
+- **The scope didn't need it.** This is a personal, non-commercial planner for
+  a residential garden or allotment. It needs to say how much space peas want
+  versus potatoes and whether they'll suffer somewhere dry — not to be a
+  taxonomic authority.
+
+##### Done: the curated soil-moisture table
+
+`packages/etl/src/moisture/` — a thin enrichment slice in the Stage 1.3 spacing
+table's mould (original curation keyed to a crop id, folded into the 1.5 merge,
+not a `SourceAdapter`). **72 core British crops** gained a `soil.moisture`
+preference; the dataset went from 2 to 74 records with soil data.
+
+What it bought, precisely — and the small print is half the point:
+
+- On a plot whose soil the user **hasn't** described, nothing changes. Soil
+  scores `unknown-plot` rather than `unknown-plant`: the gap moved from the crop
+  to the plot. Confidence stays at 0.35.
+- On a plot that **does** name its moisture, 72 crops rise to 0.55 confidence and
+  the palette genuinely re-orders — on dry ground rosemary and carrot now
+  outrank peas and celery, with reasoning a gardener can act on ("Prefers moist
+  conditions, not dry — soil is amendable, so treat this as a job rather than a
+  barrier").
+
+Both halves are pinned in `suitability/dataset.test.ts`. The plot form's "Soil
+moisture" dropdown, which previously asked a question nothing could use, now
+does something.
+
+Deliberately **moisture only** — no texture, no pH. Those matter far less for
+annual veg, a gardener rarely knows their pH, and skipping them cut the job by
+two-thirds without costing anything the app needed.
+
+##### Still to do: the crop list
+
+The 162 shipped crops overstate what's actually there. Roughly **32 can't be
+grown outdoors in Britain** (dragon fruit, papaya, pineapple, star fruit, two
+strawberry guavas, olive, grapefruit, lemongrass, okra, peanut…) and a good deal
+of the rest is cultivar padding (4 onions, 3 cauliflowers, 3 carrots, 4
+radishes, 7 squashes, 6 peppers). Meanwhile **apple, pear, raspberry, Brussels
+sprouts, swede and pumpkin are all absent** — a British allotmenteer notices
+that in the first five minutes.
+
+- **Deliverables:** add the missing staples through the Stage 1.7 curated input
+  (`packages/etl/src/curated/plants.ts`), and prune or de-prioritise the crops
+  that can't grow here. Decide explicitly whether pruning means deleting records
+  or flagging them — the in-app add-crop form (Stage 3.6) means a user can
+  always restore anything you remove, which is what makes pruning safe.
+- **Watch the icon set.** `app/src/icons/` holds one icon per shipped id and a
+  test enforces the correspondence exactly; adding or removing a crop means
+  adding or removing an icon in the same change.
+- **Expect `suitability/dataset.test.ts` and `spacing/dataset.test.ts` to fail
+  and need re-pinning.** They pin today's coverage on purpose — that is how you
+  know the change reached the engine. Re-pin them; don't loosen them.
+- **Model:** **Sonnet.** Horticultural judgement about what a British plot
+  actually grows, plus mechanical curation against a settled schema.
+- **Verification:** the hard-fail gate passes on the rebuilt dataset; every
+  shipped id still has an icon; the coverage tests are re-pinned rather than
+  relaxed.
 
 #### Stage 6.1 — Documentation pass ⭐ (directly serves "easy to clone")
 
@@ -729,8 +853,11 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Deliverables:** Keyboard-operable drag-drop alternative, colour-contrast and
   ARIA passes, responsive layout for small screens.
 - **Model:** **Sonnet.**
-- **Verification:** Automated a11y checks (e.g. axe) in CI; manual keyboard-only
-  walkthrough of the core journey.
+- **Verification:** Automated a11y checks (e.g. axe) as a **locally-runnable
+  command**, with its result recorded — the same shape Stage 5.1's Lighthouse
+  audit takes, because CI does not exist until Stage 6.4. Plus a manual
+  keyboard-only walkthrough of the core journey. Stage 6.4 is what later wires
+  this command into a workflow.
 
 #### Stage 6.3 — Final validation & coverage pass
 
@@ -739,8 +866,43 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 - **Deliverables:** Fill test-coverage gaps on engine and data; a full E2E
   regression run; a documented manual QA checklist for release.
 - **Model:** **Sonnet**; **Opus** if a deep bug hunt across the engine is needed.
-- **Verification:** Full CI green including offline + a11y + PWA audits; manual
-  QA checklist completed.
+- **Verification:** `npm run verify` green, plus the offline, a11y and
+  Lighthouse runs, **all run by hand** — CI does not exist until Stage 6.4, so
+  this stage cannot depend on it. The manual QA checklist completed.
+
+#### Stage 6.4 — Continuous integration (the deferred automation, finally)
+
+- **Goal:** Automate the checks §1.4 has been deferring since Stage 0.1, now
+  that "until the project is complete" has arrived.
+- **Depends on:** everything — this is deliberately **last**. §1.4's ground
+  rule is that no stage adds `.github/workflows/`, and that rule holds right up
+  until this stage; Stage 0.1 originally shipped a CI workflow and it was
+  removed again precisely to keep it.
+- **Deliverables:** A `.github/workflows/` directory containing a checks
+  workflow that runs **`npm run verify`** (lint → typecheck → format:check →
+  test → build → e2e) on push and pull request, plus the offline, a11y and
+  Lighthouse runs the later stages describe. §1.4 is the specification and it
+  is a tight one: **automate exactly that list and nothing else** — "nothing
+  that isn't already a check a contributor can run by hand." A check that only
+  exists in CI is a check nobody can reproduce locally, which is the failure
+  mode this deferral was protecting against.
+- **Optionally, deploy-on-merge.** Stage 5.2 ships a _manual_ Pages deploy
+  only because §1.4 forbade the workflow. That constraint lifts here, so
+  automating the deploy is now available — but it is a separate decision from
+  automating the checks, and the manual command must keep working either way.
+- **Gotchas to expect:** the runner needs Node 20+ and a browser for
+  Playwright (`npx playwright install --with-deps chromium`) — note that this
+  repo's own config supports a `PW_EXECUTABLE_PATH` override for environments
+  that ship their own Chromium, which a standard runner will not need. Cache
+  `~/.npm` and the Playwright browsers or the E2E job dominates the run time.
+  Expect to pin the workflow to the same Node version `engines` declares.
+- **Model:** **Sonnet**, or **Haiku** following a standard Node-workspace
+  Actions recipe. The judgement call is scope discipline — resisting the pull
+  to add checks CI could run but a contributor can't.
+- **Verification:** The workflow goes green on a real pull request, and fails
+  on a deliberately-broken one (break a test, confirm the run goes red, revert)
+  — the same "prove the gate actually gates" standard Stage 1.5 set for the
+  dataset gate.
 
 ---
 
@@ -757,21 +919,23 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
 (3.4 · 4.2) ─────────────► 3.7   export plot as image
 Phase 1 crop list ─► 4.1 ─► 4.2
 MVP ─► 5.1 ─► 5.2
-all ─► 6.1, 6.2, 6.3
+1.5 ─────────────────────► 1.8   curated soil-moisture slice (done)
+1.5 ─────────────────────► 6.0   fills the remaining data gaps by curation
+6.0 ─► 6.1, 6.2, 6.3 ─► 6.4      6.4 (CI) is deliberately last
 ```
 
 Natural critical path: **0.1 → 0.2 → 0.3 → (data phase) → engine → frontend →
-offline → deploy → docs.** Phases 1 (data) and 3 (frontend scaffolding) can proceed in
+offline → deploy → finish the data → docs → CI.** Phases 1 (data) and 3 (frontend scaffolding) can proceed in
 parallel by different sessions once 0.2 exists, since the frontend can start
 against sample data before the full dataset is built.
 
 ## 4. Model-tier summary
 
-| Tier                                       | Stages                                                                                   |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| **Opus** (keystone / algorithmic)          | 0.2, 0.3, 1.5, 2.1, 2.2 (+ optionally 3.4, 6.3)                                          |
-| **Sonnet** (bulk of the build)             | 0.1, 1.1, 1.2 (first adapter), 1.3, 1.4, 1.6, 1.7, 2.3, 3.1–3.7, 4.1, 5.1, 5.2, 6.1, 6.2 |
-| **Haiku / local qwen3-coder** (mechanical) | 1.2 (later adapters), 1.7 (later crop rows), 4.2, parts of 4.1 & 5.2                     |
+| Tier                                       | Stages                                                                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| **Opus** (keystone / algorithmic)          | 0.2, 0.3, 1.5, 2.1, 2.2 (+ optionally 3.4, 6.3)                                                                    |
+| **Sonnet** (bulk of the build)             | 0.1, 1.1, 1.2 (first adapter), 1.3, 1.4, 1.6, 1.7, 2.3, 3.1–3.7, 4.1, 5.1, 5.2, 6.0 (first adapter), 6.1, 6.2, 6.4 |
+| **Haiku / local qwen3-coder** (mechanical) | 1.2 (later adapters), 1.7 (later crop rows), 4.2, parts of 4.1 & 5.2, 6.0 (second adapter), 6.4 (standard recipe)  |
 
 Rule of thumb: **Opus where a wrong decision is expensive to unwind; Sonnet for
 well-scoped feature work; Haiku/local for mechanical work against a settled

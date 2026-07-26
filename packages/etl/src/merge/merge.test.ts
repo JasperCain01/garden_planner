@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { validatePlant, type Plant, type PlantLink } from '@garden-planner/engine';
 import { validateSpacingRecord, type SpacingRecord } from '../spacing/schema.ts';
+import type { MoistureRecord } from '../moisture/schema.ts';
 import type { PlantLinksByKind } from '../companions/relationships.ts';
 import { mergeDataset } from './merge.ts';
 
@@ -52,6 +53,7 @@ describe('mergeDataset — spacing', () => {
       curatedPlants: [],
       openFarmPlants: [plant({ spacing: { row: { inRowCm: 8, betweenRowCm: 30 } } })],
       spacingRecords: [spacingRow()],
+      moistureRecords: [],
       linksById: new Map(),
     });
     const onion = result.plants.find((p) => p.id === 'onion')!;
@@ -81,6 +83,7 @@ describe('mergeDataset — spacing', () => {
       spacingRecords: [
         spacingRow({ id: 'beetroot', commonName: 'Beetroot', scientificName: 'Beta vulgaris' }),
       ],
+      moistureRecords: [],
       linksById: new Map(),
       aliases: { beetroot: 'beet' },
     });
@@ -94,6 +97,7 @@ describe('mergeDataset — spacing', () => {
       curatedPlants: [],
       openFarmPlants: [plant()],
       spacingRecords: [spacingRow({ id: 'broad-bean', scientificName: 'Vicia faba' })],
+      moistureRecords: [],
       linksById: new Map(),
     });
     expect(result.report.spacingUnattached).toEqual([
@@ -112,6 +116,7 @@ describe('mergeDataset — spacing', () => {
         }),
       ],
       spacingRecords: [],
+      moistureRecords: [],
       linksById: new Map(),
     });
     expect(result.plants).toEqual([]);
@@ -127,6 +132,7 @@ describe('mergeDataset — spacing', () => {
         plant({ id: 'onion', spacing: { row: { inRowCm: 8, betweenRowCm: 6000 } } }),
       ],
       spacingRecords: [spacingRow({ id: 'onion' })],
+      moistureRecords: [],
       linksById: new Map(),
     });
     expect(result.plants.map((p) => p.id)).toEqual(['onion']);
@@ -142,6 +148,7 @@ describe('mergeDataset — spacing', () => {
           spacingRow({ id: 'onion' }),
           spacingRow({ id: 'yellow-onion', scientificName: 'Allium cepa' }),
         ],
+        moistureRecords: [],
         linksById: new Map(),
       }),
     ).toThrow(/two spacing rows resolve to the same plant/);
@@ -157,6 +164,7 @@ describe('mergeDataset — companion/antagonist links', () => {
         plant({ id: 'carrot', scientificName: 'Daucus carota' }),
       ],
       spacingRecords: [],
+      moistureRecords: [],
       linksById: linksMap({ onion: { companions: [link('carrot')] } }),
     });
     const onion = result.plants.find((p) => p.id === 'onion')!;
@@ -173,6 +181,7 @@ describe('mergeDataset — companion/antagonist links', () => {
         plant({ id: 'garlic', scientificName: 'Allium sativum' }),
       ],
       spacingRecords: [],
+      moistureRecords: [],
       linksById: linksMap({
         'french-bean': { antagonists: [link('garlic')] },
         garlic: { antagonists: [link('french-bean')] },
@@ -191,6 +200,7 @@ describe('mergeDataset — companion/antagonist links', () => {
       curatedPlants: [],
       openFarmPlants: [plant({ id: 'leek', scientificName: 'Allium porrum' })],
       spacingRecords: [],
+      moistureRecords: [],
       linksById: linksMap({
         leek: { antagonists: [link('broad-bean')] },
         'broad-bean': { antagonists: [link('leek')] },
@@ -210,6 +220,7 @@ describe('mergeDataset — companion/antagonist links', () => {
       openFarmPlants: [plant({ id: 'green-bean', scientificName: 'Phaseolus vulgaris' })],
       spacingRecords: [],
       // green-bean links to french-bean, which aliases back to green-bean itself.
+      moistureRecords: [],
       linksById: linksMap({ 'green-bean': { companions: [link('french-bean')] } }),
       aliases: { 'french-bean': 'green-bean' },
     });
@@ -239,6 +250,7 @@ describe('mergeDataset — curated plants (Stage 1.7)', () => {
       openFarmPlants: [plant({ id: 'onion' })],
       curatedPlants: [curated()],
       spacingRecords: [],
+      moistureRecords: [],
       linksById: new Map(),
     });
     expect(result.plants.map((p) => p.id)).toEqual(['jerusalem-artichoke', 'onion']);
@@ -256,6 +268,7 @@ describe('mergeDataset — curated plants (Stage 1.7)', () => {
       ],
       curatedPlants: [curated({ commonName: 'Jerusalem artichoke (curated)' })],
       spacingRecords: [],
+      moistureRecords: [],
       linksById: new Map(),
     });
     // Exactly one record ships under the shared id — never a silent duplicate.
@@ -273,6 +286,7 @@ describe('mergeDataset — curated plants (Stage 1.7)', () => {
         curated({ id: 'beetroot', scientificName: 'Beta vulgaris', commonName: 'Beetroot' }),
       ],
       spacingRecords: [],
+      moistureRecords: [],
       linksById: new Map(),
       aliases: { beetroot: 'beet' },
     });
@@ -302,6 +316,7 @@ describe('mergeDataset — curated plants (Stage 1.7)', () => {
         }),
       ],
       spacingRecords: [spacingRow({ id: 'broad-bean', scientificName: 'Vicia faba' })],
+      moistureRecords: [],
       linksById: linksMap({
         leek: { antagonists: [link('broad-bean')] },
         'broad-bean': { antagonists: [link('leek')] },
@@ -323,10 +338,131 @@ describe('mergeDataset — output', () => {
         plant({ id: 'carrot', scientificName: 'Daucus carota' }),
       ],
       spacingRecords: [],
+      moistureRecords: [],
       linksById: new Map(),
     });
     expect(result.plants.map((p) => p.id)).toEqual(['carrot', 'onion']);
     expect(result.report.outputPlantCount).toBe(2);
     expect(result.report.identityUnifications).toEqual([]);
+  });
+});
+
+describe('mergeDataset — soil moisture', () => {
+  const moistureRow = (overrides: Partial<MoistureRecord> = {}): MoistureRecord => ({
+    id: 'onion',
+    moisture: ['dry', 'moist'],
+    note: 'wants a dry finish to ripen and store',
+    ...overrides,
+  });
+
+  it('sets soil.moisture on a plant that has no soil block at all', () => {
+    const result = mergeDataset({
+      curatedPlants: [],
+      openFarmPlants: [plant()],
+      spacingRecords: [],
+      moistureRecords: [moistureRow()],
+      linksById: new Map(),
+    });
+
+    const onion = result.plants.find((p) => p.id === 'onion')!;
+    expect(onion.soil).toEqual({ moisture: ['dry', 'moist'] });
+    expect(result.report.moistureAttached).toEqual([
+      { plantId: 'onion', moisture: ['dry', 'moist'] },
+    ]);
+  });
+
+  it('records where the value came from, without overstating it', () => {
+    const result = mergeDataset({
+      curatedPlants: [],
+      openFarmPlants: [plant()],
+      spacingRecords: [],
+      moistureRecords: [moistureRow()],
+      linksById: new Map(),
+    });
+
+    const onion = result.plants.find((p) => p.id === 'onion')!;
+    // Field-level provenance so a reader can tell moisture apart from whatever
+    // the record's other fields came from.
+    expect(onion.provenance.fields?.soil?.[0].source).toBe('Garden Planner curated moisture table');
+    expect(onion.provenance.fields?.soil?.[0].note).toMatch(/hand-authored/i);
+    // …and it joins the record-level source list rather than hiding in `fields`.
+    expect(onion.provenance.sources.some((s) => /curated moisture table/.test(s.source))).toBe(
+      true,
+    );
+  });
+
+  it('never overwrites a plant that states its own moisture', () => {
+    // A curated full-plant record is the more specific authority; a
+    // single-field slice must not clobber it.
+    const curated = plant({
+      soil: { textures: ['loam'], ph: ['neutral'], moisture: ['moist'] },
+    });
+
+    const result = mergeDataset({
+      curatedPlants: [curated],
+      openFarmPlants: [],
+      spacingRecords: [],
+      moistureRecords: [moistureRow({ moisture: ['wet'] })],
+      linksById: new Map(),
+    });
+
+    const onion = result.plants.find((p) => p.id === 'onion')!;
+    expect(onion.soil).toEqual({ textures: ['loam'], ph: ['neutral'], moisture: ['moist'] });
+    expect(result.report.moistureAttached).toEqual([]);
+    expect(result.report.moistureSkipped).toEqual([
+      {
+        plantId: 'onion',
+        reason: 'plant already states its own soil moisture (curated record wins)',
+      },
+    ]);
+  });
+
+  it('preserves an existing texture/pH block while filling in the missing moisture', () => {
+    const partial = plant({ soil: { textures: ['sand'] } });
+
+    const result = mergeDataset({
+      curatedPlants: [partial],
+      openFarmPlants: [],
+      spacingRecords: [],
+      moistureRecords: [moistureRow()],
+      linksById: new Map(),
+    });
+
+    expect(result.plants.find((p) => p.id === 'onion')!.soil).toEqual({
+      textures: ['sand'],
+      moisture: ['dry', 'moist'],
+    });
+  });
+
+  it('reports a row whose crop is not in the dataset rather than failing silently', () => {
+    const result = mergeDataset({
+      curatedPlants: [],
+      openFarmPlants: [plant()],
+      spacingRecords: [],
+      moistureRecords: [moistureRow({ id: 'not-a-crop' })],
+      linksById: new Map(),
+    });
+
+    expect(result.report.moistureAttached).toEqual([]);
+    expect(result.report.moistureUnattached).toEqual([
+      {
+        moistureId: 'not-a-crop',
+        reason: 'no plant with id "not-a-crop" survives in the merged dataset',
+      },
+    ]);
+  });
+
+  it('leaves soil absent on a crop the table has no opinion about', () => {
+    const result = mergeDataset({
+      curatedPlants: [],
+      openFarmPlants: [plant()],
+      spacingRecords: [],
+      moistureRecords: [],
+      linksById: new Map(),
+    });
+
+    // "We don't know" stays "we don't know" — the scorer reports
+    // `unknown-plant` rather than being handed a guess.
+    expect(result.plants.find((p) => p.id === 'onion')!.soil).toBeUndefined();
   });
 });

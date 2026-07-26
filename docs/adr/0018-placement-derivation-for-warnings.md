@@ -172,3 +172,43 @@ not "this specific plant needs one".
   revisit this ADR — the whole two-derivation design exists specifically
   because Stage 3.4 committed to point instances, and a bed-shaped canvas
   model would likely collapse back to something closer to option 2.
+
+## Known limitation: overcrowding is per-crop, never cumulative
+
+`deriveOvercrowdingPlacements` gives **every** crop `region` = the whole plot.
+Each crop is therefore checked against the plot's capacity _for that crop
+alone_, as if nothing else were planted. The consequence is easy to state and
+worth stating plainly, because it is a horticultural claim the app cannot
+currently back:
+
+> A user can place 60 onions (the plot's full onion capacity) **and** 8 kale
+> (its full kale capacity) and be told nothing. The plot is at roughly 200% of
+> its real capacity and no overcrowding warning fires.
+
+This falls directly out of the decision above and is not a bug in it — the
+alternative mappings considered were all worse for the two-rule problem this
+ADR was actually solving. `canvas/feedback.ts`'s `PlacementTallyRow.fit` field
+comment already says the same thing in miniature ("the plot's total capacity
+for this crop, **independent of what else is placed**").
+
+**Why it is not fixed here.** Answering "is this plot over-planted overall?"
+honestly means either packing several crops into one region simultaneously (a
+genuinely hard multi-crop packing problem, well beyond Stage 3.5's scope) or
+assigning each crop a sub-region of the plot — which the canvas cannot express,
+because Stage 3.4 committed to point instances rather than drawn beds. Both are
+the "bed-shaped canvas model" the consequence above already flags as the thing
+that would make this ADR worth revisiting.
+
+**What a future stage should do about it**, roughly in order of cost:
+
+1. **Say so in the UI.** The cheapest honest fix: the warnings panel notes that
+   capacity figures are per-crop. Costs nothing and removes the false
+   impression.
+2. **An area-budget advisory.** Sum `placedCount × grid.areaPerPlantCm2` across
+   the tally and compare against `regionAreaCm2`. That is a _bound_, not a
+   packing result — it ignores shape entirely and will disagree with `fitPlant`
+   at the margin — so it must be labelled as a rough total-space check, not
+   presented as another `overcrowded` warning.
+3. **Real per-crop sub-regions**, if and when the canvas grows drawn beds. Then
+   `region` per `CropPlacement` means something specific, this whole limitation
+   disappears, and the two-derivation split likely collapses (see above).

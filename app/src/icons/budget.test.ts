@@ -15,6 +15,21 @@ import { describe, expect, it } from 'vitest';
  * Budgets: 4 KB per icon (the optimized set averages well under 1 KB; 4 KB
  * gives headroom for a contributor's hand-drawn replacement) and 250 KB total
  * (the optimized set is ~122 KB today).
+ *
+ * ### What this measures, and what it does not
+ *
+ * These are the **source `.svg` files on disk**, not the bytes a user
+ * downloads. Every icon is under Vite's `assetsInlineLimit`, so none is
+ * emitted as a separate file: they inline into the JS bundle as base64
+ * `data:` URIs, which costs roughly 4/3 of the figures asserted here (see
+ * `app/vite.config.ts` and ADR 0022). The per-icon cap is what keeps that
+ * true — an icon crossing 4 KB is also roughly where Vite would start
+ * emitting it separately — so this remains the right thing to guard.
+ *
+ * It is **not** a budget on the shipped bundle. That belongs to the build,
+ * where Vite's own `chunkSizeWarningLimit` reports it, and it is tracked
+ * separately (`docs/review-pre-deployment.md` §3.6). A green run here does
+ * not mean the download stayed small; it means no single icon went rogue.
  */
 
 const here = path.dirname(fileURLToPath(import.meta.url));

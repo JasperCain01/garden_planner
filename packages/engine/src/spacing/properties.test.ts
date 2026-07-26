@@ -4,6 +4,7 @@ import type { Vertex } from './region';
 import { circleRegion, lShapeRegion, rectangleRegion, validatePlotRegion } from './region';
 import { regionAreaCm2 } from './region';
 import { offsetRowPitchCm } from './packing';
+import { resolveLatticeSpacing } from './method';
 import { fitSpacing } from './fit';
 import type { PackingPattern } from './model';
 import { PACKING_PATTERNS } from './model';
@@ -57,13 +58,23 @@ function randomPolygon(random: () => number, corners: number, maxRadiusCm: numbe
   return validatePlotRegion({ vertices });
 }
 
-/** Row spacings spanning the range the shipped dataset actually uses. */
+/**
+ * Spacings spanning the range the shipped dataset actually uses, plus one
+ * intensive-only block.
+ *
+ * The intensive entry is here to keep `upperBound` honest: it is the shape
+ * (no `row` block) that the old bound silently turned into a divide-by-zero,
+ * and a user-defined crop quoting only "N per square" off a seed packet
+ * produces exactly it (ADR 0011). Every property below therefore runs against
+ * both spacing shapes, not just the row-shaped majority.
+ */
 const SPACINGS: readonly Spacing[] = [
   { row: { inRowCm: 3, betweenRowCm: 15 } }, // radish, the tightest shipped
   { row: { inRowCm: 10, betweenRowCm: 30 } }, // onion
   { row: { inRowCm: 15, betweenRowCm: 45 } }, // green bean
   { row: { inRowCm: 45, betweenRowCm: 60 } }, // tomato
   { row: { inRowCm: 100, betweenRowCm: 100 } }, // a courgette-sized sprawler
+  { intensive: { plantsPerSquare: 9 } }, // an intensive-only crop: a 10 cm grid
 ];
 
 describe('the area upper bound', () => {
@@ -74,9 +85,24 @@ describe('the area upper bound', () => {
    * than read off the result, so the test is an independent check.
    */
   function upperBound(spacing: Spacing, packing: PackingPattern, areaCm2: number): number {
-    const { inRowCm, betweenRowCm } = spacing.row ?? { inRowCm: 0, betweenRowCm: 0 };
+    // Resolved the same way `fitSpacing` resolves it, rather than reaching for
+    // `spacing.row` directly, so an intensive-only spacing gets a real bound.
+    //
+    // The `??`-a-zero shape this replaced was a quiet trap: a spacing with no
+    // `row` block gave a divisor of 0, an upper bound of `Infinity`, and a
+    // `toBeLessThanOrEqual` that passed for *any* count. The strongest test in
+    // the engine would have gone vacuous the first time someone added an
+    // intensive crop to `SPACINGS`, with nothing going red to say so.
+    const { inRowCm, betweenRowCm } = resolveLatticeSpacing(spacing, 'auto');
     const pitch = packing === 'offset' ? offsetRowPitchCm(inRowCm, betweenRowCm) : betweenRowCm;
-    return areaCm2 / (inRowCm * pitch);
+    const areaPerPlant = inRowCm * pitch;
+    if (!Number.isFinite(areaPerPlant) || areaPerPlant <= 0) {
+      throw new Error(
+        `upperBound got a non-positive area per plant (${areaPerPlant}) — the bound would be ` +
+          'meaningless and the assertion would pass vacuously',
+      );
+    }
+    return areaCm2 / areaPerPlant;
   }
 
   it('holds for the presets, at every spacing and both packings', () => {

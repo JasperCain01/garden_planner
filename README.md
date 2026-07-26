@@ -16,6 +16,26 @@ finished plot.
 > offline support**: the app installs and works with the network off (see
 > below). Stage 5.2 (GitHub Pages deployment) is next.
 
+### A caveat worth knowing before you judge the rankings
+
+The suitability engine scores four dimensions — **light, hardiness, soil and
+season** — and the shipped dataset feeds two of them. Of 162 crops, all carry
+light (in only two values: 148 full-sun, 14 partial-shade) and **74 carry a
+soil-moisture preference**; just 2 carry hardiness or season data.
+
+In practice that means: **describe your plot's soil moisture and the ranking
+does real work** — on dry ground, rosemary and carrots rise above peas and
+celery, with the reason given in plain English. Leave soil unset and you are
+close to a two-tier sort on light, because most gardens are sunny.
+
+The app says so rather than hiding it: every result carries a confidence figure
+and a note explaining what could and couldn't be assessed. The remaining gap is
+**data, not engine** — hardiness and season are still thin, and the shipped crop
+list still carries some crops that won't grow outdoors in Britain while missing
+a few that everyone grows. Stage 6.0 in [`WORKPLAN.md`](./WORKPLAN.md) covers
+what's left and why it's being fixed by curation rather than by ingesting
+another source.
+
 ## Why this exists
 
 A free, open, easy-to-clone tool for planning a productive garden, built to run
@@ -42,7 +62,23 @@ npm run typecheck   # type-check every workspace
 npm run lint        # lint the whole repo
 npm run format      # auto-format with Prettier
 npm run e2e         # run Playwright end-to-end tests (builds + previews the app)
+npm run verify      # all of the above, in the order WORKPLAN.md §1.4 requires
 ```
+
+Use `npm run verify` before calling any change done. `npm test` deliberately
+covers only the unit and component suites — Playwright is a separate command,
+so `npm test` alone never exercises the end-to-end journeys.
+
+> **If Playwright can't find a browser** (`Executable doesn't exist at …`),
+> you're likely in a sandbox or container that ships its own Chromium rather
+> than Playwright's managed one. Point Playwright at it instead of running
+> `npx playwright install`:
+>
+> ```bash
+> PW_EXECUTABLE_PATH=/path/to/chromium npm run verify
+> ```
+>
+> `app/playwright.config.ts` reads that variable and is otherwise unaffected.
 
 ## Progressive Web App / offline support
 
@@ -109,11 +145,16 @@ developer tool** that is never shipped.
 ## Licensing
 
 - **Code:** MIT (see [`LICENSE`](./LICENSE)).
-- **Dataset (`/data`):** CC BY-NC-SA 4.0, inherited from Plants For A Future.
-  See [`NOTICE`](./NOTICE).
+- **Dataset (`/data`):** **CC0-1.0** — public domain. Take it and do whatever you
+  like with it; no attribution required. See [`NOTICE`](./NOTICE) and
+  [ADR 0023](./docs/adr/0023-dataset-licence-cc0.md).
+- **Crop icons (`app/src/icons/`):** MIT, original work — generated from an
+  in-repo shape library, not adapted from any third-party set.
 
-This project is non-commercial by design and intended to be easily cloned,
-forked, and learned from.
+Everything here is meant to be cloned, forked and learned from. Sources are
+credited in [`NOTICE`](./NOTICE) and per-record in the dataset itself, because
+knowing where a spacing figure came from is what makes it checkable — not
+because a licence demands it.
 
 ## Contributing
 

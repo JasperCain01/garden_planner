@@ -111,14 +111,14 @@ edible/useful-plant focused).
 
 ### Growing-requirement data (light, soil, hardiness, uses)
 
-| Source                         | Strengths                                                                                                                                                                                                                                | Watch-outs                                                                                                                        |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Plants For A Future (PFAF)** | ~7,400 **temperate plants that grow in the UK**, edible/useful-plant focused — a direct fit for both the "default Britain" and edibles-only scope. Habitat, shade tolerance, soil, edibility/uses. Downloadable as CSV / Excel / SQLite. | Licensed CC BY-NC-SA — **non-commercial + share-alike + attribution**.                                                            |
-| **Permapeople**                | Active, maintained REST API. Light requirement (sun/part/shade), water needs, growth characteristics.                                                                                                                                    | Permaculture/food focus; check current API terms and rate limits.                                                                 |
-| **OpenFarm**                   | Open growing guides: seed spacing & depth, watering, sun/shade, companions. Data is CC BY-SA and the dump is still on GitHub.                                                                                                            | The **live service has shut down** — treat it as a static seed dataset, not a live API.                                           |
-| **Trefle**                     | Open botanical REST API: min temperature, root depth, fertility.                                                                                                                                                                         | Historically **unreliable / has gone offline**; there's a self-hostable dump. Don't build on the hosted API as a hard dependency. |
-| **USDA PLANTS**                | Public domain. Growth habit, native ranges.                                                                                                                                                                                              | US-centric — useful for taxonomy/growth habit, less so for UK season timing.                                                      |
-| **GBIF taxonomic backbone**    | Not requirements data, but the **canonical name resolver** — the key to merging all the above without duplicating "onion" three ways.                                                                                                    | Use it as the join key, not a content source.                                                                                     |
+| Source                         | Strengths                                                                                                                                                                                                                                                                                                     | Watch-outs                                                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Plants For A Future (PFAF)** | ~7,400 **temperate plants that grow in the UK**, edible/useful-plant focused — a direct fit for both the "default Britain" and edibles-only scope. Habitat, shade tolerance, soil, edibility/uses. Downloadable as CSV / Excel / SQLite.                                                                      | Licensed CC BY-NC-SA — **non-commercial + share-alike + attribution**.                                                            |
+| **Permapeople**                | Active, maintained REST API. Light requirement (sun/part/shade), water needs, growth characteristics.                                                                                                                                                                                                         | Permaculture/food focus; check current API terms and rate limits.                                                                 |
+| **OpenFarm**                   | Open growing guides: seed spacing & depth, watering, sun/shade, companions. Data is **CC0** (this row originally guessed CC BY-SA; Stage 1.2 checked the actual source and corrected it — see `docs/adr/0006`). The live service shut down in 2025; a community Wayback recovery is what's actually ingested. | The **live service has shut down** — treat it as a static seed dataset, not a live API.                                           |
+| **Trefle**                     | Open botanical REST API: min temperature, root depth, fertility.                                                                                                                                                                                                                                              | Historically **unreliable / has gone offline**; there's a self-hostable dump. Don't build on the hosted API as a hard dependency. |
+| **USDA PLANTS**                | Public domain. Growth habit, native ranges.                                                                                                                                                                                                                                                                   | US-centric — useful for taxonomy/growth habit, less so for UK season timing.                                                      |
+| **GBIF taxonomic backbone**    | Not requirements data, but the **canonical name resolver** — the key to merging all the above without duplicating "onion" three ways.                                                                                                                                                                         | Use it as the join key, not a content source.                                                                                     |
 
 **Verdict:** for edibles, growing-requirement data is _comfortably sufficient_.
 PFAF covers the British default well; Permapeople + the OpenFarm dump round out
@@ -315,12 +315,21 @@ terms. Two clean options:
 Either way, this is now the _only_ licensing decision that touches source
 selection — worth settling before the ETL work begins.
 
+> **Settled (2026-07-26):** the first option was taken and then reversed. PFAF
+> was never reachable and is no longer planned, so the shipped dataset contains
+> only CC0 content and original curation — and is itself released as **CC0-1.0**,
+> the second option's outcome by a different route. See
+> [`docs/adr/0023-dataset-licence-cc0.md`](./docs/adr/0023-dataset-licence-cc0.md).
+
 ---
 
 ## Open questions to resolve next
 
-- Commercial vs. non-commercial licensing of the _dataset_ (the only remaining
-  source-selection constraint now imagery is self-owned).
+- ~~Commercial vs. non-commercial licensing of the _dataset_.~~ **Settled:**
+  the dataset is **CC0-1.0** (public domain). PFAF — the CC BY-NC-SA source
+  whose terms would have forced non-commercial — is not ingested and is no
+  longer planned, and everything that does ship is CC0 or original curation.
+  See `docs/adr/0023-dataset-licence-cc0.md`.
 - Depth of the "light level" model: one value per plot, or per-area shade
   mapping (the latter is much more powerful but more UI work).
 - Which growing method(s) to support in the spacing calculator — row, intensive,

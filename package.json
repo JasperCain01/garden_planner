@@ -18,7 +18,8 @@
     "format:check": "prettier --check .",
     "dev": "npm run dev -w app",
     "preview": "npm run preview -w app",
-    "e2e": "npm run e2e -w app"
+    "e2e": "npm run e2e -w app",
+    "verify": "npm run lint && npm run typecheck && npm run format:check && npm test && npm run build && npm run e2e"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

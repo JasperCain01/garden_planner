@@ -8,32 +8,37 @@ All source code in this repository is licensed under the MIT License (see
 
 DATASET
 -------
-The plant dataset shipped under /data (data/plants.json) is licensed under
-Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
-(CC BY-NC-SA 4.0):  https://creativecommons.org/licenses/by-nc-sa/4.0/
+The plant dataset shipped under /data (data/plants.json) is dedicated to the
+public domain under CC0 1.0 Universal (CC0-1.0):
+  https://creativecommons.org/publicdomain/zero/1.0/
 
-Why CC BY-NC-SA, finalized in Workplan Stage 1.5 (see
-docs/adr/0009-dataset-merge-and-licensing.md for the full reasoning):
+Use it for anything, commercially or otherwise, with no obligation to credit
+this project. See docs/adr/0023-dataset-licence-cc0.md for the full reasoning.
 
-  The sources actually shipped in the current artifact do NOT by themselves
-  compel NonCommercial — the content is OpenFarm (CC0-1.0, a public-domain
-  dedication) plus original curation (hand-verified spacing figures, which are
-  facts and not themselves copyrightable; and the companion/antagonist links).
-  Plants For A Future (PFAF) — the CC BY-NC-SA source whose share-alike terms
-  drive this choice — is NOT yet ingested: its download endpoint is blocked by
-  the build sandbox's egress policy (the same class of block that keeps GBIF
-  unreachable; see docs/adr/0006). So today's content alone could ship under a
-  more permissive licence.
+Why CC0 (relicensed 2026-07-26, superseding the CC BY-NC-SA choice Stage 1.5
+made in docs/adr/0009):
 
-  The dataset is nonetheless held at CC BY-NC-SA deliberately: it is the
-  project's ratified stance (WORKPLAN.md §0.5), the project is non-commercial by
-  design, and PFAF is the intended primary source of growing-requirement data
-  (DESIGN.md §2). Holding the eventual target from the start avoids relicensing
-  already-released data the moment PFAF lands. CC BY-NC-SA is a valid, more
-  restrictive licence for a compilation of CC0 content, so there is no conflict.
+  Everything in the artifact is either CC0 already or original curation this
+  project owns outright, so nothing compels a restriction:
 
-Data sources ACTUALLY SHIPPED in the current artifact (full per-record
-provenance is captured in data/plants.json itself):
+    - The OpenFarm crops rescue is CC0-1.0. (An earlier draft of DESIGN.md
+      guessed CC BY-SA; Stage 1.2 checked the actual repository and corrected
+      it — see docs/adr/0006.)
+    - The hand-verified spacing figures are facts, which are not copyrightable;
+      their selection and arrangement are this project's own work.
+    - The companion/antagonist links, the curated plant records and the curated
+      soil-moisture table are all hand-authored here.
+
+  CC BY-NC-SA was only ever held to absorb Plants For A Future, whose terms
+  would have propagated. That ingest is no longer planned — Stage 6.0 fills the
+  dataset's gaps by curation instead — so the restriction had nothing left to
+  anticipate, and it was making the work less useful for no benefit.
+
+ATTRIBUTION (courtesy, not a condition)
+---------------------------------------
+CC0 asks nothing of you. The sources below are credited because knowing where a
+figure came from is what makes it checkable, and per-record provenance is
+captured in data/plants.json itself:
 
   - OpenFarm crops rescue (community      https://github.com/thefullnacho/openfarm-crops-rescue  CC0-1.0
     Wayback Machine recovery — see docs/adr/0006; OpenFarm's own live API
@@ -43,19 +48,25 @@ provenance is captured in data/plants.json itself):
     packages/etl/src/spacing/table.ts; see docs/adr/0007)
   - Companion/antagonist relationships    (hand-curated + OpenFarm-derived,
     evidence-tagged; see packages/etl/src/companions and docs/adr/0008)
+  - Curated plant records                 (hand-authored, individually cited;
+    see packages/etl/src/curated and docs/adr/0021)
+  - Curated soil-moisture table           (hand-authored from general
+    horticultural consensus, with a stated reason per row rather than
+    citations; see packages/etl/src/moisture)
+  - GBIF taxonomic backbone               https://www.gbif.org/     (name resolution
+    join key; unreachable from the build environment, so no record currently
+    carries a GBIF id — see docs/adr/0005)
 
-Data sources PLANNED but NOT yet ingested (their egress is blocked in the build
-sandbox; each will be added, with its licence recorded here, when reachable — the
-CC BY-NC-SA choice above already anticipates PFAF):
-
-  - Plants For A Future (PFAF)             https://pfaf.org/         CC BY-NC-SA
-  - Permapeople                            https://permapeople.org/
-  - GBIF taxonomic backbone                https://www.gbif.org/     (name resolution join key)
-  - USDA PLANTS                            (public domain)
+A note on the spacing and moisture figures: neither was retrieved by fetching
+the cited pages from this build environment, whose egress policy blocks them.
+Spacing figures came from web-search snippets of those exact pages; moisture
+values were authored from general horticultural knowledge. Both are recorded so
+a reviewer with unrestricted network access can check them. Treat the dataset as
+guidance for planning a garden, not as an authority.
 
 ILLUSTRATIONS
 -------------
-Crop illustrations under the app's icon set (app/src/icons/, 160 crop icons
+Crop illustrations under the app's icon set (app/src/icons/, 162 crop icons
 plus one generic fallback, Workplan Stage 4.1) are original work: every icon
 is programmatically generated by tools/icons/generate.ts from an in-repo
 shape library (tools/icons/archetypes.ts), not adapted from any third-party
@@ -63,11 +74,13 @@ icon set, font, or clip-art. They are licensed MIT, the same as the rest of
 the code (see /LICENSE), and carry no third-party restrictions. See
 docs/icon-style-guide.md for the visual conventions and
 docs/adr/0019-icon-set-archetypes-and-resolution.md for why they were built
-this way instead of as 160 hand-drawn illustrations.
+this way instead of as 162 hand-drawn illustrations.
 
 If a future contributor replaces a placeholder icon with hand-drawn or
 commissioned artwork that is not their own original work under MIT-compatible
 terms, record its source and licence here.
 
-If you add a new data source, record its licence here and in /data/README.md.
-When PFAF is ingested, move it from "planned" to "shipped" above.
+If you add a new data source, record it here and in /data/README.md — and check
+its licence first. CC0 is only honest while every input permits it: ingesting a
+share-alike or non-commercial source (Plants For A Future, for instance) would
+mean relicensing the affected build, not quietly keeping this notice as it is.

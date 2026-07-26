@@ -20,6 +20,17 @@ import { scorePlant } from './score';
  * those two now score with 0.8 confidence (light + hardiness + season
  * assessed) against the other 160's 0.35 (light alone) — the honest
  * consequence of genuinely uneven coverage, not a bug to paper over.
+ *
+ * The **curated moisture table** (`packages/etl/src/moisture/`) then gave 72
+ * records a `soil.moisture` preference, and its arrival is the clearest thing
+ * this suite has ever demonstrated: **it changes nothing on a plot whose soil
+ * the user hasn't described.** Soil then scores `unknown-plot`, not
+ * `unknown-plant` — the gap moved from the crop to the plot, confidence stays
+ * at 0.35, and the ranking is unmoved. The data only pays off once the user
+ * fills in the plot form's moisture dropdown, at which point 72 crops jump to
+ * 0.55 confidence and the list genuinely re-orders. Both halves are pinned
+ * below, because the second is the feature and the first is the honest
+ * small print.
  */
 
 const DATASET_PATH = fileURLToPath(new URL('../../../../data/plants.json', import.meta.url));
@@ -40,6 +51,8 @@ const PLANTS = loadShippedPlants();
 const SUNNY_PLOT = resolvePlotConditions({ light: 'full-sun' });
 const SHADY_PLOT = resolvePlotConditions({ light: 'full-shade' });
 const PARTIAL_PLOT = resolvePlotConditions({ light: 'partial-shade' });
+/** A plot that actually describes its soil — what the moisture table exists for. */
+const DRY_PLOT = resolvePlotConditions({ light: 'full-sun', soil: { moisture: 'dry' } });
 
 describe('the shipped dataset', () => {
   it('is the dataset these expectations were written against', () => {
@@ -52,7 +65,10 @@ describe('the shipped dataset', () => {
       'broad-bean',
       'jerusalem-artichoke',
     ]);
-    expect(PLANTS.filter((plant) => plant.soil !== undefined)).toHaveLength(2);
+    // 72 from the curated moisture table + the 2 Stage 1.7 records that carry
+    // a full soil block of their own.
+    expect(PLANTS.filter((plant) => plant.soil !== undefined)).toHaveLength(74);
+    expect(PLANTS.filter((plant) => plant.soil?.moisture !== undefined)).toHaveLength(74);
     expect(PLANTS.filter((plant) => plant.seasons !== undefined)).toHaveLength(2);
   });
 
@@ -67,21 +83,57 @@ describe('the shipped dataset', () => {
     }
   });
 
-  it('reports 0.35 confidence for the 160 records with light data only, 0.8 for the 2 curated ones', () => {
+  it('reports 0.35 confidence on a plot whose soil is undescribed, however good the crop data is', () => {
+    // The small print: moisture data on the *crop* buys nothing until the
+    // *plot* describes its soil. What changes for an enriched crop is only the
+    // wording — the gap is now the plot's, not the crop's.
     for (const plant of PLANTS) {
       const result = scorePlant(plant, SUNNY_PLOT);
       if (plant.hardiness !== undefined) {
-        // The two Stage 1.7 curated records: light + hardiness + season all
-        // assessed (soil stays unassessed — the plot's soil isn't described).
         expect(result.confidence).toBe(0.8);
         expect(result.summary).toContain('Scored on light, hardiness and season');
-        expect(result.summary).toContain("the plot's soil wasn't described");
       } else {
         expect(result.confidence).toBe(0.35);
         expect(result.summary).toContain('Scored on light alone');
-        expect(result.summary).toContain('no hardiness, soil or season data for this crop');
+      }
+      if (plant.soil !== undefined) {
+        expect(result.summary).toContain("the plot's soil wasn't described");
+        expect(result.summary).not.toContain('no soil data for this crop');
       }
     }
+  });
+
+  it('lifts 72 records to 0.55 confidence once the plot names its moisture', () => {
+    const byConfidence = new Map<number, number>();
+    for (const plant of PLANTS) {
+      const { confidence } = scorePlant(plant, DRY_PLOT);
+      byConfidence.set(confidence, (byConfidence.get(confidence) ?? 0) + 1);
+    }
+    // 88 still light-only, 72 gained the soil dimension, and the 2 curated
+    // records are now fully assessed on all four.
+    expect([...byConfidence.entries()].sort()).toEqual([
+      [0.35, 88],
+      [0.55, 72],
+      [1, 2],
+    ]);
+  });
+
+  it('re-orders the palette on a dry plot — the axis actually does work', () => {
+    // The whole point of the moisture table. On dry ground a drought-tolerant
+    // crop must outrank a thirsty one; before this data every full-sun crop
+    // tied at exactly one score.
+    const score = (id: string) =>
+      scorePlant(PLANTS.find((plant) => plant.id === id) as Plant, DRY_PLOT).rankingScore;
+
+    expect(score('rosemary')).toBeGreaterThan(score('pea'));
+    expect(score('carrot')).toBeGreaterThan(score('celery'));
+    expect(score('rosemary')).toBe(score('carrot')); // both tolerate dry
+    expect(score('watercress')).toBeLessThan(score('carrot'));
+
+    // And it says why, in words a gardener can act on.
+    const pea = scorePlant(PLANTS.find((plant) => plant.id === 'pea') as Plant, DRY_PLOT);
+    expect(pea.summary).toContain('Prefers moist conditions, not dry');
+    expect(pea.summary).toContain('Scored on light and soil');
   });
 
   it('does not collapse to a single number — it discriminates exactly as far as the data allows', () => {
@@ -183,8 +235,9 @@ describe('the shipped dataset', () => {
   });
 
   it('scores a real record as a documented worked example', () => {
-    // Lettuce is one of the fourteen partial-shade records, and carries nothing
-    // beyond identity, category, light and spacing — like every shipped record.
+    // Lettuce is one of the fourteen partial-shade records. It now also carries
+    // a moisture preference from the curated table, but nothing else — no
+    // hardiness, no seasons — like most of the catalogue.
     const lettuce = PLANTS.find((plant) => plant.id === 'lettuce');
     expect(lettuce).toBeDefined();
 
@@ -197,15 +250,20 @@ describe('the shipped dataset', () => {
       rankingScore: 0.675,
       band: 'good',
     });
+    // Soil is `unknown-plot`, not `unknown-plant`: lettuce now states its
+    // moisture, but this plot doesn't state its own, so the missing half is
+    // the plot's. That distinction is the whole reason the finding vocabulary
+    // has two "unknown" values rather than one.
     expect(result.dimensions.map((dimension) => dimension.finding)).toEqual([
       'match',
       'unknown-plant',
-      'unknown-plant',
+      'unknown-plot',
       'unknown-plant',
     ]);
     expect(result.summary).toBe(
       'Good match — Wants partial shade, and the plot is in partial shade. ' +
-        'Scored on light alone — no hardiness, soil or season data for this crop (confidence 35%).',
+        "Scored on light alone — no hardiness or season data for this crop and the plot's " +
+        "soil wasn't described (confidence 35%).",
     );
   });
 

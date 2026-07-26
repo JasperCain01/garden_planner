@@ -57,6 +57,15 @@ import { computePlacementTally } from '../canvas/feedback.ts';
  * rather than re-deriving "group by plant id, first-placed order" a second
  * time — the live feedback panel and this rule are answering the same
  * question over the same data.
+ *
+ * **Known limitation — this is per-crop, never cumulative.** Every crop is
+ * checked against the whole plot's capacity *for that crop alone*, so two
+ * crops each planted to their own maximum leave the plot at ~200% capacity
+ * with no warning. That falls out of the two-derivation design rather than
+ * being a defect in it, and ADR 0018's "Known limitation" section records why
+ * it isn't fixed here and what a future stage should do about it. Do not
+ * "fix" it by shrinking `region` — that is option 2, and the ADR explains why
+ * it makes overcrowding meaningless.
  */
 export function deriveOvercrowdingPlacements(
   placements: readonly PlacedPlant[],

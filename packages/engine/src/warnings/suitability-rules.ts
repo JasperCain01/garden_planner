@@ -10,7 +10,7 @@
  *
  * The missing-data policy this module must not break (ADR 0012, restated in
  * `docs/adr/0014` for this stage): **`unknown-plant` and `unknown-plot` never
- * produce a warning.** Zero of the 160 shipped records carry hardiness, soil
+ * produce a warning.** Only 2 of the 162 shipped records carry hardiness, soil
  * or seasons, so a rule that fired on "anything that isn't `match`" would warn
  * on nearly every crop for reasons that are gaps in the data, not problems
  * with the plot. `marginal` doesn't either (see `docs/adr/0014`'s reasoning) —

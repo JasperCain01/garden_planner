@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "generatedAt": "2026-07-26",
-  "license": "CC-BY-NC-SA-4.0",
-  "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "CC0-1.0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
   "plantCount": 162,
   "sources": [
     {
@@ -10,6 +10,9 @@
     },
     {
       "source": "Garden Planner companion/antagonist dataset (Stage 1.4)"
+    },
+    {
+      "source": "Garden Planner curated moisture table"
     },
     {
       "source": "North Carolina Extension Gardener Plant Toolbox"
@@ -219,6 +222,9 @@
           "betweenRowCm": 90
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -228,8 +234,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2023-12-01; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -245,6 +263,9 @@
           "betweenRowCm": 25
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -254,8 +275,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-02-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -271,6 +304,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -280,8 +316,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2023-03-25; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -323,6 +371,9 @@
           "betweenRowCm": 45
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -332,8 +383,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-06-15; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -351,6 +414,9 @@
         "intensive": {
           "plantsPerSquare": 9
         }
+      },
+      "soil": {
+        "moisture": ["moist"]
       },
       "companions": [
         {
@@ -394,6 +460,10 @@
             "note": "beets at 9 per square"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -425,6 +495,12 @@
               "note": "beets at 9 per square"
             }
           ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -446,6 +522,9 @@
           "inRowCm": 45,
           "betweenRowCm": 45
         }
+      },
+      "soil": {
+        "moisture": ["moist"]
       },
       "companions": [
         {
@@ -475,11 +554,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-01-14; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -670,6 +759,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["dry", "moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -679,8 +771,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2023-03-25; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -799,6 +903,9 @@
           "betweenRowCm": 40
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -808,8 +915,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2023-03-25; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -824,6 +943,9 @@
           "inRowCm": 150,
           "betweenRowCm": 90
         }
+      },
+      "soil": {
+        "moisture": ["moist"]
       },
       "companions": [
         {
@@ -848,11 +970,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-10-26; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -875,6 +1007,9 @@
           "betweenRowCm": 60
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "cumin",
@@ -893,11 +1028,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-11-27; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -975,6 +1120,9 @@
           "plantsPerSquare": 16
         }
       },
+      "soil": {
+        "moisture": ["dry", "moist"]
+      },
       "companions": [
         {
           "plantId": "onion",
@@ -1027,6 +1175,10 @@
             "note": "carrots at 16 per square"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -1058,6 +1210,12 @@
               "note": "carrots at 16 per square"
             }
           ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -1080,6 +1238,9 @@
           "betweenRowCm": 60
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -1089,8 +1250,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2022-10-06; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -1151,6 +1324,9 @@
           "betweenRowCm": 20
         }
       },
+      "soil": {
+        "moisture": ["moist", "wet"]
+      },
       "provenance": {
         "sources": [
           {
@@ -1160,8 +1336,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-05-19; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -1176,6 +1364,9 @@
           "inRowCm": 15,
           "betweenRowCm": 15
         }
+      },
+      "soil": {
+        "moisture": ["moist", "wet"]
       },
       "companions": [
         {
@@ -1195,11 +1386,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-08-15; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -1222,6 +1423,9 @@
           "betweenRowCm": 60
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -1231,8 +1435,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-01-28; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -1248,6 +1464,9 @@
           "betweenRowCm": 15
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -1257,8 +1476,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-01-14; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -1300,6 +1531,9 @@
           "betweenRowCm": 20
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "cayenne-pepper",
@@ -1318,11 +1552,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2023-12-01; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -1390,6 +1634,9 @@
           "betweenRowCm": 15
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -1399,8 +1646,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2022-01-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -1415,6 +1674,9 @@
           "inRowCm": 10,
           "betweenRowCm": 15
         }
+      },
+      "soil": {
+        "moisture": ["moist"]
       },
       "companions": [
         {
@@ -1434,11 +1696,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-10-13; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -1461,6 +1733,9 @@
           "betweenRowCm": 76
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -1470,8 +1745,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-11-27; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -1487,6 +1774,9 @@
           "betweenRowCm": 90
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -1496,8 +1786,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-07-15; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -1674,6 +1976,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "collard-greens",
@@ -1702,11 +2007,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2019-12-13; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -1755,6 +2070,9 @@
           "betweenRowCm": 60
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "bell-pepper",
@@ -1773,11 +2091,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-06-15; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -1845,6 +2173,9 @@
           "betweenRowCm": 40
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -1854,8 +2185,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-10-13; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -1897,6 +2240,9 @@
           "betweenRowCm": 15
         }
       },
+      "soil": {
+        "moisture": ["dry", "moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -1906,8 +2252,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-08-15; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -1951,6 +2309,9 @@
         "intensive": {
           "plantsPerSquare": 9
         }
+      },
+      "soil": {
+        "moisture": ["dry", "moist"]
       },
       "companions": [
         {
@@ -2006,6 +2367,10 @@
             "note": "garlic in the 4 in / 9-per-square class"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -2037,6 +2402,12 @@
               "note": "garlic in the 4 in / 9-per-square class"
             }
           ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -2059,6 +2430,9 @@
           "betweenRowCm": 8
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -2068,8 +2442,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2022-08-09; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -2166,6 +2552,9 @@
           "betweenRowCm": 8
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -2175,8 +2564,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-01-14; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -2292,6 +2693,9 @@
           "plantsPerSquare": 9
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "antagonists": [
         {
           "plantId": "garlic",
@@ -2334,6 +2738,10 @@
             "note": "bush beans at 9 per square"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -2365,6 +2773,12 @@
               "note": "bush beans at 9 per square"
             }
           ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -2387,6 +2801,9 @@
           "betweenRowCm": 8
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -2396,8 +2813,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-02-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -2588,6 +3017,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "blackberry",
@@ -2606,11 +3038,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-03-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -2769,6 +3211,9 @@
           "betweenRowCm": 45
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "german-chamomile",
@@ -2807,11 +3252,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2023-03-25; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -2834,6 +3289,9 @@
           "betweenRowCm": 10
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "german-chamomile",
@@ -2852,11 +3310,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2023-12-01; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -2879,6 +3347,9 @@
           "betweenRowCm": 45
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "thyme",
@@ -2897,11 +3368,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2023-09-28; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -2950,6 +3431,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "spinach",
@@ -2987,6 +3471,10 @@
             "note": "4–6 in apart, rows 12–16 in"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -3004,6 +3492,12 @@
               "url": "https://www.almanac.com/plant/leeks",
               "retrievedAt": "2026-07-22",
               "note": "4–6 in apart, rows 12–16 in"
+            }
+          ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
             }
           ],
           "companions": [
@@ -3028,6 +3522,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -3037,8 +3534,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-11-27; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -3082,6 +3591,9 @@
         "intensive": {
           "plantsPerSquare": 4
         }
+      },
+      "soil": {
+        "moisture": ["moist"]
       },
       "companions": [
         {
@@ -3135,6 +3647,10 @@
             "note": "lettuce at 4 per square"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -3164,6 +3680,12 @@
               "url": "https://www.almanac.com/square-foot-garden-plan",
               "retrievedAt": "2026-07-22",
               "note": "lettuce at 4 per square"
+            }
+          ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
             }
           ],
           "companions": [
@@ -3214,6 +3736,9 @@
           "betweenRowCm": 25
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -3223,8 +3748,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-03-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -3266,6 +3803,9 @@
           "betweenRowCm": 60
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -3275,8 +3815,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2022-06-25; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -3291,6 +3843,9 @@
           "inRowCm": 25,
           "betweenRowCm": 20
         }
+      },
+      "soil": {
+        "moisture": ["dry"]
       },
       "companions": [
         {
@@ -3310,11 +3865,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-01-14; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -3389,6 +3954,9 @@
           "betweenRowCm": 35
         }
       },
+      "soil": {
+        "moisture": ["moist", "wet"]
+      },
       "companions": [
         {
           "plantId": "green-zebra-tomato",
@@ -3412,11 +3980,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-06-15; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -3636,6 +4214,9 @@
           "plantsPerSquare": 9
         }
       },
+      "soil": {
+        "moisture": ["dry", "moist"]
+      },
       "companions": [
         {
           "plantId": "carrot",
@@ -3685,6 +4266,10 @@
             "note": "onion listed at 9 per square"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -3714,6 +4299,12 @@
               "url": "https://organicbackyardgardening.com/square-foot-gardening-chart/",
               "retrievedAt": "2026-07-22",
               "note": "onion listed at 9 per square"
+            }
+          ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
             }
           ],
           "companions": [
@@ -3790,6 +4381,9 @@
           "betweenRowCm": 5
         }
       },
+      "soil": {
+        "moisture": ["dry", "moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -3799,8 +4393,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-10-26; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -3871,6 +4477,9 @@
           "plantsPerSquare": 8
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "coriander",
@@ -3930,6 +4539,10 @@
             "note": "peas at 8 per grid section"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -3959,6 +4572,12 @@
               "url": "https://www.almanac.com/square-foot-garden-plan",
               "retrievedAt": "2026-07-22",
               "note": "peas at 8 per grid section"
+            }
+          ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
             }
           ],
           "companions": [
@@ -4216,6 +4835,9 @@
           "betweenRowCm": 75
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "marjoram",
@@ -4253,6 +4875,10 @@
             "note": "maincrop ~18 in apart; traditional rows ~30–36 in"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -4270,6 +4896,12 @@
               "url": "https://www.almanac.com/plant/potatoes",
               "retrievedAt": "2026-07-22",
               "note": "maincrop ~18 in apart; traditional rows ~30–36 in"
+            }
+          ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
             }
           ],
           "companions": [
@@ -4446,6 +5078,9 @@
           "plantsPerSquare": 16
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "carrot",
@@ -4488,6 +5123,10 @@
             "note": "radish at 16 per square"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -4519,6 +5158,12 @@
               "note": "radish at 16 per square"
             }
           ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -4541,6 +5186,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -4550,8 +5198,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-04-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -4638,6 +5298,9 @@
           "betweenRowCm": 60
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "celery",
@@ -4656,11 +5319,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-11-27; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -4735,6 +5408,9 @@
           "betweenRowCm": 10
         }
       },
+      "soil": {
+        "moisture": ["dry", "moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -4744,8 +5420,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-11-27; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -4787,6 +5475,9 @@
           "betweenRowCm": 92
         }
       },
+      "soil": {
+        "moisture": ["moist", "wet"]
+      },
       "provenance": {
         "sources": [
           {
@@ -4796,8 +5487,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-11-27; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -4813,6 +5516,9 @@
           "betweenRowCm": 40
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -4822,8 +5528,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-01-14; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -4839,6 +5557,9 @@
           "betweenRowCm": 50
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -4848,8 +5569,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-01-14; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -4864,6 +5597,9 @@
           "inRowCm": 60,
           "betweenRowCm": 60
         }
+      },
+      "soil": {
+        "moisture": ["dry"]
       },
       "companions": [
         {
@@ -4893,11 +5629,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-12-10; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -4920,6 +5666,9 @@
           "betweenRowCm": 20
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -4929,8 +5678,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-02-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -4972,6 +5733,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["dry"]
+      },
       "companions": [
         {
           "plantId": "bok-choy",
@@ -4990,11 +5754,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-03-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -5095,6 +5869,9 @@
           "betweenRowCm": 5
         }
       },
+      "soil": {
+        "moisture": ["dry", "moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5104,8 +5881,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-09-11; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5121,6 +5910,9 @@
           "betweenRowCm": 12
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5130,8 +5922,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-01-14; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5147,6 +5951,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5156,8 +5963,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-04-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5173,6 +5992,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5182,8 +6004,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-10-13; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5270,6 +6104,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5279,8 +6116,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-03-17; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5296,6 +6145,9 @@
           "betweenRowCm": 8
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5305,8 +6157,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-12-10; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5374,6 +6238,9 @@
           "betweenRowCm": 35
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5383,8 +6250,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-03-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5426,6 +6305,9 @@
           "betweenRowCm": 45
         }
       },
+      "soil": {
+        "moisture": ["dry", "moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5435,8 +6317,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2019-12-14; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5451,6 +6345,9 @@
           "inRowCm": 100,
           "betweenRowCm": 35
         }
+      },
+      "soil": {
+        "moisture": ["dry", "moist"]
       },
       "companions": [
         {
@@ -5475,11 +6372,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-10-26; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -5502,6 +6409,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "bok-choy",
@@ -5520,11 +6430,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-09-11; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -5625,6 +6545,9 @@
           "betweenRowCm": 30
         }
       },
+      "soil": {
+        "moisture": ["dry"]
+      },
       "companions": [
         {
           "plantId": "lacinato-kale",
@@ -5643,11 +6566,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-08-15; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -5670,6 +6603,9 @@
           "betweenRowCm": 60
         }
       },
+      "soil": {
+        "moisture": ["dry", "moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5679,8 +6615,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2024-07-15; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5698,6 +6646,9 @@
         "intensive": {
           "plantsPerSquare": 1
         }
+      },
+      "soil": {
+        "moisture": ["moist"]
       },
       "antagonists": [
         {
@@ -5741,6 +6692,10 @@
             "note": "vine tomatoes at 1 per square"
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
@@ -5772,6 +6727,12 @@
               "note": "vine tomatoes at 1 per square"
             }
           ],
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
@@ -5794,6 +6755,9 @@
           "betweenRowCm": 10
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5803,8 +6767,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2020-09-22; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5846,6 +6822,9 @@
           "betweenRowCm": 20
         }
       },
+      "soil": {
+        "moisture": ["wet"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5855,8 +6834,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-01-14; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -5917,6 +6908,9 @@
           "betweenRowCm": 7
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "provenance": {
         "sources": [
           {
@@ -5926,8 +6920,20 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2021-05-11; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+          },
+          {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
           }
-        ]
+        ],
+        "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ]
+        }
       }
     },
     {
@@ -6137,6 +7143,9 @@
           "betweenRowCm": 90
         }
       },
+      "soil": {
+        "moisture": ["moist"]
+      },
       "companions": [
         {
           "plantId": "garlic",
@@ -6160,11 +7169,21 @@
             "note": "OpenFarm.cc page archived via Wayback Machine on 2019-12-13; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           },
           {
+            "source": "Garden Planner curated moisture table",
+            "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+          },
+          {
             "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
             "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
+          "soil": [
+            {
+              "source": "Garden Planner curated moisture table",
+              "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
+            }
+          ],
           "companions": [
             {
               "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",

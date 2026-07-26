@@ -19,15 +19,28 @@ import { dirname } from 'node:path';
 import type { Plant, SourceRef } from '@garden-planner/engine';
 
 /**
- * The dataset licence. Chosen in ADR 0009: the shipped content today is OpenFarm
- * (CC0) plus original curation (hand-verified spacing facts, companion links),
- * none of which *compels* NonCommercial — but the project deliberately holds the
- * dataset at CC BY-NC-SA per WORKPLAN.md §0.5's ratified non-commercial stance and
- * to absorb PFAF (CC BY-NC-SA) seamlessly the moment its egress block lifts,
- * avoiding a licence flip-flop. See ADR 0009's licensing section and `/NOTICE`.
+ * The dataset licence: **CC0-1.0**, a public-domain dedication — as open as a
+ * dataset gets (ADR 0023, superseding ADR 0009's licensing section).
+ *
+ * ADR 0009 held the dataset at CC BY-NC-SA for one reason: to absorb Plants For
+ * A Future (CC BY-NC-SA) without a later licence flip-flop. That ingest is no
+ * longer planned (Stage 6.0 fills the data gaps by curation instead), so the
+ * anticipatory restriction had nothing left to anticipate.
+ *
+ * What actually ships is CC0 or original curation the project owns outright:
+ * the OpenFarm crops rescue is CC0-1.0 (ADR 0006 §rescue verified this and
+ * corrected `DESIGN.md`'s earlier CC BY-SA guess), and everything else —
+ * spacing figures, companion links, curated plants, the moisture table — is
+ * either an uncopyrightable fact or this project's own work. Nothing in the
+ * artifact compels a restriction, so none is imposed.
+ *
+ * Attribution is still recorded per record in `provenance`, and `/NOTICE`
+ * still credits every source. Under CC0 that is courtesy and traceability
+ * rather than a licence condition — which is the point: it stays useful to a
+ * reader without binding a reuser.
  */
-export const DATASET_LICENSE = 'CC-BY-NC-SA-4.0';
-export const DATASET_LICENSE_URL = 'https://creativecommons.org/licenses/by-nc-sa/4.0/';
+export const DATASET_LICENSE = 'CC0-1.0';
+export const DATASET_LICENSE_URL = 'https://creativecommons.org/publicdomain/zero/1.0/';
 
 /** The current artifact schema version. Bump on a breaking shape change. */
 export const ARTIFACT_SCHEMA_VERSION = 1;
@@ -94,7 +107,18 @@ export function buildArtifact(
   };
 }
 
-/** Write the artifact to disk as pretty-printed JSON with a trailing newline. */
+/**
+ * Write the artifact to disk as pretty-printed JSON with a trailing newline.
+ *
+ * `JSON.stringify(_, null, 2)` and Prettier disagree about short arrays —
+ * Prettier keeps `["seed"]` on one line, `JSON.stringify` expands it — so the
+ * raw output here does **not** satisfy `npm run format:check`. Rather than
+ * reach for Prettier from inside this module (which would drag a formatter
+ * into an otherwise dependency-light writer), the `build:data` script runs
+ * `prettier --write` over the emitted file straight afterwards. If you call
+ * `writeArtifact` from somewhere new, format the result too, or the repo goes
+ * red on a check that has nothing to do with your change.
+ */
 export function writeArtifact(path: string, artifact: DatasetArtifact): void {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(artifact, null, 2)}\n`, 'utf-8');

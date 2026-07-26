@@ -143,7 +143,7 @@ Everything below follows from that.
   position for the canvas (Stage 3.4), and a sentence for the UI. The decisions
   worth reading the ADR for are the whole-cell containment rule (which makes the
   area upper bound a theorem), the offset row pitch `√(b² − (s/2)²)` and why it
-  is not a blanket `√3/2`, and the **fallback rule**: 151 of the 160 shipped
+  is not a blanket `√3/2`, and the **fallback rule**: 153 of the 162 shipped
   records have row spacing only, so asking for an intensive count derives a
   conservative equal-area square and labels it rather than refusing.
   Stage 2.3 ([`adr/0014`](./adr/0014-warnings-and-companion-suggestions.md)) adds
@@ -387,7 +387,7 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
 
   Stage 4.1 fills the gap the paragraph above left open: the **bundled SVG
   icon set** (`app/src/icons/`, the first stage in Phase 4 — Content &
-  assets). 160 crop icons (one per `data/plants.json` id) plus one generic
+  assets). 162 crop icons (one per `data/plants.json` id) plus one generic
   fallback, all generated — not hand-drawn — from a small reusable shape
   library (`tools/icons/archetypes.ts`, ~19 archetypes such as `leaf`,
   `rootLong`, `bulbAllium`, `pod`, `roundFruit`) composed with a category fill
@@ -398,8 +398,8 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   mirroring `packages/etl`'s own build-time-tool convention). The generator
   hard-fails if the classification map and `data/plants.json` disagree about
   which ids exist — the same "no silent gap" posture as the ETL's dataset
-  gate, applied to keeping 160 files in lockstep with 160 dataset records.
-  Every icon is SVGO-optimized; the whole set is ~121 KB (161 files, ~751
+  gate, applied to keeping 162 files in lockstep with 162 dataset records.
+  Every icon is SVGO-optimized; the whole set is ~122 KB (163 files, ~766
   bytes average), well inside the budget `app/src/icons/budget.test.ts`
   enforces on every test run. The interface Stage 4.2 will call is
   `resolveIcon(plant): IconAsset` (`app/src/icons/resolveIcon.ts`, exported
@@ -411,7 +411,7 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   [`docs/icon-style-guide.md`](./icon-style-guide.md) for the visual
   conventions and how to add or replace an icon, and
   [`adr/0019`](./adr/0019-icon-set-archetypes-and-resolution.md) for why this
-  approach was chosen over hand-illustrating 160 crops.
+  approach was chosen over hand-illustrating 162 crops.
 
   Stage 4.2 ([`stage-4.2-brief.md`](./stage-4.2-brief.md)) adds the **wiring of
   icons into the palette and canvas** (`app/src/palette/PlantPalette.tsx`,
