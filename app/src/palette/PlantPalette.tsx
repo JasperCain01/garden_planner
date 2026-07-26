@@ -43,6 +43,7 @@ import {
   type RankedPlant,
   type SuitabilityBand,
 } from '@garden-planner/engine';
+import { resolveIcon } from '../icons/index.ts';
 import type { PaletteDragData } from '../canvas/drop.ts';
 import { usePlantList } from '../state/use-plant-list.ts';
 import { usePlotStore } from '../state/plot-store.ts';
@@ -178,6 +179,8 @@ function PaletteEntry({ entry }: { readonly entry: RankedPlant }) {
     data: { plant } satisfies PaletteDragData,
   });
 
+  const icon = resolveIcon(plant);
+
   return (
     <li
       ref={setNodeRef}
@@ -195,26 +198,42 @@ function PaletteEntry({ entry }: { readonly entry: RankedPlant }) {
         transform: CSS.Translate.toString(transform),
         zIndex: isDragging ? 1 : undefined,
         position: isDragging ? 'relative' : undefined,
+        display: 'flex',
+        gap: '0.75rem',
+        alignItems: 'flex-start',
       }}
     >
-      <h3 style={{ margin: 0 }}>
-        {plant.commonName}{' '}
-        <span style={{ color: BAND_COLORS[suitability.band], fontSize: '0.85em' }}>
-          {BAND_LABELS[suitability.band]}
-        </span>
-      </h3>
-      <p style={{ margin: '0.25rem 0', fontStyle: 'italic' }}>{plant.category}</p>
-      <p style={{ margin: '0.25rem 0' }}>{suitability.summary}</p>
-      <p style={{ margin: '0.25rem 0', fontSize: '0.85em' }}>
-        Confidence: {Math.round(suitability.confidence * 100)}%
-      </p>
-      <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
-        {suitability.dimensions.map((dimension) => (
-          <li key={dimension.dimension}>
-            <strong>{dimension.dimension}:</strong> {dimension.reason}
-          </li>
-        ))}
-      </ul>
+      <img
+        src={icon.url}
+        alt=""
+        style={{
+          width: '3rem',
+          height: '3rem',
+          flexShrink: 0,
+          borderRadius: '0.25rem',
+        }}
+        aria-hidden="true"
+      />
+      <div style={{ flex: 1 }}>
+        <h3 style={{ margin: 0 }}>
+          {plant.commonName}{' '}
+          <span style={{ color: BAND_COLORS[suitability.band], fontSize: '0.85em' }}>
+            {BAND_LABELS[suitability.band]}
+          </span>
+        </h3>
+        <p style={{ margin: '0.25rem 0', fontStyle: 'italic' }}>{plant.category}</p>
+        <p style={{ margin: '0.25rem 0' }}>{suitability.summary}</p>
+        <p style={{ margin: '0.25rem 0', fontSize: '0.85em' }}>
+          Confidence: {Math.round(suitability.confidence * 100)}%
+        </p>
+        <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
+          {suitability.dimensions.map((dimension) => (
+            <li key={dimension.dimension}>
+              <strong>{dimension.dimension}:</strong> {dimension.reason}
+            </li>
+          ))}
+        </ul>
+      </div>
     </li>
   );
 }

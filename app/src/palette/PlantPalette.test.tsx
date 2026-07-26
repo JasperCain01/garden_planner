@@ -133,4 +133,46 @@ describe('PlantPalette', () => {
     render(<PlantPalette />);
     expect(screen.getByRole('alert')).toBeTruthy();
   });
+
+  it('renders an icon image for each palette entry (Stage 4.2)', () => {
+    addBothFixtures();
+    const { container } = render(<PlantPalette />);
+
+    // Each entry should have an img element for its icon.
+    // Note: aria-hidden="true" makes the img not findable by getAllByRole('img'),
+    // so query by tag name instead.
+    const images = container.querySelectorAll('img');
+    // Expect at least 2 images (one per fixture plant).
+    expect(images.length).toBeGreaterThanOrEqual(2);
+    images.forEach((img) => {
+      // Each image should have a src (the resolved icon URL).
+      expect(img.getAttribute('src')).toBeTruthy();
+      // img should have empty alt text (it's decorative, aria-hidden).
+      expect(img.getAttribute('alt')).toBe('');
+      expect(img.getAttribute('aria-hidden')).toBe('true');
+    });
+  });
+
+  it('renders the generic fallback icon for a user-defined crop with no icon', () => {
+    const userCrop: UserPlantInput = {
+      commonName: 'Custom Crop',
+      category: 'vegetable',
+      light: 'full-sun',
+      spacing: { row: { inRowCm: 10, betweenRowCm: 20 } },
+      // No icon field, so resolveIcon should fall back to generic.
+    };
+
+    act(() => {
+      useUserPlantsStore.getState().addUserPlant(userCrop);
+    });
+
+    render(<PlantPalette />);
+
+    // The custom crop should appear with an icon img.
+    const customCropEntry = screen.getByText('Custom Crop').closest('li');
+    expect(customCropEntry).toBeTruthy();
+    const img = customCropEntry?.querySelector('img');
+    expect(img).toBeTruthy();
+    expect(img?.getAttribute('src')).toBeTruthy();
+  });
 });

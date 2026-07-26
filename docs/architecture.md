@@ -394,10 +394,20 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   [`docs/icon-style-guide.md`](./icon-style-guide.md) for the visual
   conventions and how to add or replace an icon, and
   [`adr/0019`](./adr/0019-icon-set-archetypes-and-resolution.md) for why this
-  approach was chosen over hand-illustrating 160 crops. **This stage
-  deliberately does not touch the palette or canvas** — both still render
-  their Stage-3.4-era coloured-circle-plus-initial placeholder; wiring
-  `resolveIcon` into them is Stage 4.2 (`docs/stage-4.2-brief.md`).
+  approach was chosen over hand-illustrating 160 crops.
+
+  Stage 4.2 ([`stage-4.2-brief.md`](./stage-4.2-brief.md)) adds the **wiring of
+  icons into the palette and canvas** (`app/src/palette/PlantPalette.tsx`,
+  `app/src/canvas/PlotCanvas.tsx`): the `resolveIcon` interface from Stage 4.1
+  is now consumed throughout. `PlantPalette.tsx` renders each entry's resolved
+  icon as an `<img>` next to its name and score. `PlotCanvas.tsx` keeps the
+  coloured category background circle (rendering immediately for instant visual
+  feedback) and layers the resolved icon on top once loaded via a custom
+  `useIconImage` hook that wraps image loading in React (`app/src/icons/useIconImage.ts`).
+  The fallback icon (for user-defined crops and any future crop before its icon ships)
+  renders the same way as any other — no warning UI, since `isFallback` is an expected,
+  common case. Component tests cover both resolved and fallback cases; E2E
+  verification confirms every placed dataset plant renders an icon or the defined fallback.
 
 ## Why a monorepo with these boundaries
 
