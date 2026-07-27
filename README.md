@@ -217,26 +217,41 @@ reasoned out in
 [ADR 0028](./docs/adr/0028-deploy-on-merge-not-automated.md) — which also
 carries a ready-to-adopt deploy-on-merge workflow for whoever wants it.
 
-### First deploy: run the command _before_ changing the Pages setting
+### The order matters: deploy first, then change the Pages setting
 
-The order matters, and it is the opposite of what you might expect. **There is
-no `gh-pages` branch in this repository yet** — `npm run deploy` is what
-creates it. Until it exists, the Settings → Pages branch dropdown has nothing
-to select, so "turn Pages on first" cannot work.
+`npm run deploy` is what **creates** the `gh-pages` branch. Until that branch
+exists, the Settings → Pages branch dropdown has nothing to offer, so "turn
+Pages on first" cannot work — which is how the original Stage 5.2 instructions
+had it, and why they were unfollowable.
 
-1. **Run `npm run deploy`** (below). The `gh-pages` package creates the
-   `gh-pages` branch and pushes `app/dist` to it. Nothing serves it yet — that
-   is expected and harmless.
-2. **Then point Pages at it** (repo-admin only, no script can do this):
+1. **Run `npm run deploy`** (below). The `gh-pages` package publishes
+   `app/dist` to the `gh-pages` branch, creating it if it doesn't exist.
+   ✅ **Done once already** (Stage 6.4, 2026-07-27): the branch exists, with
+   `index.html`, `assets/`, `manifest.webmanifest` and `sw.js` at its root and
+   the `/garden_planner/` base path correctly baked in.
+2. **Point Pages at it** (repo-admin only, no script can do this):
    **Settings → Pages → Build and deployment → Source: "Deploy from a branch" →
-   Branch: `gh-pages` / `(root)`.**
+   Branch: `gh-pages` / `(root)`.** ⬅️ **this is the outstanding step.**
 3. **Then run `npm run smoke:deployed`** to confirm the live site works.
 
-⚠️ **Pages is currently enabled on the wrong source.** The repository's
+⚠️ **Pages is currently serving the wrong branch.** The repository's
 [Actions history](https://github.com/JasperCain01/garden_planner/actions)
 shows successful `pages build and deployment` runs against **`main`**, so Pages
 is on — but it is serving the repository's own files, not the built app.
-Step 1 doesn't disturb that; step 2 is what switches it over.
+Step 1 didn't disturb that; step 2 is what switches it over.
+
+Two things the first real deploy turned up, neither yet fixed:
+
+- **`gh-pages` leaves root dotfiles behind.** `.gitignore`, `.prettierignore`
+  and `.prettierrc.json` are on the `gh-pages` branch even though `app/dist/`
+  contains none of them — the package's default removal glob doesn't match
+  dotfiles. Harmless (they are already public in `main`, and Pages just serves
+  them as static files), but untidy.
+- **There is no `.nojekyll` file.** GitHub Pages runs Jekyll over
+  branch-served content, and Jekyll skips paths beginning with `_`. Today's
+  Vite output has no such paths, so nothing is lost — but a build that emitted
+  one would silently 404. An empty `app/public/.nojekyll`, which Vite copies
+  into `dist/`, is the standard guard.
 
 ### Deploy command
 
@@ -273,29 +288,30 @@ those stay reproducible with no network dependency beyond `localhost`.
 
 ### Live site
 
-Expected at **<https://jaspercain01.github.io/garden_planner/>** once a
-maintainer has completed the three steps above. **The app has never been
-deployed there, and this has still not been confirmed by hand.** The honest
+Expected at **<https://jaspercain01.github.io/garden_planner/>** once step 2
+above is done. **Nobody has yet loaded the app from that URL.** The honest
 state, as of Stage 6.4 (2026-07-27):
 
 - **Pages is enabled**, but on the **`main`** branch rather than `gh-pages` —
   see the warning above. This corrects ADR 0024's `has_pages: false`, which
   was accurate when it was written and is not any more.
-- **There is no `gh-pages` branch at all.** Verified against the remote: the
-  repository has `main` and feature branches only. `npm run deploy` has never
-  been run for real, so the branch it would create doesn't exist — which is
-  exactly why the deploy command has to come _before_ the Settings change.
-  The build output was verified by hand for the correct base path instead
-  (ADR 0024).
+- **The `gh-pages` branch now exists, and carries a correct build.**
+  `npm run deploy` was run for real at Stage 6.4 — the first time in this
+  project's history. The branch's contents were checked against the remote
+  (`index.html`, `assets/`, `manifest.webmanifest`, `sw.js`, both icons at the
+  root) and the `/garden_planner/` base path is right in both `index.html` and
+  the manifest's `start_url`/`scope`. What it has **not** had is a browser
+  pointed at it.
 - **The live URL has never been reached from any of these sessions.** Every
   session that has worked on this repository has run behind an egress proxy
   that blocks `jaspercain01.github.io` outright (a `curl` returns no response
   at all) and now blocks `api.github.com` too, so `npm run smoke:deployed`
-  has never actually run against a deployment.
+  has never actually run against a deployment — including from the session
+  that pushed the branch.
 
-So the remaining work is one person, once: run `npm run deploy`, switch the
-Pages source to `gh-pages`, run `npm run smoke:deployed`, and update this
-section with what they see.
+So the remaining work is one person, once: switch the Pages source to
+`gh-pages`, run `npm run smoke:deployed`, and update this section with what
+they see.
 
 ## Repository layout
 
