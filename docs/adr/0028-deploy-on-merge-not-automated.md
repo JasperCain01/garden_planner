@@ -83,10 +83,12 @@ make.
 
 ## The recipe, ready to adopt
 
-This is the whole cost of the decision: a maintainer who enables Pages later
-should not have to re-derive the workflow. Once
-**Settings → Pages → Source** is set to `Deploy from a branch` → `gh-pages` /
-`(root)` (README.md's existing prerequisite), the branch-based form is:
+This is the whole cost of the decision: a maintainer who points Pages at the
+right branch later should not have to re-derive the workflow. Once a first
+manual `npm run deploy` has created the `gh-pages` branch (it does not exist
+yet — see README.md's "Deployment" section for why that step has to come first)
+and **Settings → Pages → Source** is set to `Deploy from a branch` →
+`gh-pages` / `(root)`, the branch-based form is:
 
 ```yaml
 name: deploy

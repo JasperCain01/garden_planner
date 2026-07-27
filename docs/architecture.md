@@ -543,10 +543,12 @@ Stage 6.4 section below.) Three pieces:
   extended for the PWA manifest in Stage 5.1) was already correct, confirmed
   again by building with the flag and inspecting `dist/index.html` and
   `dist/manifest.webmanifest` by hand.
-- **The one-time manual prerequisite**: enabling Pages itself
+- **The one-time manual step**: pointing Pages at the right branch
   (Settings → Pages → source branch) needs repo-admin access no automated
-  session has — documented as a manual step in the root `README.md`, not
-  attempted here.
+  session has — documented in the root `README.md`, not attempted here. Stage
+  6.4 found that this stage had the order backwards: no `gh-pages` branch
+  exists yet, and `npm run deploy` is what creates it, so the deploy runs
+  **first** and the Settings change second. README.md now says so.
 - **A post-deploy smoke check**: a second Playwright config
   (`app/playwright.pages.config.ts`) and spec (`app/e2e/deployed-smoke.spec.ts`)
   pointed at the live URL, run via `npm run smoke:deployed` — deliberately
