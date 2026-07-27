@@ -27,12 +27,18 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { name: /garden planner/i })).toBeTruthy();
   });
 
+  // Mounts the real, unfiltered palette (~130+ shipped crops match the
+  // default full-sun conditions), and Workplan Stage 6.2 gave every row a
+  // second interactive control (the "Add to plot" button, alongside the
+  // existing draggable region) for its keyboard-operable placement path —
+  // genuinely more DOM per row, and jsdom mounts that measurably slower than
+  // this test's previous ~1.5s. Longer timeout, not a regression to chase.
   it('renders the plot-definition page at the index route', () => {
     renderApp();
     expect(screen.getByRole('heading', { name: /define your plot/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /use this shape/i })).toBeTruthy();
     expect(screen.getByLabelText(/light level/i)).toBeTruthy();
-  });
+  }, 15_000);
 
   it('routes an unmatched path to the not-found page', () => {
     renderApp('/somewhere-that-does-not-exist');

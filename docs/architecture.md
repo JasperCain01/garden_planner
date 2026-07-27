@@ -614,44 +614,88 @@ is close the hardiness/season gap (still 8/144, and a new source's job, not
 curation's) or prune cultivar padding (four onions, seven squashes, six peppers
 — all of which grow here perfectly well).
 
+## Stage 6.2 — accessibility & responsive polish
+
+Three passes, each landing on a finding rather than confirming an
+assumption — full writeup in [`docs/accessibility.md`](./accessibility.md),
+reasoning in ADR
+[0026](./adr/0026-keyboard-placement-and-severity-glyphs.md).
+
+**Keyboard-operable placement.** `dnd-kit`'s `KeyboardSensor` really is
+present for free (§0.5's promise held) and lets a focused palette entry be
+picked up and nudged in raw screen pixels — but that's impractical as the
+_primary_ keyboard path across a page-length distance with no defined target
+position. So every palette entry (`app/src/palette/PlantPalette.tsx`) also
+gets an "Add to plot" button (places at the plot's centre, selects it, no
+drag math at all), and the canvas (`app/src/canvas/PlotCanvas.tsx`,
+`PlotCanvasSection.tsx`) gains arrow-key nudging plus Previous/Next-placement
+buttons, since Konva markers aren't independently focusable DOM elements.
+
+**Colour-contrast and ARIA, audited rather than assumed.** Two colour values
+genuinely failed WCAG AA's 4.5:1 (darkened one hue-step each, measured not
+eyeballed); the canvas's severity badges were genuinely colour-only (fixed
+with a per-severity glyph). Running the axe check this stage adds found a
+real bug neither of those two targeted audits would have: `aria-label` on
+elements with no ARIA role (the canvas container, the outline editor's
+corner handles) — `aria-prohibited-attr`, fixed with `role="group"`/
+`role="button"`.
+
+**Responsive layout, the actual cause fixed.** `docs/review-pre-deployment.md`'s
+canvas-at-y≈3500px finding traced to the plant palette rendering every
+matching crop with **no height limit at all** — an unbounded number that
+grows with the dataset. Capping the list to a scrolling `65vh` box is the
+structural fix; `overflow-x` containers on the canvas and outline editor
+stop a large plot forcing the whole page to scroll horizontally. Verified on
+real 390×844 and 320×568 viewports, not by reasoning about CSS.
+
+**Left behind:** a locally-runnable axe check (`npm run a11y`, 0 violations
+today) and a scripted keyboard-only walkthrough (`npm run
+keyboard-walkthrough`), both recorded honestly in `docs/accessibility.md` —
+including the gaps that remain (the free-form outline-corner editor stays
+pointer-only; no real screen-reader testing yet).
+
 ## Where to look next
 
-| Topic                                                             | File                                                                  |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Concept, data-source assessment, licensing rationale              | [`DESIGN.md`](../DESIGN.md)                                           |
-| Staged build plan, per-stage models, verification                 | [`WORKPLAN.md`](../WORKPLAN.md)                                       |
-| Specific decisions and their alternatives                         | [`adr/`](./adr/)                                                      |
-| The plant-record schema (types + validation)                      | `packages/engine/src/schema/`                                         |
-| User-crop input schema and its upcast to a `Plant`                | `packages/engine/src/schema/user-plant.ts`                            |
-| Location/climate static data and `resolveClimate`                 | `packages/engine/src/climate/`                                        |
-| Suitability scoring, its reasoning, and `rankPlants`              | `packages/engine/src/suitability/`                                    |
-| The plot-region polygon, packing geometry, `fitPlant`             | `packages/engine/src/spacing/`                                        |
-| Warnings, companion suggestions, `evaluatePlot`                   | `packages/engine/src/warnings/`                                       |
-| App shell, routing, GitHub Pages basename                         | `app/src/routes/`                                                     |
-| Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`                                   |
-| The user-plant overlay store and merged `usePlantList`            | `app/src/state/`                                                      |
-| The plot-definition page, shape picker, outline editor            | `app/src/plot/`                                                       |
-| The plot store (current region + conditions input)                | `app/src/state/plot-store.ts`                                         |
-| The ranked/searchable/filterable plant palette                    | `app/src/palette/`                                                    |
-| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)     | `app/src/canvas/`                                                     |
-| The placements store (what's placed on the canvas)                | `app/src/state/placements-store.ts`                                   |
-| The drag-and-drop E2E journey                                     | `app/e2e/plot-canvas.spec.ts`                                         |
-| The warnings overlay, companion suggestions, placement derivation | `app/src/warnings/`                                                   |
-| The warnings-overlay E2E journey                                  | `app/e2e/warnings-overlay.spec.ts`                                    |
-| The add-crop form, id-collision check, edit/remove                | `app/src/user-crops/`                                                 |
-| The add-custom-crop E2E journey                                   | `app/e2e/add-custom-crop.spec.ts`                                     |
-| The icon set, `resolveIcon`, and its style guide                  | `app/src/icons/`, [`docs/icon-style-guide.md`](./icon-style-guide.md) |
-| The icon generator (developer tool, not shipped)                  | `tools/icons/`                                                        |
-| The plot-image export pipeline and legend builder                 | `app/src/canvas/export.ts`                                            |
-| The plot-export E2E journey                                       | `app/e2e/plot-export.spec.ts`                                         |
-| The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                                              |
-| The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                                           |
-| Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`                                        |
-| Maintainer-curated full-plant input                               | `packages/etl/src/curated/`                                           |
-| The UK-outdoor exclusion list (which crops are pruned, and why)   | `packages/etl/src/exclusions/`                                        |
-| The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                                             |
-| The committed dataset artifact and its caveats                    | `data/README.md`                                                      |
-| Service worker + manifest config (`VitePWA`)                      | `app/vite.config.ts`                                                  |
-| Manifest icons (`any` + maskable)                                 | `app/public/pwa-icon.svg`, `app/public/maskable-icon.svg`             |
-| The offline E2E journey                                           | `app/e2e/offline.spec.ts`                                             |
-| Lighthouse PWA audit command and today's recorded score           | root `README.md`                                                      |
+| Topic                                                             | File                                                                          |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Concept, data-source assessment, licensing rationale              | [`DESIGN.md`](../DESIGN.md)                                                   |
+| Staged build plan, per-stage models, verification                 | [`WORKPLAN.md`](../WORKPLAN.md)                                               |
+| Specific decisions and their alternatives                         | [`adr/`](./adr/)                                                              |
+| The plant-record schema (types + validation)                      | `packages/engine/src/schema/`                                                 |
+| User-crop input schema and its upcast to a `Plant`                | `packages/engine/src/schema/user-plant.ts`                                    |
+| Location/climate static data and `resolveClimate`                 | `packages/engine/src/climate/`                                                |
+| Suitability scoring, its reasoning, and `rankPlants`              | `packages/engine/src/suitability/`                                            |
+| The plot-region polygon, packing geometry, `fitPlant`             | `packages/engine/src/spacing/`                                                |
+| Warnings, companion suggestions, `evaluatePlot`                   | `packages/engine/src/warnings/`                                               |
+| App shell, routing, GitHub Pages basename                         | `app/src/routes/`                                                             |
+| Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`                                           |
+| The user-plant overlay store and merged `usePlantList`            | `app/src/state/`                                                              |
+| The plot-definition page, shape picker, outline editor            | `app/src/plot/`                                                               |
+| The plot store (current region + conditions input)                | `app/src/state/plot-store.ts`                                                 |
+| The ranked/searchable/filterable plant palette                    | `app/src/palette/`                                                            |
+| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)     | `app/src/canvas/`                                                             |
+| The placements store (what's placed on the canvas)                | `app/src/state/placements-store.ts`                                           |
+| The drag-and-drop E2E journey                                     | `app/e2e/plot-canvas.spec.ts`                                                 |
+| The warnings overlay, companion suggestions, placement derivation | `app/src/warnings/`                                                           |
+| The warnings-overlay E2E journey                                  | `app/e2e/warnings-overlay.spec.ts`                                            |
+| The add-crop form, id-collision check, edit/remove                | `app/src/user-crops/`                                                         |
+| The add-custom-crop E2E journey                                   | `app/e2e/add-custom-crop.spec.ts`                                             |
+| The icon set, `resolveIcon`, and its style guide                  | `app/src/icons/`, [`docs/icon-style-guide.md`](./icon-style-guide.md)         |
+| The icon generator (developer tool, not shipped)                  | `tools/icons/`                                                                |
+| The plot-image export pipeline and legend builder                 | `app/src/canvas/export.ts`                                                    |
+| The plot-export E2E journey                                       | `app/e2e/plot-export.spec.ts`                                                 |
+| The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                                                      |
+| The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                                                   |
+| Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`                                                |
+| Maintainer-curated full-plant input                               | `packages/etl/src/curated/`                                                   |
+| The UK-outdoor exclusion list (which crops are pruned, and why)   | `packages/etl/src/exclusions/`                                                |
+| The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                                                     |
+| The committed dataset artifact and its caveats                    | `data/README.md`                                                              |
+| Service worker + manifest config (`VitePWA`)                      | `app/vite.config.ts`                                                          |
+| Manifest icons (`any` + maskable)                                 | `app/public/pwa-icon.svg`, `app/public/maskable-icon.svg`                     |
+| The offline E2E journey                                           | `app/e2e/offline.spec.ts`                                                     |
+| Lighthouse PWA audit command and today's recorded score           | root `README.md`                                                              |
+| Accessibility writeup, contrast/ARIA findings, responsive fix     | [`docs/accessibility.md`](./accessibility.md)                                 |
+| The axe check (locally-runnable, today's result recorded)         | `app/e2e/a11y.spec.ts`, root `README.md`                                      |
+| The keyboard-only walkthrough script and its recorded findings    | `app/keyboard-walkthrough.mjs`, [`docs/accessibility.md`](./accessibility.md) |
+| The "Skip to plot canvas" link                                    | `app/src/plot/SkipToCanvasLink.tsx`                                           |

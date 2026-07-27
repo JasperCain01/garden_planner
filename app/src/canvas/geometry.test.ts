@@ -7,6 +7,7 @@ import {
   cmToPx,
   pxToCm,
   regionBounds,
+  regionCentre,
 } from './geometry.ts';
 
 // A 300 x 200 cm rectangle at the origin: vertices (0,0) (300,0) (300,200) (0,200).
@@ -66,6 +67,17 @@ describe('cmToPx / pxToCm', () => {
   it('places a pixel point at the canvas origin back at the padded-out corner', () => {
     const cm = pxToCm({ x: 0, y: 0 }, REGION, 3);
     expect(cm).toEqual({ x: -CANVAS_PADDING_CM, y: -CANVAS_PADDING_CM });
+  });
+});
+
+describe('regionCentre', () => {
+  it('gives the bounding box midpoint for a rectangle at the origin', () => {
+    expect(regionCentre(REGION)).toEqual({ x: 150, y: 100 });
+  });
+
+  it('is always inside the bounding box, so clampToBounds never needs to touch it', () => {
+    const centre = regionCentre(REGION);
+    expect(clampToBounds(centre, REGION)).toEqual(centre);
   });
 });
 

@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { rectangleRegion, type UserPlantInput } from '@garden-planner/engine';
+import { usePlacementsStore } from '../state/placements-store.ts';
 import { usePlotStore } from '../state/plot-store.ts';
 import { useUserPlantsStore } from '../state/user-plants-store.ts';
 import { PlantPalette } from './PlantPalette.tsx';
@@ -42,6 +43,36 @@ describe('PlantPalette', () => {
       conditionsInput: { light: 'full-sun' },
     });
     useUserPlantsStore.setState({ userPlants: {} });
+    usePlacementsStore.setState({ placements: [], selectedId: null });
+  });
+
+  it('places a plant at the plot’s centre and selects it when its "Add to plot" button is pressed, with no drag at all (Workplan Stage 6.2)', () => {
+    addBothFixtures();
+    render(<PlantPalette />);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /add sun lover to the plot, without dragging/i }),
+    );
+
+    const { placements, selectedId } = usePlacementsStore.getState();
+    expect(placements).toHaveLength(1);
+    expect(placements[0].plant.commonName).toBe('Sun Lover');
+    // rectangleRegion(300, 200) has vertices (0,0) (300,0) (300,200) (0,200) — centre (150, 100).
+    expect(placements[0].x).toBe(150);
+    expect(placements[0].y).toBe(100);
+    expect(selectedId).toBe(placements[0].id);
+  });
+
+  it('keeps the "Add to plot" button a sibling of the draggable card, not nested inside it (axe’s nested-interactive rule)', () => {
+    addBothFixtures();
+    render(<PlantPalette />);
+
+    const button = screen.getByRole('button', { name: /add sun lover to the plot/i });
+    const draggableCard = screen.getByLabelText(/drag sun lover onto the plot to place it/i);
+    // The button must not be a descendant of the element wearing dnd-kit's
+    // own `role="button"` — that's exactly the "control nested inside
+    // another control" shape axe's nested-interactive check flags.
+    expect(draggableCard.contains(button)).toBe(false);
   });
 
   it('demotes a full-sun crop below a shade-tolerant one once the plot turns shady', () => {

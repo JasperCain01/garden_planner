@@ -45,3 +45,4 @@ old one and mark the old one `Superseded`.
 - [0023 — Relicense the dataset to CC0-1.0](./0023-dataset-licence-cc0.md)
 - [0024 — GitHub Pages deployment: `gh-pages`, script placement, and a manual post-deploy smoke check](./0024-github-pages-manual-deploy.md)
 - [0025 — Pruning the crop list: delete the crops Britain can't grow, keep the reasoning](./0025-uk-outdoor-crop-exclusions.md)
+- [0026 — Keyboard placement without pixel-drag, and severity glyphs alongside colour](./0026-keyboard-placement-and-severity-glyphs.md)

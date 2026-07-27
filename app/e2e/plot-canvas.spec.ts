@@ -52,7 +52,12 @@ test('dragging a plant from the palette onto the plot places it, with live count
   // — which surfaces as a 30-second click timeout with no hint of the cause.
   const canvasBox = await canvasBoxOf(canvas);
   await page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
-  await page.getByRole('button', { name: /remove/i }).click();
+  // Exact match: the outline editor's corner handles are also `role="button"`
+  // elements whose own label happens to contain the substring "remove"
+  // ("drag to move, double-click to remove" — Workplan Stage 6.2 gave them
+  // that role so `aria-label` is valid ARIA on them at all), so a loose
+  // `/remove/i` regex now matches five buttons, not one.
+  await page.getByRole('button', { name: 'Remove', exact: true }).click();
   await expect(page.getByText(/nothing placed yet/i)).toBeVisible();
 });
 

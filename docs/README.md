@@ -57,6 +57,18 @@ image", next to the canvas) rather than a guide — see
 [ADR 0020](./adr/0020-plot-export-canvas-compositing.md) if you want to know
 how the export pipeline itself works.
 
+## I want to know how accessible or responsive the app is
+
+[`docs/accessibility.md`](./accessibility.md) (Workplan Stage 6.2) — the
+keyboard-operable alternative to drag-and-drop, the colour-contrast/ARIA
+audit, the responsive-layout fix and its measured before/after numbers, the
+locally-runnable axe check (today's result recorded in
+[`README.md`](../README.md#accessibility-axe-check)), and a scripted
+keyboard-only walkthrough of the core journey with its findings — including
+what's still pointer-only, recorded honestly rather than hidden. See ADR
+[0026](./adr/0026-keyboard-placement-and-severity-glyphs.md) for the
+reasoning behind the keyboard-interaction model.
+
 ## I want to know where a fact came from, or what I can do with the data
 
 [`docs/data-provenance-and-licensing.md`](./data-provenance-and-licensing.md)

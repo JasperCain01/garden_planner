@@ -55,9 +55,23 @@ import type { EdibleCategory, PlotRegion, WarningSeverity } from '@garden-planne
 import { resolveIcon } from '../icons/index.ts';
 import { useIconImage } from '../icons/useIconImage.ts';
 import { usePlacementsStore, type PlacedPlant } from '../state/placements-store.ts';
-import { severityColor } from '../warnings/severity.ts';
+import { severityColor, severityGlyph } from '../warnings/severity.ts';
 import { CANVAS_DROPPABLE_ID } from './drop.ts';
-import { canvasSizePx, cmToPx, pxToCm } from './geometry.ts';
+import { canvasSizePx, clampToBounds, cmToPx, pxToCm } from './geometry.ts';
+
+/** How far one arrow-key press nudges the selected placement, in plot centimetres — the keyboard-operable alternative to Konva's pointer-only `draggable` (Workplan Stage 6.2, ADR 0026). */
+const NUDGE_STEP_CM = 10;
+
+/** The larger nudge step held-Shift gives, for crossing a big plot without needing dozens of presses. */
+const NUDGE_STEP_CM_FAST = 50;
+
+/** Arrow key → unit direction, in the same x/y frame `PlotRegion.vertices` uses (down/right positive, matching screen and canvas pixel conventions). */
+const NUDGE_DIRECTIONS: Readonly<Record<string, { dx: number; dy: number }>> = {
+  ArrowUp: { dx: 0, dy: -1 },
+  ArrowDown: { dx: 0, dy: 1 },
+  ArrowLeft: { dx: -1, dy: 0 },
+  ArrowRight: { dx: 1, dy: 0 },
+};
 
 /** Radius of a placed-plant marker, in canvas pixels. */
 const MARKER_RADIUS_PX = 16;
@@ -159,7 +173,7 @@ function PlacementMarker({
               strokeWidth={1}
             />
             <Text
-              text="!"
+              text={severityGlyph(severity)}
               fontStyle="bold"
               fontSize={10}
               fill="#ffffff"
@@ -211,25 +225,67 @@ export function PlotCanvas({
     movePlacement(placementId, pxToCm({ x: node.x(), y: node.y() }, region));
   }
 
-  /** Delete/Backspace removes the selected plant — the keyboard-accessible half of "remove"; the toolbar button (`PlotCanvasSection.tsx`) is the pointer half. */
+  /**
+   * Delete/Backspace removes the selected plant (the keyboard-accessible
+   * half of "remove"; the toolbar button in `PlotCanvasSection.tsx` is the
+   * pointer half), and the arrow keys nudge it — Workplan Stage 6.2's
+   * keyboard-operable alternative to Konva's pointer-only `draggable` on
+   * `PlacementMarker` above. Both need a selection first; `PlotCanvasSection`
+   * gives keyboard users two ways to get one (the "Previous/next placement"
+   * buttons, or clicking a marker), since Konva shapes aren't independently
+   * focusable/tabbable the way DOM elements are.
+   */
   function handleKeyDown(event: ReactKeyboardEvent<HTMLDivElement>): void {
-    if ((event.key === 'Delete' || event.key === 'Backspace') && selectedId !== null) {
+    if (selectedId === null) {
+      return;
+    }
+    if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
       removePlacement(selectedId);
+      return;
     }
+    const direction = NUDGE_DIRECTIONS[event.key];
+    if (direction === undefined) {
+      return;
+    }
+    event.preventDefault();
+    const current = placements.find((placement) => placement.id === selectedId);
+    if (current === undefined) {
+      return;
+    }
+    const step = event.shiftKey ? NUDGE_STEP_CM_FAST : NUDGE_STEP_CM;
+    const next = clampToBounds(
+      { x: current.x + direction.dx * step, y: current.y + direction.dy * step },
+      region,
+    );
+    movePlacement(selectedId, next);
   }
 
   return (
     <div
       ref={setNodeRef}
+      // Anchor target for `PlotDefinitionPage.tsx`'s "Skip to plot canvas"
+      // link (Workplan Stage 6.2) — a keyboard user placing a crop via the
+      // palette's "Add to plot" button would otherwise have to tab through
+      // every remaining filtered palette row *and* the whole "Add your own
+      // crop" form to reach the canvas and nudge the plant into place; the
+      // walkthrough in `docs/accessibility.md` measured that at 20+ tab
+      // presses for a six-crop search match.
+      id="plot-canvas"
       tabIndex={0}
+      // `role="group"` (Workplan Stage 6.2): a plain `<div>` with no ARIA
+      // role has an implicit role that doesn't support `aria-label` at all
+      // (axe's `aria-prohibited-attr` rule). "group" is the honest fit — a
+      // labelled, keyboard-focusable container for the placed-plant markers
+      // and the drop target, not a specific ARIA widget this doesn't behave
+      // like.
+      role="group"
       onKeyDown={handleKeyDown}
-      aria-label="plot canvas — drag plants here to place them; click a placed plant to select it"
+      aria-label="plot canvas — drag plants here to place them, or select one and use the arrow keys (hold Shift to move further) to nudge it; click a placed plant to select it"
       style={{
         width: size.width,
         height: size.height,
         border: isOver ? '2px dashed #2e7d32' : '1px solid #ccc',
-        outline: 'none',
       }}
     >
       <Stage

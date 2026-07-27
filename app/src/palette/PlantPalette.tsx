@@ -30,6 +30,27 @@
  * the palette→canvas handoff half of the plot canvas's drag-and-drop. See
  * `docs/adr/0017-plot-canvas-konva-and-dnd-kit.md` for why dnd-kit owns this
  * handoff and react-konva owns everything after the plant lands.
+ *
+ * **Keyboard alternative (Workplan Stage 6.2, ADR 0026).** dnd-kit's default
+ * `KeyboardSensor` already lets a focused entry be picked up (Space/Enter)
+ * and nudged (arrow keys) — `canvas/drop.ts#resolveDrop` reads the dragged
+ * element's own translated rect regardless of *how* the drag started, so
+ * that "just works". But it's impractical as the *primary* keyboard path: it
+ * moves the card in raw screen pixels, and the canvas can be a long way down
+ * the page. So every entry also renders a plain "Add to plot" `<button>` —
+ * places the plant at the region's centre (`canvas/geometry.ts#regionCentre`)
+ * and selects it, ready for the canvas's arrow-key nudge to fine-position.
+ * See ADR 0026 for why this, and not a custom keyboard-drag interaction, is
+ * the answer to "what does a keyboard-initiated drop position mean".
+ *
+ * The button is a **sibling** of the draggable region, not nested inside it —
+ * dnd-kit's `attributes` already put `role="button"` on the draggable
+ * element, and a real `<button>` nested inside another `role="button"`
+ * element is exactly what axe's `nested-interactive` check flags (a screen
+ * reader can't sensibly navigate into an interactive control that lives
+ * inside another one). `PaletteEntry` below splits the `<li>` into a
+ * draggable inner `<div>` (the drag surface + keyboard-drag target) and the
+ * button next to it, both direct children of the plain `<li>`.
  */
 
 import { useMemo, useState } from 'react';
@@ -45,17 +66,32 @@ import {
 } from '@garden-planner/engine';
 import { resolveIcon } from '../icons/index.ts';
 import type { PaletteDragData } from '../canvas/drop.ts';
+import { regionCentre } from '../canvas/geometry.ts';
+import { usePlacementsStore } from '../state/placements-store.ts';
 import { usePlantList } from '../state/use-plant-list.ts';
 import { usePlotStore } from '../state/plot-store.ts';
 import { filterRanked, type CategoryFilter } from './filters.ts';
 
 const CATEGORY_OPTIONS = EdibleCategorySchema.options;
 
-/** Colour cue per band, from a confident match (green) to a hard mismatch (grey-out). */
+/**
+ * Colour cue per band, from a confident match (green) to a hard mismatch
+ * (grey-out) — supplementary to `BAND_LABELS`' own text, which is what
+ * actually carries the meaning (WCAG 1.4.1: colour is never the only signal
+ * here, see `PaletteEntry` below).
+ *
+ * **Contrast (Workplan Stage 6.2 a11y pass):** every value here reaches at
+ * least 4.5:1 against a white background — this is a text colour
+ * (`PaletteEntry`'s band `<span>`), so that's the normal-text bar, not the
+ * looser 3:1 large-text/UI-component one. `good` (`#4c8c2b`, 4.12:1) and
+ * `fair` (`#9a7b0a`, 4.03:1) both fell short; darkened one step each, same
+ * hue, to `#3f7522` (5.56:1) and `#8a6c00` (4.97:1). `excellent` (5.08:1),
+ * `poor` (4.72:1) and `unsuitable` (4.54:1) already cleared it.
+ */
 const BAND_COLORS: Readonly<Record<SuitabilityBand, string>> = {
   excellent: '#1a7f37',
-  good: '#4c8c2b',
-  fair: '#9a7b0a',
+  good: '#3f7522',
+  fair: '#8a6c00',
   poor: '#b35c00',
   unsuitable: '#767676',
 };
@@ -154,7 +190,32 @@ export function PlantPalette() {
           {visible.length === 0 ? (
             <p>No crops match your plot&rsquo;s conditions and current filters.</p>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            /**
+             * **Bounded height, not the page (Workplan Stage 6.2 responsive
+             * fix).** Every matching crop used to render in full, unbounded —
+             * with all 144 shipped crops visible at once (the common case:
+             * no search, no category filter) that pushed everything below
+             * the palette, including the plot canvas, arbitrarily far down
+             * the page. `docs/review-pre-deployment.md` §2 measured the
+             * canvas at y ≈ 3500px because of exactly this, and the figure
+             * only grows as the dataset does. A capped, internally-scrolling
+             * list keeps the page's own height roughly constant regardless
+             * of how many crops match, which is what actually makes the
+             * canvas reachable on a phone — a media-query breakpoint
+             * wouldn't touch this, since the list was already a single
+             * column at every width.
+             */
+            <ul
+              style={{
+                listStyle: 'none',
+                padding: '0.5rem',
+                margin: 0,
+                maxHeight: '65vh',
+                overflowY: 'auto',
+                border: '1px solid #ddd',
+                borderRadius: '0.5rem',
+              }}
+            >
               {visible.map((entry) => (
                 <PaletteEntry key={entry.plant.id} entry={entry} />
               ))}
@@ -167,10 +228,39 @@ export function PlantPalette() {
 }
 
 /**
- * One palette row, and this stage's drag source: `useDraggable` carries the
- * row's `Plant` as drag data and follows the pointer via a CSS transform
- * while dragging, so `canvas/drop.ts`'s `resolveDrop` can read the dragged
- * card's own rect as the drop point (see that module's doc for why).
+ * One palette row. Two ways onto the plot, both landing on the same
+ * `addPlacement` action:
+ *
+ * 1. **Pointer/keyboard drag** — `useDraggable` carries the row's `Plant` as
+ *    drag data and follows the pointer via a CSS transform while dragging,
+ *    so `canvas/drop.ts`'s `resolveDrop` can read the dragged card's own
+ *    rect as the drop point (see that module's doc for why). Applied to the
+ *    inner `<div>`, not the `<li>` — see below.
+ * 2. **"Add to plot" button (Workplan Stage 6.2, ADR 0026)** — places `plant`
+ *    directly at the plot's centre and selects it, no drag at all. This is
+ *    the primary non-pointer path (see the module doc's "Keyboard
+ *    alternative" section for why dnd-kit's keyboard-sensor drag alone isn't
+ *    enough here).
+ *
+ * **Why the `<li>` itself isn't the draggable node.** dnd-kit's `attributes`
+ * put `role="button"` and `tabIndex={0}` on whatever `setNodeRef` attaches
+ * to. Putting the "Add to plot" `<button>` *inside* that element would nest
+ * a real interactive control inside another one wearing an interactive
+ * role — axe's `nested-interactive` check exists precisely because a screen
+ * reader has no sane way to navigate into a control nested inside another
+ * control. So the draggable surface is an inner `<div>` (still carrying the
+ * drag `aria-label`, still keyboard-focusable), and the button is the
+ * `<li>`'s other, sibling child.
+ *
+ * **The region is read at click-time (`usePlotStore.getState()`), not
+ * subscribed to** — `handleAddToPlot` only ever needs it at the moment the
+ * button is actually pressed, so there's no reason for every one of up to
+ * 144 rows to re-render on every outline edit just to keep an unused prop
+ * current. This trims *a* cost, but not the main one: mounting a second
+ * interactive control on every matching row is genuinely more DOM, and
+ * `PlotDefinitionPage.test.tsx`/`App.test.tsx` both needed longer timeouts to
+ * match (see their own comments) — a real, accepted cost of the button
+ * existing at all, not something this particular choice was going to erase.
  */
 function PaletteEntry({ entry }: { readonly entry: RankedPlant }) {
   const { plant, suitability } = entry;
@@ -181,59 +271,72 @@ function PaletteEntry({ entry }: { readonly entry: RankedPlant }) {
 
   const icon = resolveIcon(plant);
 
+  function handleAddToPlot(): void {
+    usePlacementsStore.getState().addPlacement(plant, regionCentre(usePlotStore.getState().region));
+  }
+
   return (
-    <li
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      aria-label={`drag ${plant.commonName} onto the plot to place it`}
-      style={{
-        border: '1px solid #ccc',
-        borderRadius: '0.5rem',
-        padding: '0.75rem',
-        marginBottom: '0.75rem',
-        opacity: suitability.band === 'unsuitable' ? 0.6 : isDragging ? 0.4 : 1,
-        cursor: 'grab',
-        touchAction: 'none',
-        transform: CSS.Translate.toString(transform),
-        zIndex: isDragging ? 1 : undefined,
-        position: isDragging ? 'relative' : undefined,
-        display: 'flex',
-        gap: '0.75rem',
-        alignItems: 'flex-start',
-      }}
-    >
-      <img
-        src={icon.url}
-        alt=""
+    <li style={{ marginBottom: '0.75rem' }}>
+      <div
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
+        aria-label={`drag ${plant.commonName} onto the plot to place it`}
         style={{
-          width: '3rem',
-          height: '3rem',
-          flexShrink: 0,
-          borderRadius: '0.25rem',
+          border: '1px solid #ccc',
+          borderRadius: '0.5rem',
+          padding: '0.75rem',
+          opacity: suitability.band === 'unsuitable' ? 0.6 : isDragging ? 0.4 : 1,
+          cursor: 'grab',
+          touchAction: 'none',
+          transform: CSS.Translate.toString(transform),
+          zIndex: isDragging ? 1 : undefined,
+          position: isDragging ? 'relative' : undefined,
+          display: 'flex',
+          gap: '0.75rem',
+          alignItems: 'flex-start',
         }}
-        aria-hidden="true"
-      />
-      <div style={{ flex: 1 }}>
-        <h3 style={{ margin: 0 }}>
-          {plant.commonName}{' '}
-          <span style={{ color: BAND_COLORS[suitability.band], fontSize: '0.85em' }}>
-            {BAND_LABELS[suitability.band]}
-          </span>
-        </h3>
-        <p style={{ margin: '0.25rem 0', fontStyle: 'italic' }}>{plant.category}</p>
-        <p style={{ margin: '0.25rem 0' }}>{suitability.summary}</p>
-        <p style={{ margin: '0.25rem 0', fontSize: '0.85em' }}>
-          Confidence: {Math.round(suitability.confidence * 100)}%
-        </p>
-        <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
-          {suitability.dimensions.map((dimension) => (
-            <li key={dimension.dimension}>
-              <strong>{dimension.dimension}:</strong> {dimension.reason}
-            </li>
-          ))}
-        </ul>
+      >
+        <img
+          src={icon.url}
+          alt=""
+          style={{
+            width: '3rem',
+            height: '3rem',
+            flexShrink: 0,
+            borderRadius: '0.25rem',
+          }}
+          aria-hidden="true"
+        />
+        <div style={{ flex: 1 }}>
+          <h3 style={{ margin: 0 }}>
+            {plant.commonName}{' '}
+            <span style={{ color: BAND_COLORS[suitability.band], fontSize: '0.85em' }}>
+              {BAND_LABELS[suitability.band]}
+            </span>
+          </h3>
+          <p style={{ margin: '0.25rem 0', fontStyle: 'italic' }}>{plant.category}</p>
+          <p style={{ margin: '0.25rem 0' }}>{suitability.summary}</p>
+          <p style={{ margin: '0.25rem 0', fontSize: '0.85em' }}>
+            Confidence: {Math.round(suitability.confidence * 100)}%
+          </p>
+          <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
+            {suitability.dimensions.map((dimension) => (
+              <li key={dimension.dimension}>
+                <strong>{dimension.dimension}:</strong> {dimension.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
+      <button
+        type="button"
+        onClick={handleAddToPlot}
+        aria-label={`Add ${plant.commonName} to the plot, without dragging`}
+        style={{ marginTop: '0.5rem' }}
+      >
+        Add to plot
+      </button>
     </li>
   );
 }

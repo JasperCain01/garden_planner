@@ -59,12 +59,36 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
   const placements = usePlacementsStore((state) => state.placements);
   const selectedId = usePlacementsStore((state) => state.selectedId);
   const removePlacement = usePlacementsStore((state) => state.removePlacement);
+  const selectPlacement = usePlacementsStore((state) => state.selectPlacement);
   const stageRef = useRef<Konva.Stage>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   const selected = placements.find((placement) => placement.id === selectedId) ?? null;
   const selectedWarnings =
     selected === null ? [] : (canvasWarnings?.warningsByPlacementId.get(selected.id) ?? []);
+
+  /**
+   * Move the selection by `offset` placements (±1), wrapping around — the
+   * keyboard-operable way to select a placed plant (Workplan Stage 6.2,
+   * ADR 0026). Konva shapes aren't independently focusable/tabbable the way
+   * DOM elements are, so clicking a marker isn't the *only* way to select
+   * one; these two buttons are real, always-tabbable `<button>`s that need
+   * no pointer at all. Starts from the first (or last) placement when
+   * nothing is currently selected, rather than doing nothing.
+   */
+  function selectRelative(offset: 1 | -1): void {
+    if (placements.length === 0) {
+      return;
+    }
+    const currentIndex = placements.findIndex((placement) => placement.id === selectedId);
+    const nextIndex =
+      currentIndex === -1
+        ? offset === 1
+          ? 0
+          : placements.length - 1
+        : (currentIndex + offset + placements.length) % placements.length;
+    selectPlacement(placements[nextIndex].id);
+  }
 
   async function handleExport(): Promise<void> {
     setIsExporting(true);
@@ -79,20 +103,44 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
     <section>
       <h2>3. Arrange your plants</h2>
       <p>
-        Drag a plant from the palette above onto the plot below. Click a placed plant to select it,
-        drag it to move it, and double-click, press Delete/Backspace, or use the button below to
-        remove it.
+        Drag a plant from the palette above onto the plot below — or, without a pointer, use its
+        &ldquo;Add to plot&rdquo; button, then select it with the buttons below (or click it) and
+        nudge it into place with the arrow keys (hold Shift to move further). Double-click, press
+        Delete/Backspace, or use the Remove button to remove a selected plant.
       </p>
-      <PlotCanvas
-        region={region}
-        severityByPlacementId={canvasWarnings?.severityByPlacementId}
-        stageRef={stageRef}
-      />
+      {/*
+       * Workplan Stage 6.2: a plot large enough to make the canvas wider
+       * than a phone's viewport must not force the whole *page* to scroll
+       * horizontally — that would also drag the growing-conditions form,
+       * palette and warnings panel out sideways with it. Scrolling
+       * contained to this box, instead, keeps the canvas at full resolution
+       * (unlike shrinking its pixels-per-cm to fit, which would make plant
+       * icons illegible on a large plot) at the cost of a horizontal
+       * scrollbar on the canvas itself for those plots — an accepted
+       * trade-off recorded in ADR 0026.
+       */}
+      <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
+        <PlotCanvas
+          region={region}
+          severityByPlacementId={canvasWarnings?.severityByPlacementId}
+          stageRef={stageRef}
+        />
+      </div>
       <p>
         <button type="button" onClick={handleExport} disabled={isExporting}>
           {isExporting ? 'Exporting…' : 'Export image'}
         </button>
       </p>
+      {placements.length > 0 && (
+        <p>
+          <button type="button" onClick={() => selectRelative(-1)}>
+            ◀ Previous placement
+          </button>{' '}
+          <button type="button" onClick={() => selectRelative(1)}>
+            Next placement ▶
+          </button>
+        </p>
+      )}
       {selected !== null && (
         <div>
           <p>
