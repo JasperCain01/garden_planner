@@ -210,4 +210,20 @@ describe('createGbifResolver', () => {
     expect(outcome.status === 'error' && outcome.message).toContain('simulated network failure');
     expect(resolver.getCache()).toEqual({});
   });
+
+  it('stringifies a non-Error rejection rather than assuming transport failures are always Errors', async () => {
+    // A transport doesn't have to reject with an Error (e.g. an aborted fetch
+    // in some environments rejects with a bare string or DOMException-like
+    // object) — the resolver must not throw trying to read `.message` off it.
+    const transport: GbifTransport = {
+      matchName: vi.fn(async () => {
+        throw 'ECONNRESET';
+      }),
+    };
+    const resolver = createGbifResolver({ transport });
+
+    const outcome = await resolver.resolve('onion');
+
+    expect(outcome).toMatchObject({ status: 'error', query: 'onion', message: 'ECONNRESET' });
+  });
 });

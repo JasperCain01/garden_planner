@@ -30,4 +30,24 @@ describe('datasetSpacingIssues', () => {
     const issues = datasetSpacingIssues({ intensive: { plantsPerSquare: 500 } });
     expect(issues.some((i) => i.includes('ceiling'))).toBe(true);
   });
+
+  it('rejects a decimal-slip tiny plantsPerSquare', () => {
+    // 0.01 for a plausible "1 per square" is exactly the kind of misplaced-decimal
+    // error the floor exists to catch (§ module doc, minPlantsPerSquare).
+    const issues = datasetSpacingIssues({ intensive: { plantsPerSquare: 0.01 } });
+    expect(issues.some((i) => i.includes('plantsPerSquare') && i.includes('floor'))).toBe(true);
+  });
+
+  it('rejects an implausible perSquareMetre density (no floor, only a ceiling)', () => {
+    // Broadcast salad leaves can legitimately run to a few hundred per m², but
+    // 1000 is a data error, not a crop.
+    const issues = datasetSpacingIssues({ intensive: { perSquareMetre: 1000 } });
+    expect(issues.some((i) => i.includes('perSquareMetre') && i.includes('ceiling'))).toBe(true);
+  });
+
+  it('accepts a very low perSquareMetre (no floor for widely-spaced crops)', () => {
+    // A tree-like crop can be a small fraction of a plant per square metre —
+    // that is not an error, unlike the same sparsity in plantsPerSquare terms.
+    expect(datasetSpacingIssues({ intensive: { perSquareMetre: 0.01 } })).toEqual([]);
+  });
 });

@@ -45,6 +45,46 @@ describe('regionDistanceCm', () => {
     const bedB = translate(rectangleRegion(60, 60), 250, 40);
     expect(regionDistanceCm(bedA, bedB)).toBeCloseTo(regionDistanceCm(bedB, bedA), 6);
   });
+
+  it('is zero for a plus-shaped overlap where neither bed has a vertex inside the other', () => {
+    // A wide-short rectangle and a narrow-tall one, crossing like a "+". Every
+    // corner of each lies outside the other (e.g. bedA's (0,40) has x=0, well
+    // outside bedB's x:[40,60] span), so the two containment checks at the top
+    // of `regionDistanceCm` both find nothing — this exercises the edge-pair
+    // scan's own zero-distance path (`segmentsIntersect`), not containment.
+    const bedA = {
+      vertices: [
+        { x: 0, y: 40 },
+        { x: 100, y: 40 },
+        { x: 100, y: 60 },
+        { x: 0, y: 60 },
+      ],
+    };
+    const bedB = {
+      vertices: [
+        { x: 40, y: 0 },
+        { x: 60, y: 0 },
+        { x: 60, y: 100 },
+        { x: 40, y: 100 },
+      ],
+    };
+    expect(regionDistanceCm(bedA, bedB)).toBe(0);
+  });
+
+  it('treats a degenerate (zero-length) edge as the single point it collapses to', () => {
+    // A hand-drawn outline can end up with two coincident corners (a dragged
+    // corner dropped exactly onto its neighbour). `distancePointToSegment`'s
+    // degenerate-segment branch keeps this from producing NaN or Infinity.
+    const point = {
+      vertices: [
+        { x: 300, y: 300 },
+        { x: 300, y: 300 },
+        { x: 300, y: 300 },
+      ],
+    };
+    const bed = rectangleRegion(100, 100); // [0,100] x [0,100]
+    expect(regionDistanceCm(point, bed)).toBeCloseTo(Math.sqrt(200 * 200 + 200 * 200), 6);
+  });
 });
 
 describe('adjacencyThresholdCm', () => {

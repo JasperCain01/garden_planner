@@ -104,4 +104,24 @@ describe('validateDataset — the hard-fail gate catches every layer', () => {
     const report = validateDataset([onion, { id: 'bad', not: 'a plant' }]);
     expect(report.issues.length).toBeGreaterThanOrEqual(2);
   });
+
+  it('fails on an empty dataset (structural — nothing to ship)', () => {
+    const report = validateDataset([]);
+    expect(report.ok).toBe(false);
+    expect(
+      report.issues.some((i) => i.kind === 'structural' && /dataset is empty/.test(i.message)),
+    ).toBe(true);
+  });
+
+  it('falls back to a positional label when a schema-invalid record has no usable id', () => {
+    // `looseId` can't trust an id that isn't there — a record this broken (not
+    // even an object) has nothing better to report than its position.
+    const report = validateDataset(['not even an object', 42, null]);
+    expect(report.ok).toBe(false);
+    expect(report.issues.filter((i) => i.kind === 'schema').map((i) => i.plantId)).toEqual([
+      '#0',
+      '#1',
+      '#2',
+    ]);
+  });
 });

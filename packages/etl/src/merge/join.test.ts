@@ -111,6 +111,22 @@ describe('findSpacingTarget', () => {
     if (!join.matched) expect(join.reason).toContain('scientific names disagree');
   });
 
+  it('rejects a stale alias whose target slug is not in the index at all', () => {
+    // A curated alias table entry surviving a plant removal/rename — the
+    // alias itself resolves, but `index.bySlug` has nothing at that slug. The
+    // spacing row's own scientific name must not unambiguously resolve on its
+    // own (step 2), or the alias lookup (step 3) is never reached.
+    const plants = [plant({ id: 'onion', scientificName: 'Allium cepa' })];
+    const index = buildPlantIndex(plants);
+    const join = findSpacingTarget(
+      spacingRow({ id: 'beetroot', scientificName: 'Beta vulgaris' }),
+      index,
+      { beetroot: 'no-such-plant' },
+    );
+    expect(join.matched).toBe(false);
+    if (!join.matched) expect(join.reason).toContain('points at no known plant');
+  });
+
   it('reports no home when nothing matches (broad-bean case)', () => {
     const plants = [plant({ id: 'leek', scientificName: 'Allium porrum' })];
     const index = buildPlantIndex(plants);
