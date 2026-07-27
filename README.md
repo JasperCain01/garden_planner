@@ -220,12 +220,21 @@ developer tool** that is never shipped.
 | `data/`            | The committed static dataset artifact the app loads at runtime.                                                          |
 | `docs/`            | Architecture notes and Architecture Decision Records (`docs/adr/`).                                                      |
 
+## Documentation
+
+[`docs/README.md`](./docs/README.md) is the docs index — "where do I look for
+X?" for everything from how-to guides (add a crop, add an icon, run the ETL)
+to the architecture overview, the ADRs, and where the data actually came
+from.
+
 ## Licensing
 
 - **Code:** MIT (see [`LICENSE`](./LICENSE)).
 - **Dataset (`/data`):** **CC0-1.0** — public domain. Take it and do whatever you
-  like with it; no attribution required. See [`NOTICE`](./NOTICE) and
-  [ADR 0023](./docs/adr/0023-dataset-licence-cc0.md).
+  like with it; no attribution required. See
+  [`docs/data-provenance-and-licensing.md`](./docs/data-provenance-and-licensing.md)
+  for the full sourcing/licensing picture, or [`NOTICE`](./NOTICE) and
+  [ADR 0023](./docs/adr/0023-dataset-licence-cc0.md) directly.
 - **Crop icons (`app/src/icons/`):** MIT, original work — generated from an
   in-repo shape library, not adapted from any third-party set.
 

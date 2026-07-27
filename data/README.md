@@ -1,5 +1,10 @@
 # `/data` — the committed dataset artifact
 
+> See [`/docs/data-provenance-and-licensing.md`](../docs/data-provenance-and-licensing.md)
+> for a single consolidated read of provenance and licensing, gathering this
+> page, `/NOTICE` and ADRs 0009/0023/0025. This page remains the canonical
+> detail on the artifact's shape and how to regenerate it.
+
 This directory holds the **static plant dataset** the app loads at runtime. It is
 a _build output_ of the `packages/etl` pipeline, committed to the repo so that:
 

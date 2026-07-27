@@ -4,6 +4,32 @@ This is a short map of how the pieces fit together. For the _why_, read
 [`DESIGN.md`](../DESIGN.md) and the ADRs in [`adr/`](./adr/); for the build
 sequence read [`WORKPLAN.md`](../WORKPLAN.md).
 
+## How to read this file
+
+This file is two things at once: an architecture overview and a stage-by-stage
+build log, and it grows by accretion — each stage appends its section rather
+than the file being rewritten. That's deliberate (§0.2's "update docs as part
+of the stage" applies here too), but it means reading it start to finish is
+not the fastest way to understand the system. Three ways to use it instead:
+
+- **New here and want the shape of the system, not its history?** Read "The
+  one big constraint" and "Why a monorepo with these boundaries" below, then
+  skip straight to ["Where to look next"](#where-to-look-next) at the bottom —
+  a topic → file table that covers the whole codebase as it stands today,
+  with no stage history to wade through.
+- **Picking up a specific area (the engine, the ETL, one app feature)?** Find
+  its row in "Where to look next" and follow the file path — most modules'
+  own doc comments carry more of the "why" than this file restates.
+- **Want the reasoning behind one decision?** Check [`docs/adr/`](./adr/)
+  first — an ADR is scoped to one decision, which is usually faster to read
+  than finding the same reasoning embedded in a stage section below.
+
+The stage-by-stage sections that follow are the project's build log: useful
+for _why_ a design landed the way it did and in what order, not required
+reading to use or extend the app. [`docs/README.md`](./README.md) is the
+general docs index if you're looking for something other than architecture
+(how-to guides, data provenance, the build plan).
+
 ## The one big constraint
 
 The app must run as a **fully static site** (GitHub Pages) and **work offline**.

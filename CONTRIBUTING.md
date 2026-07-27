@@ -55,8 +55,10 @@ holds all the horticultural logic as pure, framework-free functions. See
 [`DESIGN.md`](./DESIGN.md), [`WORKPLAN.md`](./WORKPLAN.md), and `docs/adr/` for
 the full reasoning.
 
-## Adding things (guides arrive with the features)
+## Adding things
 
-How-to guides for "add a plant", "add a companion relationship", and "add an
-icon" are written in Stage 6.1 once those systems exist. Until then, follow the
-schema (Stage 0.2) and the ETL patterns (Phase 1).
+Start at [`docs/README.md`](./docs/README.md) — the docs index links every
+how-to guide (adding a curated crop, a spacing figure, a moisture row, an
+exclusion, a companion relationship, a data source, or a crop icon) to where
+it actually lives (`packages/etl/README.md` and `docs/icon-style-guide.md`),
+rather than duplicating them here.
