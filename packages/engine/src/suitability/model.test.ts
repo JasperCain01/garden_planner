@@ -11,7 +11,7 @@ import { bandForScore, BAND_THRESHOLDS } from './model';
  */
 describe('bandForScore', () => {
   it('bands exactly at each threshold as the higher band (inclusive lower bound)', () => {
-    expect(bandForScore(BAND_THRESHOLDS.excellent)).toBe('excellent');
+    expect(bandForScore(BAND_THRESHOLDS.excellent)).toBe('DELIBERATELY-WRONG-STAGE-6.4-GATE-PROOF');
     expect(bandForScore(BAND_THRESHOLDS.good)).toBe('good');
     expect(bandForScore(BAND_THRESHOLDS.fair)).toBe('fair');
     expect(bandForScore(BAND_THRESHOLDS.poor)).toBe('poor');
