@@ -1,8 +1,21 @@
 # 0005 — GBIF name resolver: join key, offline cache, and the "add a source" extension point
 
-## Status
-
-Accepted (Stage 1.1).
+> **Dated note (Stage 6.4, 2026-07-27 — the project's closing consistency
+> pass).** This ADR's design is unchanged and still current, but two of its
+> forward-looking statements have since been overtaken and are left in place
+> rather than rewritten (`docs/adr/README.md`: never rewrite history):
+>
+> - It anticipates **PFAF and Permapeople adapters landing in Stage 1.2**. They
+>   never landed and are **no longer planned** — Stage 6.0 closed the data gap
+>   by curation instead (see ADR [0023](./0023-dataset-licence-cc0.md)'s context
+>   and `WORKPLAN.md`'s Stage 1.2 row). The multi-source reconciliation this
+>   resolver was designed for therefore has no second source to reconcile
+>   against today. The design still upgrades for free if one ever arrives, which
+>   is exactly why it was built this way.
+> - The pre-deployment note below says **"0 of 162 resolved"**. The dataset now
+>   ships **144** crops (Stage 6.0), and the substance is unchanged: still
+>   **0 resolved**, because GBIF is still unreachable from every sandbox that
+>   has run the build.
 
 ## Context
 

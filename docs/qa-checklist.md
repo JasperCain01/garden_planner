@@ -3,10 +3,13 @@
 A by-hand checklist a maintainer (or a future session) can run through before
 calling a build v1, without re-deriving anything from scratch. It complements
 `npm run verify` and the automated E2E suite — it does not replace them; run
-those first (see [`WORKPLAN.md`](../WORKPLAN.md) §1.4). This is not a QA
-_process_ document (there is no CI to gate on yet — Stage 6.4), it is a
-worked-through list: tick the boxes, or re-run the exact commands below and
-compare to the numbers already recorded here.
+those first (see [`WORKPLAN.md`](../WORKPLAN.md) §1.4). Since Stage 6.4, CI
+runs the automatable parts of this on every pull request
+([`.github/workflows/checks.yml`](../.github/workflows/checks.yml)) — but this
+page is deliberately **not** that: it is the by-hand list, and every item below
+is here precisely because a script can only partly assert it (a non-blank PNG
+is not the same as a legible one). Tick the boxes, or re-run the exact commands
+below and compare to the numbers already recorded here.
 
 ## Before you start
 
@@ -79,24 +82,30 @@ alongside the automated pass.
 
 ## 4. Automated-but-manual checks to (re-)run
 
-These exist as locally-runnable commands rather than a CI gate (no
-`.github/workflows/` yet — §1.4, Stage 6.4). Re-run each and compare to the
-last-recorded result; a material change is worth a note in `README.md`/
-`docs/accessibility.md`, not just a shrug.
+All four now run in CI as well as by hand — the first two as **blocking**
+checks, the last two as **informational** ones that report into the run summary
+without failing the build (Stage 6.4, [ADR
+0027](./adr/0027-ci-checks-workflow-and-blocking-policy.md)). That makes rows 3
+and 4 the ones still worth a human's attention: nothing goes red if the
+Lighthouse score slips or a keyboard step regresses, so re-run them, compare to
+the last-recorded result, and treat a material change as a note in `README.md`/
+`docs/accessibility.md` rather than a shrug.
 
-| Check                | Command                                                                                                 | Last recorded result                                                                                                                                                                         |
-| -------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full E2E regression  | `PW_EXECUTABLE_PATH=/path/to/chromium npm run e2e`                                                      | 7/7 passing (Stage 6.3, 2026-07-27). `plot-export.spec.ts` has been observed to flake once under the default 2-worker parallelism — retry once before treating it as a regression.           |
-| Accessibility (axe)  | `npm run a11y -w app` (needs the preview server running)                                                | 0 violations, both scanned states (Stage 6.3, 2026-07-27 — unchanged since Stage 6.2).                                                                                                       |
-| Keyboard walkthrough | `PW_EXECUTABLE_PATH=/path/to/chromium npm run keyboard-walkthrough -w app`                              | All steps pass; same friction/gap findings as Stage 6.2 (see §5 below) — unchanged (Stage 6.3, 2026-07-27).                                                                                  |
-| Lighthouse PWA audit | `npx lighthouse@11 http://localhost:4173/ --only-categories=pwa --chrome-flags="--headless=new" --view` | **0.88 / 1.00** — unchanged since Stage 5.1. Same single failing audit (custom splash screen needs a PNG ≥512px icon; this project ships SVG icons only, an accepted gap — see `README.md`). |
+| Check                | Command                                                                                                 | Last recorded result                                                                                                                                                                                                                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Full E2E regression  | `PW_EXECUTABLE_PATH=/path/to/chromium npm run e2e`                                                      | 7/7 passing (Stage 6.3, and again in CI at Stage 6.4). **Blocking in CI.** `plot-export.spec.ts`'s known flake is now handled by `retries: 1` under `CI` rather than by re-running by hand.                                                                                                                                                          |
+| Accessibility (axe)  | `npm run a11y -w app` (needs the preview server running)                                                | 0 violations, both scanned states (unchanged since Stage 6.2; re-confirmed by CI at Stage 6.4). **Blocking in CI.**                                                                                                                                                                                                                                  |
+| Keyboard walkthrough | `PW_EXECUTABLE_PATH=/path/to/chromium npm run keyboard-walkthrough -w app`                              | All steps pass, 35 tab presses to the canvas — identical in CI at Stage 6.4. Same friction/gap findings as Stage 6.2 (see §5). **Informational in CI.**                                                                                                                                                                                              |
+| Lighthouse PWA audit | `npx lighthouse@11 http://localhost:4173/ --only-categories=pwa --chrome-flags="--headless=new" --view` | **0.88 / 1.00** — unchanged since Stage 5.1, and measured at exactly 0.88 again by CI at Stage 6.4. Same single failing audit (custom splash screen needs a PNG ≥512px icon; this project ships SVG icons only, an accepted gap — see `README.md`). **Informational in CI**, and this figure is the baseline its run-summary reporter warns against. |
 
 ## 5. Known gaps — don't re-discover these, don't silently fix them
 
 Recorded honestly in [`docs/accessibility.md`](./accessibility.md); pointed
 at here so a release note doesn't have to reconstruct them from scratch.
-Closing any of these is a decision for whichever stage picks it up next, not
-something to absorb quietly into a QA pass:
+Closing any of these is a deliberate decision, not something to absorb quietly
+into a QA pass — and since Stage 6.4 each one has an explicit disposition and
+its unblocker named in [`WORKPLAN.md`](../WORKPLAN.md) §5.2's post-v1 backlog,
+alongside the rest of what v1 deliberately leaves out.
 
 - **The free-form plot-outline corner editor is pointer-only.**
   (`app/src/plot/PlotOutlineEditor.tsx`) — dragging a corner to reshape an
@@ -111,9 +120,11 @@ something to absorb quietly into a QA pass:
   scripted keyboard walkthrough proves reachability and operability, not that
   a screen reader announces state changes usefully.
 - **Hardiness/season data covers 8 of 144 shipped crops.** Not an app bug —
-  a dataset-coverage gap that needs a new source (Stage 1.2's unstarted
-  PFAF/Permapeople adapters), not more curation. See `WORKPLAN.md`'s Stage
-  6.0 entry and `docs/data-provenance-and-licensing.md`.
+  a dataset-coverage gap that needs a new, freely-licensed source with
+  cultivar-level data, not more curation. Stage 1.2's PFAF/Permapeople adapters
+  were investigated, blocked, and are **no longer planned** (ADR 0006's dated
+  note). See `WORKPLAN.md`'s Stage 6.0 entry, §5.2's backlog, and
+  `docs/data-provenance-and-licensing.md`.
 
 ## 6. Test-coverage audit (Stage 6.3)
 

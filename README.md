@@ -1,5 +1,7 @@
 # Garden Planner 🌱
 
+[![checks](https://github.com/JasperCain01/garden_planner/actions/workflows/checks.yml/badge.svg)](https://github.com/JasperCain01/garden_planner/actions/workflows/checks.yml)
+
 An offline-capable, statically-hosted planner for **edible** gardens and
 allotments. Describe your plot (size, light/shade, location — default Britain),
 and the app helps you work out which crops will thrive, how many fit at proper
@@ -7,18 +9,18 @@ spacing, and how to arrange them — with drag-and-drop and live warnings. You c
 also **add your own crops** from a seed packet and **export a picture** of the
 finished plot.
 
-> **Status: Phases 1–4 complete; Phase 5 (offline & deployment) complete.**
-> The data pipeline, the framework-free suitability/spacing/warnings engine,
-> and the full drag-and-drop React UI (plot definition, ranked palette,
-> canvas, warnings overlay, user-defined crops, plot-image export, a bundled
-> SVG icon set) are all built and green — see [`WORKPLAN.md`](./WORKPLAN.md)'s
-> Progress table for the stage-by-stage detail. Stage 5.1 added **PWA /
-> offline support** (installs, works with the network off — see below); Stage
-> 5.2 adds a **manual GitHub Pages deploy path** (see "Deployment" below —
-> deliberately a hand-run command, not CI: see `WORKPLAN.md` §1.4). Phase 6
-> (community readiness) is under way: Stage 6.0 has now curated the crop list
-> itself — six British staples added, 24 crops that can't be grown outdoors
-> here removed — leaving **144 crops** in the shipped dataset.
+> **Status: v1 — the build plan is complete.** Every stage in
+> [`WORKPLAN.md`](./WORKPLAN.md) is done, through the last one (6.4, CI). The
+> data pipeline, the framework-free suitability/spacing/warnings engine, and
+> the full drag-and-drop React UI (plot definition, ranked palette, canvas,
+> warnings overlay, user-defined crops, plot-image export, a bundled SVG icon
+> set) are built and green, the app installs and works offline (Stage 5.1),
+> there is a documented GitHub Pages deploy path (Stage 5.2), the shipped
+> dataset is curated for British outdoor growing at **144 crops** (Stage 6.0),
+> and every check is now automated on push and pull request (Stage 6.4 — the
+> badge above). See `WORKPLAN.md`'s Progress table for the stage-by-stage
+> detail, and its closing section for what is deliberately **not** in v1 and
+> where each of those gaps is tracked.
 
 ### A caveat worth knowing before you judge the rankings
 
@@ -84,6 +86,19 @@ Use `npm run verify` before calling any change done. `npm test` deliberately
 covers only the unit and component suites — Playwright is a separate command,
 so `npm test` alone never exercises the end-to-end journeys.
 
+### Continuous integration
+
+Every push to `main` and every pull request runs
+[`.github/workflows/checks.yml`](./.github/workflows/checks.yml): `npm run
+verify` and `npm run a11y -w app` as **blocking** checks, plus an
+**informational** job that reports the Lighthouse PWA score and the
+keyboard-only walkthrough into the run summary without blocking a merge.
+Everything CI runs is a command you can run locally, unchanged — that is a
+deliberate constraint (`WORKPLAN.md` §1.4), so a red check always means "run
+this exact command and you will see the same failure". The blocking-vs-
+informational split is reasoned out in
+[ADR 0027](./docs/adr/0027-ci-checks-workflow-and-blocking-policy.md).
+
 > **If Playwright can't find a browser** (`Executable doesn't exist at …`),
 > you're likely in a sandbox or container that ships its own Chromium rather
 > than Playwright's managed one. Point Playwright at it instead of running
@@ -112,7 +127,7 @@ the printed local URL, reload once (so the service worker installs), then
 disconnect from the network (or use your browser devtools' "Offline"
 throttling) and reload again — the app keeps working.
 
-### Lighthouse PWA audit (manual — no CI workflow exists yet, per `WORKPLAN.md` §1.4)
+### Lighthouse PWA audit (run in CI as an informational check, and by hand with the command below)
 
 ```bash
 npm run build -w app && npm run preview -w app   # serve the production build at :4173, in one terminal
@@ -122,8 +137,9 @@ npx lighthouse@11 http://localhost:4173/ --only-categories=pwa \
 ```
 
 **Today's recorded score: 0.88 / 1.00** (7 of 8 weighted points; re-confirmed
-unchanged at Stage 6.3, 2026-07-27 — see
-[`docs/qa-checklist.md`](./docs/qa-checklist.md)). Breakdown:
+unchanged at Stage 6.3, and again by the first CI run of Stage 6.4's `audits`
+job, 2026-07-27 — see [`docs/qa-checklist.md`](./docs/qa-checklist.md)).
+Breakdown:
 
 | Audit                      | Result  | Notes                                                                                                                                                                            |
 | -------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -152,7 +168,7 @@ plot canvas doesn't render thousands of pixels down the page on a phone —
 Workplan Stage 6.2. Full writeup, including what's still a known gap (the
 free-form outline-corner editor stays pointer-only): [`docs/accessibility.md`](./docs/accessibility.md).
 
-### Accessibility (axe check) (manual — no CI workflow exists yet, per `WORKPLAN.md` §1.4)
+### Accessibility (axe check) — a blocking CI check, and runnable by hand
 
 ```bash
 npm run build -w app && npm run preview -w app   # serve the production build at :4173, in one terminal
@@ -168,7 +184,9 @@ placing a crop via the keyboard-operable "Add to plot" button — checking the
 [`@axe-core/playwright`](https://www.npmjs.com/package/@axe-core/playwright).
 
 **Today's recorded result: 0 violations, in both states** (re-confirmed
-unchanged at Stage 6.3, 2026-07-27).
+unchanged at Stage 6.3, and now enforced on every push and pull request by the
+`a11y` job in [`.github/workflows/checks.yml`](./.github/workflows/checks.yml)
+— a new violation fails the build).
 
 ```
 Running 2 tests using 1 worker
@@ -192,19 +210,28 @@ honestly-recorded findings.
 
 The app is a fully static build (`app/dist/`), so hosting it is "build with
 the right base path and publish `dist/`" — no server, no environment
-variables the deployed app reads at runtime. Per `WORKPLAN.md` §1.4, this
-stays a **manual, maintainer-run command**; there is no
-`.github/workflows/` directory and this stage does not add one — CI/CD
-automation (including "deploy on merge") is deliberately deferred to Stage
-6.4.
+variables the deployed app reads at runtime. Deploying stays a **manual,
+maintainer-run command**. That was originally because `WORKPLAN.md` §1.4
+forbade workflows; since Stage 6.4 lifted that rule it is a deliberate choice,
+reasoned out in
+[ADR 0028](./docs/adr/0028-deploy-on-merge-not-automated.md) — which also
+carries a ready-to-adopt deploy-on-merge workflow for whoever wants it.
 
 ### One-time prerequisite (repo-admin only)
 
-GitHub Pages must be turned on once, in the repo's own settings — no script
-or session without repo-admin access can do this step:
+GitHub Pages must point at the `gh-pages` branch that `npm run deploy`
+publishes to — no script or session without repo-admin access can do this
+step:
 
 **Settings → Pages → Build and deployment → Source: "Deploy from a branch" →
 Branch: `gh-pages` / `(root)`.**
+
+⚠️ **Pages is currently enabled on the wrong source.** The repository's
+[Actions history](https://github.com/JasperCain01/garden_planner/actions)
+shows successful `pages build and deployment` runs against **`main`**, so
+Pages is on — but it is serving the repository's own files, not the built app.
+Until the source is changed to `gh-pages`, `npm run deploy` will publish a
+branch that nothing serves.
 
 ### Deploy command
 
@@ -242,14 +269,25 @@ those stay reproducible with no network dependency beyond `localhost`.
 ### Live site
 
 Expected at **<https://jaspercain01.github.io/garden_planner/>** once a
-maintainer has completed the two steps above. **Not yet confirmed live from
-this repository** — Stage 5.2 was built and verified (build output inspected
-by hand for the correct base path; see ADR 0024) from a sandboxed session
-whose outbound network is blocked beyond package installs and the GitHub
-API, so neither the actual `gh-pages` push nor a request to the live URL
-could be completed or observed here. The GitHub API confirms Pages is not
-yet enabled on the real repo (`has_pages: false` as of this writing). Update
-this line once a real deploy has been run and the URL checked by hand.
+maintainer has completed the two steps above. **The app has never been
+deployed there, and this has still not been confirmed by hand.** The honest
+state, as of Stage 6.4 (2026-07-27):
+
+- **Pages is enabled**, but on the **`main`** branch rather than `gh-pages` —
+  see the warning above. This corrects ADR 0024's `has_pages: false`, which
+  was accurate when it was written and is not any more.
+- **No `gh-pages` push has ever happened.** `npm run deploy` has never been
+  run for real; the build output was verified by hand for the correct base
+  path instead (ADR 0024).
+- **The live URL has never been reached from any of these sessions.** Every
+  session that has worked on this repository has run behind an egress proxy
+  that blocks `jaspercain01.github.io` outright (a `curl` returns no response
+  at all) and now blocks `api.github.com` too, so `npm run smoke:deployed`
+  has never actually run against a deployment.
+
+So the remaining work is one person, once: change the Pages source to
+`gh-pages`, run `npm run deploy`, then `npm run smoke:deployed`, and update
+this section with what they see.
 
 ## Repository layout
 

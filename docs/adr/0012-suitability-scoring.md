@@ -1,5 +1,16 @@
 # 0012 — Suitability scoring: the weighting model, the missing-data policy, and how reasoning is represented
 
+> **Dated note (Stage 6.4, 2026-07-27 — the project's closing consistency
+> pass).** The coverage table below measured the dataset **as it was at Stage
+> 2.1** and is kept as the record of what this design was responding to. Stages
+> 1.7/1.8/6.0 have since changed the numbers — re-measured today against
+> `data/plants.json` (144 records): `light` **144/144** (133 full-sun, 11
+> partial-shade), `soil` **80/144**, `hardiness` **8/144**, `seasons`
+> **8/144**. The decision is unchanged and, if anything, better supported:
+> soil is now a genuinely working second dimension, and the missing-data policy
+> this ADR argues for is exactly what keeps the other two honest while they stay
+> thin. `WORKPLAN.md` §5.2 records the hardiness/season gap's disposition.
+
 - **Status:** Accepted
 - **Date:** 2026-07-25
 - **Workplan stage:** 2.1 (⭐ keystone) — suitability scoring engine
@@ -127,8 +138,9 @@ palette should still be able to show the crop greyed out _with the explanation_,
 and because Stage 2.3 turns exactly these results into warnings. Callers who want
 them gone pass `rankPlants(…, { excludeUnsuitable: true })` — which is also how
 the Workplan's "no matching plants" edge case arises honestly: an all-shade plot
-against today's dataset returns exactly the 14 shade-tolerant crops, and against
-a full-sun-only list returns an empty array.
+against the dataset as it stood at this stage returned exactly its 14
+shade-tolerant crops (11 as of Stage 6.0's curation — see the dated note above),
+and against a full-sun-only list returns an empty array.
 
 Which dimensions may return 0 is itself a decision:
 

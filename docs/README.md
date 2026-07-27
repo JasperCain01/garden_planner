@@ -106,6 +106,26 @@ later sections have the full brief for each stage, past and future.
 §0's ground rules, plus the definition-of-done commands to run before
 opening a change.
 
+## I want to know what CI checks my pull request, and what it doesn't
+
+[`.github/workflows/checks.yml`](../.github/workflows/checks.yml) (Workplan
+Stage 6.4) runs `npm run verify` and the axe check as **blocking** jobs, plus
+an **informational** job reporting the Lighthouse PWA score and the
+keyboard-only walkthrough. ADR
+[0027](./adr/0027-ci-checks-workflow-and-blocking-policy.md) explains which
+gates and why, and why nothing runs in CI that you can't run locally with a
+documented command. ADR
+[0028](./adr/0028-deploy-on-merge-not-automated.md) covers the deliberate
+absence of a deploy-on-merge workflow, with a ready-to-adopt recipe.
+
+## I want to know what was checked for security, and what was found
+
+[`docs/security-review.md`](./security-review.md) (Workplan Stage 6.4) — the
+`npm audit` triage (what was fixed, what is genuinely not applicable and why),
+an executed XSS probe against the custom-crop path with a positive control,
+and the CI workflow's least-privilege review. Scoped to what a static
+client-side app with no server and no accounts actually risks.
+
 ## Historical / archival
 
 These record a point-in-time snapshot rather than the current state — useful
