@@ -43,6 +43,15 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
 
+  // `app/keyboard-walkthrough.mjs` (Workplan Stage 6.2): a standalone Node
+  // script driving a real browser via Playwright, so it needs Node globals
+  // (`process`) for itself *and* browser globals (`document`) for the
+  // `page.evaluate()` callback that actually runs inside the page, not Node.
+  {
+    files: ['app/keyboard-walkthrough.mjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+
   // Turn off stylistic rules that Prettier owns. Must come last.
   prettier,
 );

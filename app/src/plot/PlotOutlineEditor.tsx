@@ -161,47 +161,66 @@ export function PlotOutlineEditor({ region, onChange }: PlotOutlineEditorProps) 
 
   return (
     <div>
-      <svg
-        role="img"
-        aria-label="plot outline — drag a corner to adjust, or use the add/remove handles"
-        width={viewBoxWidth * PX_PER_CM}
-        height={viewBoxHeight * PX_PER_CM}
-        viewBox={viewBox}
-      >
-        <polygon
-          points={draftVertices.map((vertex) => `${vertex.x},${vertex.y}`).join(' ')}
-          fill="rgba(76, 175, 80, 0.25)"
-          stroke={error !== null ? '#c0392b' : '#2e7d32'}
-          strokeWidth={4}
-        />
-        {draftVertices.map((vertex, index) => {
-          const next = draftVertices[(index + 1) % draftVertices.length];
-          const midpoint: Vertex = { x: (vertex.x + next.x) / 2, y: (vertex.y + next.y) / 2 };
-          return (
-            <g key={index}>
-              <circle
-                data-testid={`plot-corner-add-${index}`}
-                aria-label={`add a corner after corner ${index + 1}`}
-                cx={midpoint.x}
-                cy={midpoint.y}
-                r={MIDPOINT_RADIUS_CM}
-                fill="#90caf9"
-                onClick={() => handleAddMidpoint(index)}
-              />
-              <circle
-                data-testid={`plot-corner-${index}`}
-                aria-label={`corner ${index + 1} — drag to move, double-click to remove`}
-                cx={vertex.x}
-                cy={vertex.y}
-                r={CORNER_RADIUS_CM}
-                fill="#2e7d32"
-                onPointerDown={(event) => handleCornerPointerDown(index, event)}
-                onDoubleClick={() => handleRemove(index)}
-              />
-            </g>
-          );
-        })}
-      </svg>
+      {/* Workplan Stage 6.2: a large outline can render wider than a phone viewport at this fixed PX_PER_CM; scrolling here (not the whole page) keeps the rest of the layout from being dragged sideways with it — same reasoning as `PlotCanvasSection.tsx`'s canvas wrapper. */}
+      <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
+        <svg
+          role="img"
+          aria-label="plot outline — drag a corner to adjust, or use the add/remove handles"
+          width={viewBoxWidth * PX_PER_CM}
+          height={viewBoxHeight * PX_PER_CM}
+          viewBox={viewBox}
+        >
+          <polygon
+            points={draftVertices.map((vertex) => `${vertex.x},${vertex.y}`).join(' ')}
+            fill="rgba(76, 175, 80, 0.25)"
+            stroke={error !== null ? '#c0392b' : '#2e7d32'}
+            strokeWidth={4}
+          />
+          {/*
+           * `role="button"` (Workplan Stage 6.2 a11y pass) makes these valid
+           * `aria-label` targets — a `<circle>` with no ARIA role has an
+           * implicit role that doesn't support naming at all, which axe's
+           * `aria-prohibited-attr` rule correctly flagged. **This does not
+           * make the corners keyboard-operable** — no `tabIndex` is added,
+           * deliberately: there's no keyboard handler behind them yet, and a
+           * focusable-but-inert control is worse than one a screen reader's
+           * virtual cursor can at least announce correctly. The brief for
+           * this stage scoped the keyboard-drag alternative to exactly two
+           * places (`docs/stage-6.2-brief.md`) — the palette→canvas handoff
+           * and on-canvas move/remove — not this editor; see
+           * `docs/accessibility.md`'s "known gaps" section, and ADR 0026.
+           */}
+          {draftVertices.map((vertex, index) => {
+            const next = draftVertices[(index + 1) % draftVertices.length];
+            const midpoint: Vertex = { x: (vertex.x + next.x) / 2, y: (vertex.y + next.y) / 2 };
+            return (
+              <g key={index}>
+                <circle
+                  data-testid={`plot-corner-add-${index}`}
+                  role="button"
+                  aria-label={`add a corner after corner ${index + 1}`}
+                  cx={midpoint.x}
+                  cy={midpoint.y}
+                  r={MIDPOINT_RADIUS_CM}
+                  fill="#90caf9"
+                  onClick={() => handleAddMidpoint(index)}
+                />
+                <circle
+                  data-testid={`plot-corner-${index}`}
+                  role="button"
+                  aria-label={`corner ${index + 1} — drag to move, double-click to remove`}
+                  cx={vertex.x}
+                  cy={vertex.y}
+                  r={CORNER_RADIUS_CM}
+                  fill="#2e7d32"
+                  onPointerDown={(event) => handleCornerPointerDown(index, event)}
+                  onDoubleClick={() => handleRemove(index)}
+                />
+              </g>
+            );
+          })}
+        </svg>
+      </div>
       {error !== null && <p role="alert">{error}</p>}
     </div>
   );

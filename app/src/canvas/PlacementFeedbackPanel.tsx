@@ -37,7 +37,10 @@ export function PlacementFeedbackPanel({
 
   if (placements.length === 0) {
     return (
-      <p>Nothing placed yet — drag a plant from the palette onto the plot to see how many fit.</p>
+      <p>
+        Nothing placed yet — drag a plant from the palette onto the plot (or use its &ldquo;Add to
+        plot&rdquo; button) to see how many fit.
+      </p>
     );
   }
 

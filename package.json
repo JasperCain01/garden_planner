@@ -19,6 +19,7 @@
     "dev": "npm run dev -w app",
     "preview": "npm run preview -w app",
     "e2e": "npm run e2e -w app",
+    "a11y": "npm run a11y -w app",
     "verify": "npm run lint && npm run typecheck && npm run format:check && npm test && npm run build && npm run e2e",
     "deploy": "GITHUB_PAGES=true npm run build -w app && gh-pages -d app/dist",
     "smoke:deployed": "npm run smoke:deployed -w app"

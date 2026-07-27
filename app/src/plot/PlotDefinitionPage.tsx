@@ -36,6 +36,10 @@
  * unnumbered section rather than a fifth numbered step, positioned so a
  * newly-added crop is visible in the palette immediately above before the
  * user scrolls down to place it.
+ *
+ * **Skip link (Workplan Stage 6.2).** `SkipToCanvasLink` is the one addition
+ * this stage's keyboard-only walkthrough turned up as worth making: see that
+ * component's own doc for the friction it closes.
  */
 
 import { DndContext } from '@dnd-kit/core';
@@ -49,6 +53,7 @@ import { UserCropsSection } from '../user-crops/UserCropsSection.tsx';
 import { PlotConditionsForm } from './PlotConditionsForm.tsx';
 import { PlotOutlineEditor } from './PlotOutlineEditor.tsx';
 import { ShapePicker } from './ShapePicker.tsx';
+import { SkipToCanvasLink } from './SkipToCanvasLink.tsx';
 
 export function PlotDefinitionPage() {
   const region = usePlotStore((state) => state.region);
@@ -60,6 +65,7 @@ export function PlotDefinitionPage() {
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
+      <SkipToCanvasLink />
       <section>
         <h2>1. Define your plot</h2>
         <p>

@@ -8,9 +8,15 @@ import { defineConfig } from '@playwright/test';
 // GitHub Pages URL, not this local preview server, and runs under its own
 // config (`playwright.pages.config.ts`, `npm run smoke:deployed`) — a manual,
 // by-hand check per WORKPLAN.md §1.4, not part of `npm run e2e`/`verify`.
+//
+// `a11y.spec.ts` is excluded for the same reason (Workplan Stage 6.2): it's a
+// locally-runnable axe check (`playwright.a11y.config.ts`, `npm run a11y`),
+// not a CI gate — §1.4 holds until Stage 6.4, so this stays a documented
+// manual command whose result is recorded in README.md, same shape as Stage
+// 5.1's Lighthouse audit.
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: '**/deployed-smoke.spec.ts',
+  testIgnore: ['**/deployed-smoke.spec.ts', '**/a11y.spec.ts'],
   use: {
     baseURL: 'http://localhost:4173',
     // Escape hatch for environments that ship a pre-installed browser whose

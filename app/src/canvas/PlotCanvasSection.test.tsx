@@ -58,6 +58,48 @@ describe('PlotCanvasSection export button', () => {
     expect(conditions?.light).toBe('full-sun');
   });
 
+  it('selects placements in order with the Previous/Next placement buttons, wrapping around (Workplan Stage 6.2)', () => {
+    const OTHER: Plant = validatePlant({
+      id: 'lettuce',
+      commonName: 'Lettuce',
+      scientificName: 'Lactuca sativa',
+      gbifId: null,
+      category: 'vegetable',
+      light: 'full-sun',
+      spacing: { row: { inRowCm: 10, betweenRowCm: 30 } },
+      provenance: { sources: [{ source: 'hand-written test fixture' }] },
+    });
+    usePlacementsStore.setState({
+      placements: [
+        { id: 'placement-1', plant: ONION, x: 10, y: 10 },
+        { id: 'placement-2', plant: OTHER, x: 20, y: 20 },
+      ],
+      selectedId: null,
+    });
+
+    render(<PlotCanvasSection canvasWarnings={null} />);
+
+    // Nothing selected yet: "Next" starts at the first placement.
+    fireEvent.click(screen.getByRole('button', { name: /next placement/i }));
+    expect(usePlacementsStore.getState().selectedId).toBe('placement-1');
+
+    fireEvent.click(screen.getByRole('button', { name: /next placement/i }));
+    expect(usePlacementsStore.getState().selectedId).toBe('placement-2');
+
+    // Wraps back around to the first.
+    fireEvent.click(screen.getByRole('button', { name: /next placement/i }));
+    expect(usePlacementsStore.getState().selectedId).toBe('placement-1');
+
+    // Previous wraps the other way.
+    fireEvent.click(screen.getByRole('button', { name: /previous placement/i }));
+    expect(usePlacementsStore.getState().selectedId).toBe('placement-2');
+  });
+
+  it('does not render the Previous/Next placement buttons when nothing is placed', () => {
+    render(<PlotCanvasSection canvasWarnings={null} />);
+    expect(screen.queryByRole('button', { name: /next placement/i })).toBeNull();
+  });
+
   it('reports conditions as null to the pipeline when they fail to resolve', async () => {
     // A soil block with every facet cleared fails `PlotSoilSchema`'s refine rule.
     usePlotStore.setState({

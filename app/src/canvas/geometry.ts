@@ -88,6 +88,23 @@ export function pxToCm(point: PxPoint, region: PlotRegion, pxPerCm: number = PX_
 }
 
 /**
+ * The centre of a region's bounding box, in centimetres.
+ *
+ * Used as the default drop position for the keyboard-operable "Add to plot"
+ * action (`palette/PlantPalette.tsx`, Workplan Stage 6.2) — a pointer drag
+ * has a natural drop point (wherever the pointer is), but a keyboard
+ * activation doesn't, so it needs *some* deterministic answer. The centre is
+ * always inside the bounding box (hence never needs {@link clampToBounds}) and
+ * lands the new placement somewhere the user can immediately see and nudge
+ * with the canvas's arrow-key move, rather than guessing at the outline's
+ * true (possibly non-convex) shape.
+ */
+export function regionCentre(region: PlotRegion): CmPoint {
+  const bounds = regionBounds(region);
+  return { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
+}
+
+/**
  * Clamp a centimetre position to the region's bounding box.
  *
  * Not full polygon containment — a plant dropped in the notch of an L-shaped

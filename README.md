@@ -142,6 +142,49 @@ until an equivalent replacement exists. `--view` opens the HTML report in a
 browser; drop it (and add `--output=json --output-path=<file>` instead) for
 a scriptable result.
 
+## Accessibility & responsive design
+
+The app has a keyboard-operable alternative to every drag-and-drop
+interaction, a colour-contrast/ARIA pass, and a responsive layout fix so the
+plot canvas doesn't render thousands of pixels down the page on a phone —
+Workplan Stage 6.2. Full writeup, including what's still a known gap (the
+free-form outline-corner editor stays pointer-only): [`docs/accessibility.md`](./docs/accessibility.md).
+
+### Accessibility (axe check) (manual — no CI workflow exists yet, per `WORKPLAN.md` §1.4)
+
+```bash
+npm run build -w app && npm run preview -w app   # serve the production build at :4173, in one terminal
+# in another terminal:
+npm run a11y -w app
+```
+
+Runs `app/e2e/a11y.spec.ts` (its own Playwright config,
+`app/playwright.a11y.config.ts`, so it's never part of `npm run e2e`/`verify`)
+against the plot-definition page in two states — a fresh load, and after
+placing a crop via the keyboard-operable "Add to plot" button — checking the
+`wcag2a`/`wcag2aa`/`wcag21a`/`wcag21aa` rule tags with
+[`@axe-core/playwright`](https://www.npmjs.com/package/@axe-core/playwright).
+
+**Today's recorded result: 0 violations, in both states.**
+
+```
+Running 2 tests using 1 worker
+
+  ✓  1 e2e/a11y.spec.ts:36:1 › the plot-definition page has no axe violations in its initial state
+  ✓  2 e2e/a11y.spec.ts:44:1 › the plot-definition page has no axe violations once a plant is placed and selected
+
+  2 passed
+```
+
+What this can't check: the plot canvas renders to a single opaque
+`<canvas>` element (react-konva), so axe — like any DOM-based tool — can't
+see the placement markers or severity badges drawn on it. Those are covered
+by unit tests (`app/src/warnings/severity.test.ts`) and manual review
+instead. See `e2e/a11y.spec.ts`'s own doc comment, and
+[`docs/accessibility.md`](./docs/accessibility.md), for the fuller picture —
+including a scripted keyboard-only walkthrough of the core journey and its
+honestly-recorded findings.
+
 ## Deployment (GitHub Pages)
 
 The app is a fully static build (`app/dist/`), so hosting it is "build with

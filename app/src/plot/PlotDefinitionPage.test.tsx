@@ -13,11 +13,15 @@ describe('PlotDefinitionPage', () => {
     });
   });
 
-  // This render+interact flow is consistently ~5s even on `main` (heavy
-  // component tree: outline editor, palette, canvas) — right at the default
-  // 5000ms test timeout's edge, so it flakes under parallel test-run load.
-  // Not a regression from this stage; just headroom for a pre-existing slow
-  // test (a longer per-test timeout, given explicitly below).
+  // This render+interact flow was already consistently ~5s on `main` (heavy
+  // component tree: outline editor, palette, canvas), right at the default
+  // 5000ms timeout's edge. Workplan Stage 6.2 added a second interactive
+  // control to every one of the ~130+ palette rows the default conditions
+  // rank (the "Add to plot" button, alongside the existing draggable
+  // region) for keyboard-operable placement — genuinely more DOM per row,
+  // and jsdom mounting + re-rendering that repeatedly (once per form edit
+  // below) now measures ~18-19s. Timeout raised with real headroom over
+  // that; not a regression to chase, just a bigger, still-correct tree.
   it('produces a region and conditions the engine actually accepts, driven end to end through the DOM', () => {
     render(<PlotDefinitionPage />);
 
@@ -45,7 +49,7 @@ describe('PlotDefinitionPage', () => {
     expect(resolved.light).toBe('partial-shade');
     expect(resolved.soil).toEqual({ texture: 'clay' });
     expect(resolved.climate.id).toBe('south-west-england');
-  }, 10_000);
+  }, 30_000);
 
   it('starts from a valid default plot even before any interaction', () => {
     render(<PlotDefinitionPage />);
