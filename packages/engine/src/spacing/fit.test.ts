@@ -12,7 +12,7 @@ import { fitPlant, fitSpacing } from './fit';
  * Spacings used below, all real figures from `data/plants.json`:
  *   onion   10 × 30 cm rows,  9 per 30 cm square
  *   tomato  45 × 60 cm rows,  1 per square
- *   kale    45 × 45 cm rows,  no intensive figure (like 153 of the 162 records)
+ *   kale    45 × 45 cm rows,  no intensive figure (like 135 of the 144 records)
  */
 
 const ONION_SPACING: Spacing = {
@@ -20,7 +20,7 @@ const ONION_SPACING: Spacing = {
   intensive: { plantsPerSquare: 9 },
 };
 
-/** A crop with row spacing only — the shape 153 of the 162 shipped records have. */
+/** A crop with row spacing only — the shape 135 of the 144 shipped records have. */
 const KALE_SPACING: Spacing = { row: { inRowCm: 45, betweenRowCm: 45 } };
 
 /** Build a `Plant` around a spacing block, so `fitPlant` has something real to chew on. */
@@ -183,7 +183,7 @@ describe('choosing a growing method', () => {
   });
 
   it('derives an intensive figure from row spacing, conservatively, and says so', () => {
-    // Kale has no intensive block — like 153 of the 162 shipped records. Its
+    // Kale has no intensive block — like 135 of the 144 shipped records. Its
     // 45 × 45 cm rectangle re-laid as an equal-area square is √(45 × 45) = 45 cm,
     // so 4 columns × 2 rows = 8 plants: the same ground per plant, minus the
     // paths. A real square-foot figure would be tighter, and the summary

@@ -16,28 +16,40 @@ finished plot.
 > offline support** (installs, works with the network off — see below); Stage
 > 5.2 adds a **manual GitHub Pages deploy path** (see "Deployment" below —
 > deliberately a hand-run command, not CI: see `WORKPLAN.md` §1.4). Phase 6
-> (community readiness, including finishing the crop-list gaps Stage 6.0
-> describes) is next.
+> (community readiness) is under way: Stage 6.0 has now curated the crop list
+> itself — six British staples added, 24 crops that can't be grown outdoors
+> here removed — leaving **144 crops** in the shipped dataset.
 
 ### A caveat worth knowing before you judge the rankings
 
 The suitability engine scores four dimensions — **light, hardiness, soil and
-season** — and the shipped dataset feeds two of them. Of 162 crops, all carry
-light (in only two values: 148 full-sun, 14 partial-shade) and **74 carry a
-soil-moisture preference**; just 2 carry hardiness or season data.
+season** — and the shipped dataset feeds them very unevenly. Of **144 crops**,
+all carry light (in only two values: 133 full-sun, 11 partial-shade), **80 carry
+a soil-moisture preference**, and just **8 carry hardiness or season data**.
 
-In practice that means: **describe your plot's soil moisture and the ranking
-does real work** — on dry ground, rosemary and carrots rise above peas and
-celery, with the reason given in plain English. Leave soil unset and you are
-close to a two-tier sort on light, because most gardens are sunny.
+In practice that means:
+
+- **Describe your plot's soil moisture and the ranking does real work.** On dry
+  ground, rosemary and carrots rise above peas and celery, with the reason given
+  in plain English.
+- **The top of the list is now decided by data, not the alphabet.** The eight
+  hand-curated crops — broad bean, Jerusalem artichoke, apple, pear, raspberry,
+  Brussels sprouts, swede and pumpkin — are scored on all four dimensions, so
+  they sort above the rest on merit. Pumpkin sits below the others because it is
+  genuinely tender, which is the engine working rather than a gap in the data.
+- **Below those eight, you are still close to a two-tier sort on light**, because
+  most gardens are sunny and most records say nothing else.
 
 The app says so rather than hiding it: every result carries a confidence figure
 and a note explaining what could and couldn't be assessed. The remaining gap is
-**data, not engine** — hardiness and season are still thin, and the shipped crop
-list still carries some crops that won't grow outdoors in Britain while missing
-a few that everyone grows. Stage 6.0 in [`WORKPLAN.md`](./WORKPLAN.md) covers
-what's left and why it's being fixed by curation rather than by ingesting
-another source.
+**data, not engine**. Stage 6.0 fixed the crop list — the shipped catalogue is
+now curated for British outdoor growing, with the 24 crops that can't be grown
+here removed (see ADR
+[0025](./docs/adr/0025-uk-outdoor-crop-exclusions.md), which records why they
+were deleted rather than flagged, and why you can always add any of them back
+in the app) — but hardiness and season coverage stays thin at 8/144, and
+closing that would take a new data source rather than more curation. See
+[`WORKPLAN.md`](./WORKPLAN.md) for what's left.
 
 ## Why this exists
 

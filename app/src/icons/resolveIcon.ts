@@ -26,7 +26,7 @@ import genericIconUrl from './generic.svg';
 // (a string) rather than the raw SVG source or a parsed module — the same
 // thing a plain `import x from './foo.svg'` gives for one file, generalized
 // to every file the glob matches. `eager: true` resolves them all up front
-// (there are only ~162, and the previous shape — one `import` per file —
+// (there are only ~144, and the previous shape — one `import` per file —
 // would mean hand-maintaining an import list in step with `classification.ts`).
 const cropIconUrls = import.meta.glob('./crops/*.svg', {
   eager: true,

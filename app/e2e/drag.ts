@@ -21,7 +21,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * **1. The locator must name the crop.** A wildcard like
  * `/drag .* onto the plot to place it/i` plus `.first()` is satisfied by
  * *whatever entry is currently rendered* — including a stale one from the
- * previous search term, before React has finished re-ranking 162 plants. The
+ * previous search term, before React has finished re-ranking 144 plants. The
  * drag then places the previous crop a second time and the intended one not at
  * all. (That is a real failure, not a hypothetical: it is how
  * `plot-export.spec.ts` intermittently reported "Kale: 2 placed" and no

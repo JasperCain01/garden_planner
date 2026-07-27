@@ -97,7 +97,7 @@ export default defineConfig({
     //
     // Today's build is ~1,109 kB raw / ~264 kB gzipped in one chunk, and that
     // is *by design*: §0.1 says everything the app needs must ship with it, so
-    // the 162-crop dataset (a JSON module) and the whole icon set (inlined as
+    // the 144-crop dataset (a JSON module) and the whole icon set (inlined as
     // base64 `data:` URIs — see the workbox comment above) are both in there
     // alongside React and Konva. Splitting them into separate chunks would not
     // speed up first paint, because the palette needs the dataset and the

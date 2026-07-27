@@ -56,7 +56,7 @@ export interface AggregateScore {
  * {@link PlotConditions}, never reads a clock, and never touches the network.
  * Both arguments are assumed already validated — `resolvePlotConditions` (and
  * `validatePlant` upstream) are the boundary; re-validating on every call would
- * cost real time when ranking 162+ records and buy nothing.
+ * cost real time when ranking 144+ records and buy nothing.
  *
  * @param plant - any valid plant record, shipped or user-defined (ADR 0011 —
  *   there is no origin-awareness here, and there should never be).

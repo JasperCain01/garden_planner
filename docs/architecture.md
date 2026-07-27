@@ -64,7 +64,7 @@ Everything below follows from that.
   the artifact. Run it with `npm run build:data -w @garden-planner/etl`.
 - **`/data`** is that committed static artifact (`data/plants.json`): the plant
   "database" as a plain-JSON file the browser loads directly. No database server
-  exists at runtime. As of Stage 1.7 it holds 162 validated, merged plants; see
+  exists at runtime. As of Stage 6.0 it holds 144 validated, merged plants; see
   [`data/README.md`](../data/README.md) for its shape and current caveats.
 - **`packages/engine`** is pure, framework-free logic (suitability scoring,
   spacing/density, warnings). It runs in the browser but has no UI dependency, so
@@ -106,7 +106,8 @@ Everything below follows from that.
   pipeline end to end. `broad-bean` closes a gap ADR 0009 documented: OpenFarm
   has no mappable _Vicia faba_, so the Stage 1.3 spacing row and the Stage 1.4
   `leek` antagonist link had nothing to attach to until this stage gave them a
-  plant. The dataset now ships 162 plants.
+  plant. The dataset shipped 162 plants at the end of this stage; Stage 6.0
+  (below) re-curated the list to 144.
   Stage 2.1 ([`adr/0012`](./adr/0012-suitability-scoring.md)) adds the engine's
   first real brain — **suitability scoring**
   (`packages/engine/src/suitability/`): a zod-first plot/growing-conditions
@@ -143,7 +144,7 @@ Everything below follows from that.
   position for the canvas (Stage 3.4), and a sentence for the UI. The decisions
   worth reading the ADR for are the whole-cell containment rule (which makes the
   area upper bound a theorem), the offset row pitch `√(b² − (s/2)²)` and why it
-  is not a blanket `√3/2`, and the **fallback rule**: 153 of the 162 shipped
+  is not a blanket `√3/2`, and the **fallback rule**: 135 of the 144 shipped
   records have row spacing only, so asking for an intensive count derives a
   conservative equal-area square and labels it rather than refusing.
   Stage 2.3 ([`adr/0014`](./adr/0014-warnings-and-companion-suggestions.md)) adds
@@ -387,7 +388,8 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
 
   Stage 4.1 fills the gap the paragraph above left open: the **bundled SVG
   icon set** (`app/src/icons/`, the first stage in Phase 4 — Content &
-  assets). 162 crop icons (one per `data/plants.json` id) plus one generic
+  assets). One crop icon per `data/plants.json` id — 162 at the time, 144
+  after Stage 6.0's crop-list curation — plus one generic
   fallback, all generated — not hand-drawn — from a small reusable shape
   library (`tools/icons/archetypes.ts`, ~19 archetypes such as `leaf`,
   `rootLong`, `bulbAllium`, `pod`, `roundFruit`) composed with a category fill
@@ -398,8 +400,8 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   mirroring `packages/etl`'s own build-time-tool convention). The generator
   hard-fails if the classification map and `data/plants.json` disagree about
   which ids exist — the same "no silent gap" posture as the ETL's dataset
-  gate, applied to keeping 162 files in lockstep with 162 dataset records.
-  Every icon is SVGO-optimized; the whole set is ~122 KB (163 files, ~766
+  gate, applied to keeping the icon files in lockstep with the dataset records.
+  Every icon is SVGO-optimized; the whole set is ~112 KB today (145 files, ~794
   bytes average), well inside the budget `app/src/icons/budget.test.ts`
   enforces on every test run. The interface Stage 4.2 will call is
   `resolveIcon(plant): IconAsset` (`app/src/icons/resolveIcon.ts`, exported
@@ -411,7 +413,7 @@ dev` doesn't reproduce a subpath deployment. `dataset/shipped-plants.ts` is
   [`docs/icon-style-guide.md`](./icon-style-guide.md) for the visual
   conventions and how to add or replace an icon, and
   [`adr/0019`](./adr/0019-icon-set-archetypes-and-resolution.md) for why this
-  approach was chosen over hand-illustrating 162 crops.
+  approach was chosen over hand-illustrating a whole catalogue of crops.
 
   Stage 4.2 ([`stage-4.2-brief.md`](./stage-4.2-brief.md)) adds the **wiring of
   icons into the palette and canvas** (`app/src/palette/PlantPalette.tsx`,
@@ -542,9 +544,49 @@ adds a manual GitHub Pages deploy path (`gh-pages`, a root `deploy` script, a
 post-deploy Playwright smoke check against the live URL — see
 [ADR 0024](./adr/0024-github-pages-manual-deploy.md) and the README's
 "Deployment" section; deliberately no `.github/workflows/`, per
-`WORKPLAN.md` §1.4). `WORKPLAN.md`'s Progress table and dependency map cover
-what's next (Phase 6, community readiness, starting with finishing Stage
-6.0's crop-list gaps).
+`WORKPLAN.md` §1.4). Phase 6 (community readiness) is now under way — see the
+Stage 6.0 section below; `WORKPLAN.md`'s Progress table and dependency map
+cover what remains.
+
+## Stage 6.0 — the crop list itself
+
+The data gaps Stage 6.0 set out to close were never in the engine, and only
+half of them were in the _fields_. The soil-moisture half landed first
+(`packages/etl/src/moisture/`, giving 72 crops a moisture preference); this
+stage did the other half, which is the **crop list**.
+
+Two changes, both curation against the settled schema — no engine, schema or
+scoring change:
+
+- **Six British staples added** through the Stage 1.7 curated channel
+  (`packages/etl/src/curated/plants.ts`): `apple`, `pear`, `raspberry`,
+  `brussels-sprouts`, `swede`, `pumpkin`. Each carries RHS-cited spacing,
+  hardiness, soil and season data, so each is a record the suitability engine
+  can score on all four dimensions rather than one.
+- **Twenty-four crops removed** — the ones that cannot be grown outdoors in
+  Britain (dragon fruit, papaya, pineapple, citrus, lemongrass, okra, peanut,
+  the melons, and others). They live on as data, not as a deleted commit:
+  `packages/etl/src/exclusions/` records each id, the ground it fails on
+  (`too-tender` or `wont-ripen`), and a sentence of reasoning. The merge drops
+  them before anything joins onto them, so the nine companion links that
+  pointed at an excluded crop were dropped by the existing referential-integrity
+  machinery with a stated reason, not hand-edited out.
+
+[ADR 0025](./adr/0025-uk-outdoor-crop-exclusions.md) records the decision the
+workplan left open — **delete rather than flag** — and its reasoning: flagging
+would need a new field on the keystone schema, a new scoring rule, new UI and a
+location model to be relative to, against an undo (Stage 3.6's in-app add-crop
+form) the app already ships.
+
+The dataset goes from 162 crops to **144**, and every pinned coverage number
+moved with it: light 144/144 (133 full-sun, 11 partial-shade), soil 80/144,
+hardiness and seasons 8/144, companion links 76 across 50 records. Those pins
+live in `packages/engine/src/{suitability,spacing,warnings}/dataset.test.ts` and
+were re-pinned to the new real figures — a failure there is how a crop-list
+change proves it reached the engine. What this stage deliberately did **not** do
+is close the hardiness/season gap (still 8/144, and a new source's job, not
+curation's) or prune cultivar padding (four onions, seven squashes, six peppers
+— all of which grow here perfectly well).
 
 ## Where to look next
 
@@ -580,6 +622,7 @@ what's next (Phase 6, community readiness, starting with finishing Stage
 | The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                                           |
 | Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`                                        |
 | Maintainer-curated full-plant input                               | `packages/etl/src/curated/`                                           |
+| The UK-outdoor exclusion list (which crops are pruned, and why)   | `packages/etl/src/exclusions/`                                        |
 | The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                                             |
 | The committed dataset artifact and its caveats                    | `data/README.md`                                                      |
 | Service worker + manifest config (`VitePWA`)                      | `app/vite.config.ts`                                                  |

@@ -36,7 +36,7 @@ function fullyDescribedPlant(overrides: Partial<Plant> = {}): Plant {
 /**
  * A crop shaped like almost every record in the shipped dataset: identity,
  * category, light and spacing, and nothing else (`data/plants.json` — only
- * 2 of 162 carry hardiness, soil or seasons).
+ * 8 of 144 carry hardiness or seasons).
  */
 function sparsePlant(overrides: Partial<Plant> = {}): Plant {
   return validatePlant({

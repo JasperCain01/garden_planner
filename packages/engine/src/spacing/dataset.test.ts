@@ -12,11 +12,18 @@ import { fitPlant } from './fit';
  * `suitability/dataset.test.ts` sets the precedent, and the argument is the
  * same: hand-built fixtures prove the arithmetic, but only the real records
  * prove the model fits the data that actually ships. The coverage assertions
- * here are a **tripwire** as much as a test. Stage 1.7's two curated records
- * (`broad-bean`, `jerusalem-artichoke`) are both row-only — like the great
- * majority of the dataset — so they only moved the total plant count, not the
- * intensive-coverage counts; a future curated record with a real intensive
- * figure would trip those too, and that is intended.
+ * here are a **tripwire** as much as a test. Every curated record so far —
+ * Stage 1.7's two (`broad-bean`, `jerusalem-artichoke`) and Stage 6.0's six
+ * British staples — is row-only, like the great majority of the dataset, so
+ * they moved the total plant count and nothing else. A future curated record
+ * with a real intensive figure would trip the intensive counts too, and that
+ * is intended.
+ *
+ * Stage 6.0 also took 24 crops *out* (`packages/etl/src/exclusions/`, ADR
+ * 0025), which is the same tripwire pulled the other way: the total fell from
+ * 162 to 144 while the nine hand-verified intensive figures were untouched,
+ * because every excluded crop was a tropical the Stage 1.3 curation had never
+ * quoted a square-foot density for.
  */
 
 const DATASET_PATH = fileURLToPath(new URL('../../../../data/plants.json', import.meta.url));
@@ -40,12 +47,12 @@ const ONE_SQUARE_METRE = rectangleRegion(100, 100);
 
 describe('the shipped spacing data', () => {
   it('is the dataset these expectations were written against', () => {
-    expect(PLANTS).toHaveLength(162);
+    expect(PLANTS).toHaveLength(144);
     // Every record has *some* spacing: ADR 0004 §2 makes that a schema rule, so
     // the calculator never has a "this crop has no spacing" case to handle.
-    expect(PLANTS.filter((plant) => plant.spacing.row !== undefined)).toHaveLength(162);
-    // Stage 1.7's two curated records (`broad-bean`, `jerusalem-artichoke`) are
-    // both row-only, same as the great majority of the dataset, so this stays 9.
+    expect(PLANTS.filter((plant) => plant.spacing.row !== undefined)).toHaveLength(144);
+    // All eight curated records are row-only, same as the great majority of the
+    // dataset, and no excluded crop had an intensive figure — so this stays 9.
     expect(WITH_INTENSIVE).toHaveLength(9);
     // No record is intensive-only — that shape is reachable only through a
     // user-defined crop (ADR 0011), which is why `derived-from-intensive` has
@@ -152,10 +159,10 @@ describe('the nine crops with a real intensive figure', () => {
   });
 });
 
-describe('the other 153 records', () => {
+describe('the other 135 records', () => {
   it('all fall back to a derived square when asked for an intensive count', () => {
     const rowOnly = PLANTS.filter((plant) => plant.spacing.intensive === undefined);
-    expect(rowOnly).toHaveLength(153);
+    expect(rowOnly).toHaveLength(135);
     for (const plant of rowOnly) {
       const lattice = resolveLatticeSpacing(plant.spacing, 'intensive');
       expect(lattice.method).toBe('intensive');

@@ -9,14 +9,18 @@ a _build output_ of the `packages/etl` pipeline, committed to the repo so that:
 ## Status
 
 **Populated.** `plants.json` is the merged, validated dataset produced by Workplan
-**Stage 1.5** (see [`/docs/adr/0009-dataset-merge-and-licensing.md`](../docs/adr/0009-dataset-merge-and-licensing.md))
-and extended by **Stage 1.7**'s curated input (see
-[`/docs/adr/0021-curated-plant-input.md`](../docs/adr/0021-curated-plant-input.md)).
-It currently holds **162 plants**: 160 OpenFarm crops the adapter can map, plus
-**2 maintainer-curated crops** (`broad-bean`, `jerusalem-artichoke` — full
-identity and provenance, held to the same bar as every other record), enriched
-with the hand-verified spacing table (Stage 1.3, spacing wins over scraped
-figures on conflict) and the evidence-tagged companion/antagonist links
+**Stage 1.5** (see [`/docs/adr/0009-dataset-merge-and-licensing.md`](../docs/adr/0009-dataset-merge-and-licensing.md)),
+extended by **Stage 1.7**'s curated input (see
+[`/docs/adr/0021-curated-plant-input.md`](../docs/adr/0021-curated-plant-input.md))
+and re-curated for British outdoor growing by **Stage 6.0** (see
+[`/docs/adr/0025-uk-outdoor-crop-exclusions.md`](../docs/adr/0025-uk-outdoor-crop-exclusions.md)).
+It currently holds **144 plants**: 136 OpenFarm crops the adapter can map and
+that can be grown outdoors in Britain, plus **8 maintainer-curated crops**
+(`broad-bean`, `jerusalem-artichoke`, `apple`, `pear`, `raspberry`,
+`brussels-sprouts`, `swede`, `pumpkin` — full identity and provenance, held to
+the same bar as every other record), enriched with the hand-verified spacing
+table (Stage 1.3, spacing wins over scraped figures on conflict), the curated
+soil-moisture table and the evidence-tagged companion/antagonist links
 (Stage 1.4). Every record conforms to the Stage 0.2 schema
 (`packages/engine/src/schema/`; zod is the source of truth, see
 [`/docs/adr/0004-plant-schema.md`](../docs/adr/0004-plant-schema.md)).
@@ -44,7 +48,22 @@ pipeline):
   to. Stage 1.7 closes this: it now ships as a curated crop (ADR 0021), and
   both the spacing row and the companion link attach to it as normal.
 
-## The dataset's five inputs
+Two caveats about the _scope_ of what ships, which are curation decisions
+rather than environment limitations:
+
+- **This is a crop list for British outdoor growing.** Stage 6.0 removed 24
+  crops that can't be grown outdoors here (tropicals, citrus, the melons, okra,
+  peanut and so on — the full list with a stated reason each is in
+  `packages/etl/src/exclusions/table.ts`). They are _absent_, not flagged; ADR
+  0025 records why, and the in-app add-crop form (Stage 3.6) is how a user gets
+  any of them back. Every spacing figure and moisture judgement here is already
+  British-outdoor-specific, so the crop list now matches the rest of the data.
+- **Hardiness and season coverage is thin: 8 of 144 records**, and those eight
+  are exactly the maintainer-curated crops. Soil moisture is better at 80/144,
+  and light is 144/144 but only two distinct values. The suitability engine says
+  so per result rather than hiding it (see the README's "caveat worth knowing").
+
+## The dataset's six inputs
 
 1. **OpenFarm** — the community-rescued crop dump (Stage 1.2).
 2. **The hand-verified spacing table** (Stage 1.3) — spacing wins on conflict.
@@ -62,11 +81,18 @@ pipeline):
    preference (`dry` | `moist` | `wet`, as an array, so a crop can tolerate a
    range). It **enriches, never overwrites**: a plant already stating its own
    moisture keeps it. Deliberately covers the garden/allotment core rather than
-   all 162 crops — a crop with no row keeps `soil` absent and scores
+   all 144 crops — a crop with no row keeps `soil` absent and scores
    `unknown-plant`, which is honest, where a guess would not be. Unlike the
    spacing table it carries no per-figure citations, and its schema explains
    why: a moisture preference is three-value horticultural consensus, not a
    contested measurement. Treat it as guidance, not authority.
+6. **The UK-outdoor exclusion list** (Stage 6.0,
+   `packages/etl/src/exclusions/table.ts`) — the one input that _removes_
+   records rather than adding or enriching them: 24 crops that cannot be grown
+   outdoors in Britain, each with the ground it fails on (`too-tender` or
+   `wont-ripen`) and a sentence of reasoning. Applied before anything joins onto
+   a plant, so companion links pointing at an excluded crop are dropped by the
+   ordinary referential-integrity machinery with a stated reason. See ADR 0025.
 
 ## The artifact shape
 
@@ -80,21 +106,25 @@ runtime needed at this size.
 
 1. A contributor runs the ETL: `npm run build:data -w @garden-planner/etl`.
 2. The build gathers the OpenFarm plants, folds in the curated plants
-   (replacing an OpenFarm-sourced record outright on an id collision), merges
-   the spacing and companion data, runs the **hard-fail validation gate**
+   (replacing an OpenFarm-sourced record outright on an id collision), drops the
+   excluded crops, merges the spacing, moisture and companion data, runs the
+   **hard-fail validation gate**
    (schema + referential integrity + sanity bounds — the build fails loudly on
    any invalid, dangling, or absurd record), and writes `plants.json` here.
 3. The contributor commits the regenerated artifact.
 
 To add a maintainer-curated crop permanently, see
-`packages/etl/README.md`'s "Maintainer-curated plants" section.
+`packages/etl/README.md`'s "Maintainer-curated plants" section; to exclude one,
+its "UK-outdoor exclusion list" section. Either change also needs the icon set
+regenerated (`tools/icons/`), since a test enforces one icon per shipped id.
 
 ## Licensing
 
 The dataset is dedicated to the public domain under **CC0-1.0** — use it for
 anything, with no obligation to credit this project. Every input is either CC0
 already (the OpenFarm crops rescue) or original curation this project owns
-(spacing figures, companion links, curated plants, the moisture table), so
+(spacing figures, companion links, curated plants, the moisture table, the
+exclusion list), so
 nothing compels a restriction. It was previously CC BY-NC-SA, held only to
 absorb Plants For A Future; that ingest is no longer planned. Full reasoning in
 [`/docs/adr/0023-dataset-licence-cc0.md`](../docs/adr/0023-dataset-licence-cc0.md).

@@ -17,6 +17,8 @@ import type { SpacingRecord } from '../spacing/schema.ts';
 import { HAND_VERIFIED_SPACING } from '../spacing/table.ts';
 import type { MoistureRecord } from '../moisture/schema.ts';
 import { CURATED_MOISTURE } from '../moisture/table.ts';
+import type { ExcludedCrop } from '../exclusions/schema.ts';
+import { EXCLUDED_CROPS } from '../exclusions/table.ts';
 import { toPlantLinksById, type PlantLinksByKind } from '../companions/relationships.ts';
 import { CURATED_PLANTS } from '../curated/plants.ts';
 import { collectOpenFarmPlants, type CollectOpenFarmResult } from './collect-openfarm.ts';
@@ -38,6 +40,8 @@ export interface BuildDatasetInputs {
   readonly spacingRecords?: readonly SpacingRecord[];
   /** Soil-moisture rows; defaults to the curated moisture table. */
   readonly moistureRecords?: readonly MoistureRecord[];
+  /** Crops to drop as not UK-outdoor-growable (Stage 6.0); defaults to `EXCLUDED_CROPS`. */
+  readonly excludedCrops?: readonly ExcludedCrop[];
   /** Companion links by pre-merge id; defaults to the full relationship set. */
   readonly linksById?: ReadonlyMap<string, PlantLinksByKind>;
   /** ISO date for the artifact header; omit to leave it off. */
@@ -64,6 +68,7 @@ export async function buildDataset(inputs: BuildDatasetInputs): Promise<BuildDat
   const curatedPlants = inputs.curatedPlants ?? CURATED_PLANTS;
   const spacingRecords = inputs.spacingRecords ?? HAND_VERIFIED_SPACING;
   const moistureRecords = inputs.moistureRecords ?? CURATED_MOISTURE;
+  const excludedCrops = inputs.excludedCrops ?? EXCLUDED_CROPS;
   const linksById = inputs.linksById ?? toPlantLinksById();
 
   log('Stage 1.5 dataset build — gathering OpenFarm plants…');
@@ -79,6 +84,7 @@ export async function buildDataset(inputs: BuildDatasetInputs): Promise<BuildDat
     curatedPlants,
     spacingRecords,
     moistureRecords,
+    excludedCrops,
     linksById,
   });
   log(
@@ -87,6 +93,13 @@ export async function buildDataset(inputs: BuildDatasetInputs): Promise<BuildDat
   );
   for (const o of report.curatedOverrides) {
     log(`    · curated "${o.curatedId}" replaced OpenFarm "${o.overriddenId}"`);
+  }
+  log(
+    `  Excluded ${report.cropsExcluded.length} crop(s) as not growable outdoors in Britain; ` +
+      `${report.exclusionsUnmatched.length} exclusion row(s) matched nothing.`,
+  );
+  for (const u of report.exclusionsUnmatched) {
+    log(`    · exclusion "${u.excludedId}" unmatched: ${u.reason}`);
   }
   log(
     `  Spacing attached to ${report.spacingAttached.length} plant(s); ` +

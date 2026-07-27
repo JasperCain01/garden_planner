@@ -1,7 +1,7 @@
 # Icon style guide (Workplan Stage 4.1)
 
 This is where a contributor looks before adding or replacing a crop icon.
-For the reasoning behind the approach (why archetypes instead of 160 bespoke
+For the reasoning behind the approach (why archetypes instead of 144 bespoke
 illustrations, why colour is category-based, why resolution works the way it
 does), see [ADR 0019](./adr/0019-icon-set-archetypes-and-resolution.md).
 This document is the "how", not the "why."
@@ -10,7 +10,7 @@ This document is the "how", not the "why."
 
 ```
 app/src/icons/
-  crops/*.svg       160 generated crop icons, one per data/plants.json id
+  crops/*.svg       144 generated crop icons, one per data/plants.json id
   generic.svg       the fallback icon (no crop-specific icon set)
   resolveIcon.ts     Plant -> IconAsset lookup (the Stage 4.2 interface)
   index.ts           public entry point — import from here
@@ -96,6 +96,20 @@ curated input, or a future source adapter).
    resolves to a non-fallback icon, so a missed classification entry (or a
    generation failure) fails the test suite, not just the generator.
 
+## Removing an icon
+
+The mirror image, and just as enforced. When a crop leaves `data/plants.json`
+(Stage 6.0 removed 24 — see `packages/etl/src/exclusions/`), delete its line
+from `classification.ts` and re-run the generator: it clears the output
+directory first, so the stale `.svg` disappears on its own, and it throws if
+`classification.ts` still names an id the dataset no longer has.
+
+An archetype left with no crop using it is fine and does **not** need deleting.
+`tools/icons/` is a build-time developer tool — only the generated icons ship —
+so an unused shape costs the app nothing and saves the next person re-drawing
+it. Five sit unused today (`dragonFruit`, `starFruit`, `pineapple`, `okra`,
+`melon`), all for crops Stage 6.0 excluded.
+
 ## Replacing a placeholder with real illustration
 
 Nothing about `resolveIcon` cares how a file under `app/src/icons/crops/`
@@ -123,10 +137,10 @@ nothing stops the check running locally on every test invocation):
 
 - **Per icon:** ≤ 4 KB (generous headroom — the generated, SVGO-optimized set
   averages well under 1 KB per icon today).
-- **Whole set (160 crops + 1 fallback):** ≤ 250 KB.
+- **Whole set (144 crops + 1 fallback):** ≤ 250 KB.
 
 Actual figures as generated today (`node --experimental-strip-types tools/icons/generate.ts` prints
-this on every run): **~121 KB total, ~751 bytes/icon average.** Small
+this on every run): **~112 KB total, ~794 bytes/icon average.** Small
 enough that Vite inlines every icon as a `data:` URI in the JS bundle rather
 than emitting separate asset files (its default inlining threshold is 4 KB
 per asset) — still zero runtime fetches either way.
