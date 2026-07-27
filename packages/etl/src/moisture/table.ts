@@ -7,12 +7,15 @@
  *
  * ## Scope: the crops people actually grow here
  *
- * Roughly 60 rows covering the British garden and allotment core — not all 162
- * shipped crops. The dataset carries a long tail of things that will not grow
- * outdoors in Britain (dragon fruit, papaya, lemongrass, okra) and a good deal
- * of cultivar padding (four onions, seven squashes, six peppers). Neither is
- * worth a moisture opinion: the tropicals because nobody here will plant them,
- * the cultivars because Purple Carrot wants exactly what Carrot wants.
+ * Roughly 70 rows covering the British garden and allotment core — not all 144
+ * shipped crops. When this table was written the dataset still carried a long
+ * tail of things that will not grow outdoors in Britain (dragon fruit, papaya,
+ * lemongrass, okra), and skipping them was one of the reasons the table is
+ * shorter than the catalogue. Stage 6.0 has since removed those crops outright
+ * (`../exclusions/`, ADR 0025), so what is left uncovered here is mostly the
+ * cultivar padding — four onions, seven squashes, six peppers — which is not
+ * worth a moisture opinion of its own, because Purple Carrot wants exactly
+ * what Carrot wants.
  *
  * A crop with no row here simply keeps `soil` absent and its `soil` dimension
  * reports `unknown-plant` — the same honest "we don't know" the engine already

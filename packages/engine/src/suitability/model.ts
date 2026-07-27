@@ -17,9 +17,9 @@
  *    lost shows up instead as {@link SuitabilityResult.confidence} — the share of
  *    the model's weight that could actually be assessed — and is said out loud in
  *    the result's reasoning. This matters enormously on today's dataset, where
- *    **only 2 of the 162 shipped records carry hardiness, soil or seasons** —
- *    the two Stage 1.7 curated crops; every OpenFarm-sourced record is scored
- *    on light alone.
+ *    **only 8 of the 144 shipped records carry hardiness or seasons** — the
+ *    curated crops (Stages 1.7 and 6.0); 80 carry a soil-moisture preference,
+ *    and every remaining OpenFarm-sourced record is scored on light alone.
  * 3. **A hard mismatch on one dimension caps the whole result** (Liebig's law of
  *    the minimum: the limiting factor governs). A full-sun crop in a deep-shade
  *    bed must not average its way to a respectable score off three unknowns.

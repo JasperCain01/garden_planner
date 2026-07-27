@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-26",
+  "generatedAt": "2026-07-27",
   "license": "CC0-1.0",
   "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-  "plantCount": 162,
+  "plantCount": 144,
   "sources": [
     {
       "source": "Deep Green Permaculture"
@@ -162,6 +162,65 @@
             }
           ]
         }
+      }
+    },
+    {
+      "id": "apple",
+      "commonName": "Apple",
+      "scientificName": "Malus domestica",
+      "gbifId": null,
+      "category": "fruit",
+      "edibleParts": ["fruit"],
+      "light": "full-sun",
+      "spacing": {
+        "row": {
+          "inRowCm": 360,
+          "betweenRowCm": 450
+        }
+      },
+      "hardiness": {
+        "rhsRating": "H6",
+        "minTempC": -20
+      },
+      "soil": {
+        "ph": ["neutral"],
+        "moisture": ["moist"]
+      },
+      "seasons": {
+        "sow": [
+          {
+            "start": 11,
+            "end": 3
+          }
+        ],
+        "harvest": [
+          {
+            "start": 8,
+            "end": 11
+          }
+        ]
+      },
+      "provenance": {
+        "sources": [
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/fruit/fruit-trees/rootstocks",
+            "retrievedAt": "2026-07-27",
+            "note": "Bush apples on MM106 are spaced 3.6m (12ft) apart with 4.5m (15ft) between rows; on the dwarfing M26, 2.4-3.6m (8-12ft) apart with the same 4.5m row width."
+          },
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/fruit/apples/grow-your-own",
+            "retrievedAt": "2026-07-27",
+            "note": "Buy bare-root trees between November and March, while dormant, for best establishment. Cultivar choice spreads picking from late July ('Discovery') to November ('Sturmer Pippin')."
+          },
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/plants/60558/malus-domestica-f/details",
+            "retrievedAt": "2026-07-27",
+            "note": "Hardiness H6. Apples prefer deep, fertile, moist but well-drained, neutral soil in a sunny, sheltered position, and will not thrive on very acid soils, shallow chalk soils, or with shade for more than half the day."
+          }
+        ]
       }
     },
     {
@@ -605,51 +664,6 @@
       }
     },
     {
-      "id": "black-eyed-pea",
-      "commonName": "Black-Eyed Pea",
-      "scientificName": "Vigna unguiculata subsp. unguiculata",
-      "gbifId": null,
-      "category": "vegetable",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 25,
-          "betweenRowCm": 6
-        }
-      },
-      "companions": [
-        {
-          "plantId": "okra",
-          "evidence": "traditional",
-          "note": "OpenFarm's \"Black-Eyed Pea\" page lists \"okra\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
-        }
-      ],
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "black-eyed-pea",
-            "url": "https://web.archive.org/web/20250114072436/https://openfarm.cc/en/crops/black-eyed-pea",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2025-01-14; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          },
-          {
-            "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-            "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
-          }
-        ],
-        "fields": {
-          "companions": [
-            {
-              "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-              "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
-            }
-          ]
-        }
-      }
-    },
-    {
       "id": "blackberry",
       "commonName": "Blackberry",
       "scientificName": "Rubus fruticosus",
@@ -932,6 +946,60 @@
       }
     },
     {
+      "id": "brussels-sprouts",
+      "commonName": "Brussels sprouts",
+      "scientificName": "Brassica oleracea (Gemmifera Group)",
+      "gbifId": null,
+      "category": "vegetable",
+      "edibleParts": ["leaf"],
+      "light": "full-sun",
+      "spacing": {
+        "row": {
+          "inRowCm": 60,
+          "betweenRowCm": 60
+        }
+      },
+      "hardiness": {
+        "rhsRating": "H5",
+        "minTempC": -15
+      },
+      "soil": {
+        "textures": ["chalk", "clay", "loam", "sand"],
+        "ph": ["neutral", "alkaline"],
+        "moisture": ["moist"]
+      },
+      "seasons": {
+        "sow": [
+          {
+            "start": 3,
+            "end": 4
+          }
+        ],
+        "harvest": [
+          {
+            "start": 10,
+            "end": 2
+          }
+        ]
+      },
+      "provenance": {
+        "sources": [
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/vegetables/brussels-sprouts/grow-your-own",
+            "retrievedAt": "2026-07-27",
+            "note": "Space plants 60cm (2ft) apart with at least 60cm (2ft) between rows — the wide spacing gives plants light and air, helps them crop, and deters fungal disease, so \"don't be tempted to plant more closely\". Sprouts ripen from the base of the stalk upwards and are picked as ready."
+          },
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/plants/246762/brassica-oleracea-(gemmifera-group)-trafalgar/details",
+            "retrievedAt": "2026-07-27",
+            "note": "Brussels sprout 'Trafalgar': hardiness H5; soil types chalk, clay, loam and sand; pH alkaline and neutral; moist but well-drained; full sun, sheltered. Ready to pick November to January."
+          }
+        ]
+      }
+    },
+    {
       "id": "butternut-squash",
       "commonName": "Butternut Squash",
       "scientificName": "Cucurbita moschata",
@@ -1010,13 +1078,6 @@
       "soil": {
         "moisture": ["moist"]
       },
-      "companions": [
-        {
-          "plantId": "cumin",
-          "evidence": "traditional",
-          "note": "OpenFarm's \"Cabbage\" page lists \"cumin\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
-        }
-      ],
       "provenance": {
         "sources": [
           {
@@ -1030,10 +1091,6 @@
           {
             "source": "Garden Planner curated moisture table",
             "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
-          },
-          {
-            "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-            "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
           }
         ],
         "fields": {
@@ -1042,40 +1099,8 @@
               "source": "Garden Planner curated moisture table",
               "note": "Hand-authored from general horticultural consensus for common British garden and allotment crops, not retrieved from a cited source. Each row carries its reasoning in a note; the three-value vocabulary (dry/moist/wet) is coarse by design. Treat as guidance, not authority."
             }
-          ],
-          "companions": [
-            {
-              "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-              "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
-            }
           ]
         }
-      }
-    },
-    {
-      "id": "cantaloupe",
-      "commonName": "Cantaloupe",
-      "scientificName": "Cucumis melo var. cantalupo",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 150,
-          "betweenRowCm": 45
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "cantaloupe",
-            "url": "https://web.archive.org/web/20250218025452/https://openfarm.cc/en/crops/cantaloupe",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2025-02-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
       }
     },
     {
@@ -1803,51 +1828,6 @@
       }
     },
     {
-      "id": "cumin",
-      "commonName": "Cumin",
-      "scientificName": "Cuminum cyminum",
-      "gbifId": null,
-      "category": "herb",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 30,
-          "betweenRowCm": 30
-        }
-      },
-      "companions": [
-        {
-          "plantId": "cabbage",
-          "evidence": "traditional",
-          "note": "OpenFarm's \"Cumin\" page lists \"cabbage\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
-        }
-      ],
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "cumin",
-            "url": "https://web.archive.org/web/20241013043010/https://openfarm.cc/en/crops/cumin",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2024-10-13; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          },
-          {
-            "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-            "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
-          }
-        ],
-        "fields": {
-          "companions": [
-            {
-              "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-              "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
-            }
-          ]
-        }
-      }
-    },
-    {
       "id": "daikon",
       "commonName": "Daikon",
       "scientificName": "Raphanus sativus var. longipinnatus",
@@ -2032,32 +2012,6 @@
       }
     },
     {
-      "id": "dragon-fruit",
-      "commonName": "Dragon Fruit",
-      "scientificName": "Hylocereus undatus",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 1,
-          "betweenRowCm": 250
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "dragon-fruit",
-            "url": "https://web.archive.org/web/20241105234926/https://openfarm.cc/en/crops/dragon-fruit",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2024-11-05; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
       "id": "eggplant",
       "commonName": "Eggplant",
       "scientificName": "Solanum melongena",
@@ -2199,32 +2153,6 @@
             }
           ]
         }
-      }
-    },
-    {
-      "id": "feijoa",
-      "commonName": "Feijoa",
-      "scientificName": "Acca sellowiana / Feijoa sellowiana",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 200,
-          "betweenRowCm": 200
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "feijoa",
-            "url": "https://web.archive.org/web/20250318014037/https://openfarm.cc/en/crops/feijoa",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2025-03-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
       }
     },
     {
@@ -2514,32 +2442,6 @@
       }
     },
     {
-      "id": "ginger",
-      "commonName": "Ginger",
-      "scientificName": "Zingiber officinale",
-      "gbifId": null,
-      "category": "herb",
-      "light": "partial-shade",
-      "spacing": {
-        "row": {
-          "inRowCm": 25,
-          "betweenRowCm": 20
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "ginger",
-            "url": "https://web.archive.org/web/20241105233801/https://openfarm.cc/en/crops/ginger",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2024-11-05; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
       "id": "golden-beet",
       "commonName": "Golden Beet",
       "scientificName": "Beta vulgaris",
@@ -2602,32 +2504,6 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2022-06-25; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
-      "id": "grapefruit",
-      "commonName": "Grapefruit",
-      "scientificName": "Citrus × paradisi",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 450,
-          "betweenRowCm": 600
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "grapefruit",
-            "url": "https://web.archive.org/web/20211127093959/https://openfarm.cc/en/crops/grapefruit",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2021-11-27; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           }
         ]
       }
@@ -2974,32 +2850,6 @@
             "license": "CC0-1.0",
             "retrievedAt": "2026-07-18",
             "note": "OpenFarm.cc page archived via Wayback Machine on 2025-03-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
-      "id": "honeydew-melon",
-      "commonName": "Honeydew melon",
-      "scientificName": "Cucumis melo",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 150,
-          "betweenRowCm": 90
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "honeydew-melon",
-            "url": "https://web.archive.org/web/20250218040344/https://openfarm.cc/en/crops/honeydew-melon",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2025-02-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
           }
         ]
       }
@@ -3551,32 +3401,6 @@
       }
     },
     {
-      "id": "lemongrass",
-      "commonName": "Lemongrass",
-      "scientificName": "Cymbopogon citratus",
-      "gbifId": null,
-      "category": "herb",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 140,
-          "betweenRowCm": 30
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "lemongrass",
-            "url": "https://web.archive.org/web/20211127092320/https://openfarm.cc/en/crops/lemongrass",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2021-11-27; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
       "id": "lettuce",
       "commonName": "Lettuce",
       "scientificName": "Lactuca Sativa",
@@ -3765,32 +3589,6 @@
       }
     },
     {
-      "id": "loquat",
-      "commonName": "Loquat",
-      "scientificName": "Eriobotrya japonica",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 400,
-          "betweenRowCm": 750
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "loquat",
-            "url": "https://web.archive.org/web/20220809172055/https://openfarm.cc/en/crops/loquat",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2022-08-09; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
       "id": "lovage",
       "commonName": "Lovage",
       "scientificName": "Levisticum officinale",
@@ -3890,32 +3688,6 @@
       }
     },
     {
-      "id": "melon",
-      "commonName": "Melon",
-      "scientificName": "Cucumis melo",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 130,
-          "betweenRowCm": 120
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "melon",
-            "url": "https://web.archive.org/web/20250218033704/https://openfarm.cc/en/crops/melon",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2025-02-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
       "id": "mexican-tarragon",
       "commonName": "Mexican Tarragon",
       "scientificName": "Tagetes lucida",
@@ -3962,11 +3734,6 @@
           "plantId": "green-zebra-tomato",
           "evidence": "traditional",
           "note": "OpenFarm's \"Mint\" page lists \"green-zebra-tomato\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
-        },
-        {
-          "plantId": "pomegranate",
-          "evidence": "traditional",
-          "note": "OpenFarm's \"Mint\" page lists \"pomegranate\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
         }
       ],
       "provenance": {
@@ -4128,77 +3895,6 @@
       }
     },
     {
-      "id": "okra",
-      "commonName": "Okra",
-      "scientificName": "Abelmoschus esculentus",
-      "gbifId": null,
-      "category": "vegetable",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 25,
-          "betweenRowCm": 25
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "okra",
-            "url": "https://web.archive.org/web/20240519133237/https://openfarm.cc/en/crops/okra",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2024-05-19; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
-      "id": "olive",
-      "commonName": "Olive",
-      "scientificName": "Olea europaea",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 600,
-          "betweenRowCm": 500
-        }
-      },
-      "companions": [
-        {
-          "plantId": "rosemary",
-          "evidence": "traditional",
-          "note": "OpenFarm's \"Olive\" page lists \"rosemary\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
-        }
-      ],
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "olive",
-            "url": "https://web.archive.org/web/20220809155403/https://openfarm.cc/en/crops/olive",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2022-08-09; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          },
-          {
-            "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-            "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
-          }
-        ],
-        "fields": {
-          "companions": [
-            {
-              "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-              "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
-            }
-          ]
-        }
-      }
-    },
-    {
       "id": "onion",
       "commonName": "Onion",
       "scientificName": "Allium cepa",
@@ -4317,58 +4013,6 @@
       }
     },
     {
-      "id": "orange",
-      "commonName": "Orange",
-      "scientificName": "Citrus × sinensis",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 300,
-          "betweenRowCm": 350
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "orange",
-            "url": "https://web.archive.org/web/20250218030047/https://openfarm.cc/en/crops/orange",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2025-02-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
-      "id": "papaya",
-      "commonName": "Papaya",
-      "scientificName": "Carica papaya",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 450,
-          "betweenRowCm": 400
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "papaya",
-            "url": "https://web.archive.org/web/20220625072933/https://openfarm.cc/en/crops/papaya",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2022-06-25; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
       "id": "parsnip",
       "commonName": "Parsnip",
       "scientificName": "Pastinaca sativa",
@@ -4436,32 +4080,6 @@
       }
     },
     {
-      "id": "pawpaw",
-      "commonName": "Pawpaw",
-      "scientificName": "Asimina triloba",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "partial-shade",
-      "spacing": {
-        "row": {
-          "inRowCm": 600,
-          "betweenRowCm": 600
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "pawpaw",
-            "url": "https://web.archive.org/web/20250318004657/https://openfarm.cc/en/crops/pawpaw",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2025-03-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
       "id": "pea",
       "commonName": "Pea",
       "scientificName": "Pisum sativum",
@@ -4490,11 +4108,6 @@
           "plantId": "french-breakfast-radish",
           "evidence": "traditional",
           "note": "OpenFarm's \"Pea\" page lists \"french-breakfast-radish\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
-        },
-        {
-          "plantId": "orange",
-          "evidence": "traditional",
-          "note": "OpenFarm's \"Pea\" page lists \"orange\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
         }
       ],
       "antagonists": [
@@ -4590,98 +4203,61 @@
       }
     },
     {
-      "id": "peanut",
-      "commonName": "Peanut",
-      "scientificName": "Arachis hypogaea",
+      "id": "pear",
+      "commonName": "Pear",
+      "scientificName": "Pyrus communis",
       "gbifId": null,
-      "category": "vegetable",
+      "category": "fruit",
+      "edibleParts": ["fruit"],
       "light": "full-sun",
       "spacing": {
         "row": {
-          "inRowCm": 30,
-          "betweenRowCm": 25
+          "inRowCm": 350,
+          "betweenRowCm": 350
         }
       },
-      "companions": [
-        {
-          "plantId": "eggplant",
-          "evidence": "traditional",
-          "note": "OpenFarm's \"Peanut\" page lists \"eggplant\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
-        }
-      ],
-      "provenance": {
-        "sources": [
+      "hardiness": {
+        "rhsRating": "H6",
+        "minTempC": -20
+      },
+      "soil": {
+        "textures": ["clay", "loam", "sand"],
+        "ph": ["neutral"],
+        "moisture": ["moist"]
+      },
+      "seasons": {
+        "sow": [
           {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "peanut",
-            "url": "https://web.archive.org/web/20241013045710/https://openfarm.cc/en/crops/peanut",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2024-10-13; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          },
-          {
-            "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-            "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
+            "start": 11,
+            "end": 3
           }
         ],
-        "fields": {
-          "companions": [
-            {
-              "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-              "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
-            }
-          ]
-        }
-      }
-    },
-    {
-      "id": "persimmon",
-      "commonName": "Persimmon",
-      "scientificName": "Diospyros kaki",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 600,
-          "betweenRowCm": 760
-        }
-      },
-      "provenance": {
-        "sources": [
+        "harvest": [
           {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "persimmon",
-            "url": "https://web.archive.org/web/20220625081947/https://openfarm.cc/en/crops/persimmon",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2022-06-25; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+            "start": 9,
+            "end": 10
           }
         ]
-      }
-    },
-    {
-      "id": "pineapple",
-      "commonName": "Pineapple",
-      "scientificName": "Ananas comosus",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 120,
-          "betweenRowCm": 30
-        }
       },
       "provenance": {
         "sources": [
           {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "pineapple",
-            "url": "https://web.archive.org/web/20220809155940/https://openfarm.cc/en/crops/pineapple",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2022-08-09; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/fruit/pears/grow-your-own",
+            "retrievedAt": "2026-07-27",
+            "note": "Space trees 3.5-5.5m (11-18ft) apart on 'Quince A' rootstock, or 2.5-3.5m (8-11ft) on 'Quince C'/'Quince Eline'."
+          },
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/plants/74814/pyrus-communis-conference-d/details",
+            "retrievedAt": "2026-07-27",
+            "note": "Pear 'Conference': hardiness H6; soil types clay, loam and sand; pH neutral; moist but well-drained or well-drained; full sun, sheltered."
+          },
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/plants/14227/pyrus-communis-f/details",
+            "retrievedAt": "2026-07-27",
+            "note": "Pears need a deep, fertile, moist but well-drained, fairly neutral soil in a sheltered, sunny position; they will not thrive on very acid or shallow chalk soils, or with shade for more than half the day."
           }
         ]
       }
@@ -4778,51 +4354,6 @@
       }
     },
     {
-      "id": "pomegranate",
-      "commonName": "Pomegranate",
-      "scientificName": "Punica granatum",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 450,
-          "betweenRowCm": 550
-        }
-      },
-      "companions": [
-        {
-          "plantId": "mint",
-          "evidence": "traditional",
-          "note": "OpenFarm's \"Pomegranate\" page lists \"mint\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
-        }
-      ],
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "pomegranate",
-            "url": "https://web.archive.org/web/20240615194838/https://openfarm.cc/en/crops/pomegranate",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2024-06-15; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          },
-          {
-            "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-            "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
-          }
-        ],
-        "fields": {
-          "companions": [
-            {
-              "source": "Garden Planner companion/antagonist dataset (Stage 1.4)",
-              "note": "Evidence tag is carried per-link; per-relationship citations live in packages/etl/src/companions and docs/adr/0008."
-            }
-          ]
-        }
-      }
-    },
-    {
       "id": "potato",
       "commonName": "Potato",
       "scientificName": "Solanum tuberosum",
@@ -4911,6 +4442,58 @@
             }
           ]
         }
+      }
+    },
+    {
+      "id": "pumpkin",
+      "commonName": "Pumpkin",
+      "scientificName": "Cucurbita maxima",
+      "gbifId": null,
+      "category": "vegetable",
+      "edibleParts": ["fruit"],
+      "light": "full-sun",
+      "spacing": {
+        "row": {
+          "inRowCm": 150,
+          "betweenRowCm": 150
+        }
+      },
+      "hardiness": {
+        "rhsRating": "H2",
+        "minTempC": 1
+      },
+      "soil": {
+        "moisture": ["moist"]
+      },
+      "seasons": {
+        "sow": [
+          {
+            "start": 4,
+            "end": 6
+          }
+        ],
+        "harvest": [
+          {
+            "start": 9,
+            "end": 10
+          }
+        ]
+      },
+      "provenance": {
+        "sources": [
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/vegetables/pumpkins/grow-your-own",
+            "retrievedAt": "2026-07-27",
+            "note": "Space bush varieties 90cm (3ft) apart and trailing varieties 1.5m (5ft) apart. Start under cover at 18-21°C from mid-April and plant out in June after hardening off, or sow outdoors late May/early June. Harvest when the stem cracks and the skin hardens, picking before the first frosts in October or November."
+          },
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/plants/237223/cucurbita-maxima-crown-prince/details",
+            "retrievedAt": "2026-07-27",
+            "note": "Squash 'Crown Prince' (Cucurbita maxima): hardiness H2 — tolerant of low temperatures, but not surviving being frozen (1 to 5°C). Grow in rich, fertile, moist but well-drained soil in full sun."
+          }
+        ]
       }
     },
     {
@@ -5286,6 +4869,64 @@
       }
     },
     {
+      "id": "raspberry",
+      "commonName": "Raspberry",
+      "scientificName": "Rubus idaeus",
+      "gbifId": null,
+      "category": "fruit",
+      "edibleParts": ["fruit"],
+      "light": "full-sun",
+      "spacing": {
+        "row": {
+          "inRowCm": 45,
+          "betweenRowCm": 180
+        }
+      },
+      "hardiness": {
+        "rhsRating": "H6",
+        "minTempC": -20
+      },
+      "soil": {
+        "textures": ["loam", "sand"],
+        "ph": ["acid"],
+        "moisture": ["moist"]
+      },
+      "seasons": {
+        "sow": [
+          {
+            "start": 11,
+            "end": 3
+          }
+        ],
+        "harvest": [
+          {
+            "start": 6,
+            "end": 7
+          },
+          {
+            "start": 8,
+            "end": 10
+          }
+        ]
+      },
+      "provenance": {
+        "sources": [
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/fruit/raspberries/grow-your-own",
+            "retrievedAt": "2026-07-27",
+            "note": "Space canes 45cm apart with 1.8m between rows; plant in autumn or spring. Summer-fruiting types fruit on the previous year's growth, autumn-fruiting types on the current season's."
+          },
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/plants/76281/rubus-idaeus-autumn-bliss-f/details",
+            "retrievedAt": "2026-07-27",
+            "note": "Raspberry 'Autumn Bliss': hardiness H6; soil types loam and sand; pH acid; moist but well-drained or well-drained; full sun; sheltered. Height 1.5-2.5m, spread 0.1-0.5m."
+          }
+        ]
+      }
+    },
+    {
       "id": "red-cabbage",
       "commonName": "Red Cabbage",
       "scientificName": "Brassica oleracea var. capitata",
@@ -5611,11 +5252,6 @@
           "plantId": "lemon-balm",
           "evidence": "traditional",
           "note": "OpenFarm's \"Rosemary\" page lists \"lemon-balm\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
-        },
-        {
-          "plantId": "olive",
-          "evidence": "traditional",
-          "note": "OpenFarm's \"Rosemary\" page lists \"olive\" as a companion. This is a scraped wiki field with no citation of its own, so it informs a \"traditional\" tag at best, never \"well-supported\" — see docs/adr/0006 §2 and docs/adr/0008."
         }
       ],
       "provenance": {
@@ -6174,32 +5810,6 @@
       }
     },
     {
-      "id": "star-fruit",
-      "commonName": "Star Fruit",
-      "scientificName": "Averrhoa carambola",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 800,
-          "betweenRowCm": 900
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "star-fruit",
-            "url": "https://web.archive.org/web/20200810163159/https://openfarm.cc/en/crops/star-fruit",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2020-08-10; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
       "id": "stevia",
       "commonName": "Stevia",
       "scientificName": "Stevia rebaudiana",
@@ -6267,32 +5877,6 @@
       }
     },
     {
-      "id": "strawberry-guava",
-      "commonName": "Strawberry Guava",
-      "scientificName": "Psidium cattleianum / Psidium cattleyanum",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 350,
-          "betweenRowCm": 300
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "strawberry-guava",
-            "url": "https://web.archive.org/web/20220118195249/https://openfarm.cc/en/crops/strawberry-guava",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2022-01-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
       "id": "summer-savory",
       "commonName": "Summer Savory",
       "scientificName": "Satureja hortensis",
@@ -6331,6 +5915,59 @@
             }
           ]
         }
+      }
+    },
+    {
+      "id": "swede",
+      "commonName": "Swede",
+      "scientificName": "Brassica napus (Napobrassica Group)",
+      "gbifId": null,
+      "category": "vegetable",
+      "edibleParts": ["root"],
+      "light": "full-sun",
+      "spacing": {
+        "row": {
+          "inRowCm": 25,
+          "betweenRowCm": 38
+        }
+      },
+      "hardiness": {
+        "rhsRating": "H4",
+        "minTempC": -10
+      },
+      "soil": {
+        "ph": ["neutral", "alkaline"],
+        "moisture": ["moist"]
+      },
+      "seasons": {
+        "sow": [
+          {
+            "start": 4,
+            "end": 6
+          }
+        ],
+        "harvest": [
+          {
+            "start": 9,
+            "end": 1
+          }
+        ]
+      },
+      "provenance": {
+        "sources": [
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/vegetables/swede/grow-your-own",
+            "retrievedAt": "2026-07-27",
+            "note": "Sow direct from late spring to early summer in rows 38cm (15in) apart, thinning seedlings to 20-25cm (8-10in). Best in an open, sunny site with moist but free-draining, fertile soil; lime acid soil. Harvested in autumn and winter — dug from early autumn, or left in the ground until Christmas and beyond."
+          },
+          {
+            "source": "RHS",
+            "url": "https://www.rhs.org.uk/plants/149640/brassica-napus-(napobrassica-group)-brora-pbr/details",
+            "retrievedAt": "2026-07-27",
+            "note": "Swede 'Brora': hardiness H4. Grow in well-firmed, non-acid soil in full sun; sow outdoors April to June, 1cm deep, 30cm between rows, thinning to 15cm apart."
+          }
+        ]
       }
     },
     {
@@ -6784,32 +6421,6 @@
       }
     },
     {
-      "id": "water-spinach",
-      "commonName": "water spinach",
-      "scientificName": "Ipomoea aquatica",
-      "gbifId": null,
-      "category": "vegetable",
-      "light": "partial-shade",
-      "spacing": {
-        "row": {
-          "inRowCm": 30,
-          "betweenRowCm": 10
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "water-spinach",
-            "url": "https://web.archive.org/web/20220118201059/https://openfarm.cc/en/crops/water-spinach",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2022-01-18; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
-      }
-    },
-    {
       "id": "watercress",
       "commonName": "Watercress",
       "scientificName": "nasturtium officinale",
@@ -7102,32 +6713,6 @@
             }
           ]
         }
-      }
-    },
-    {
-      "id": "yellow-strawberry-guava",
-      "commonName": "Yellow Strawberry Guava",
-      "scientificName": "Psidium cattleyanum var. littorale / Psidium littorale / Psidium cattleianum var. lucidum",
-      "gbifId": null,
-      "category": "fruit",
-      "light": "full-sun",
-      "spacing": {
-        "row": {
-          "inRowCm": 400,
-          "betweenRowCm": 400
-        }
-      },
-      "provenance": {
-        "sources": [
-          {
-            "source": "OpenFarm crops rescue (community Wayback Machine recovery)",
-            "sourceId": "yellow-strawberry-guava",
-            "url": "https://web.archive.org/web/20191016091522/https://openfarm.cc/en/crops/yellow-strawberry-guava",
-            "license": "CC0-1.0",
-            "retrievedAt": "2026-07-18",
-            "note": "OpenFarm.cc page archived via Wayback Machine on 2019-10-16; OpenFarm's own live API was shut down before this project could use it (see docs/adr/0006)."
-          }
-        ]
       }
     },
     {

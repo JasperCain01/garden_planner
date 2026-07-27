@@ -18,9 +18,13 @@
  *    the array literal in `plant.ts`. With only three bands, adjacency would buy
  *    little anyway.
  *
- * Almost no shipped record carries soil (2/162 — Stage 1.7's curated crops),
- * so this dimension reports `unknown-plant` across nearly the whole current
- * dataset — visibly, in the reasoning.
+ * Soil is the best-covered dimension after light: 80 of 144 shipped records
+ * carry a moisture preference (the curated moisture table's 72, plus the eight
+ * curated full-plant records' own soil blocks). For the other 64 this reports
+ * `unknown-plant` — visibly, in the reasoning. Note the asymmetry the finding
+ * vocabulary exists to express: a covered crop on a plot whose soil the user
+ * never described reports `unknown-plot` instead, because the missing half is
+ * then the plot's, not ours.
  */
 
 import type { Plant } from '../schema/plant.ts';

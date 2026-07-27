@@ -21,9 +21,9 @@
  * different crop. It is the model's lightest-weighted dimension for the same
  * reason.
  *
- * Almost no shipped record carries `seasons` (2/162 — Stage 1.7's curated
- * crops), so this dimension reports `unknown-plant` across nearly the whole
- * current dataset.
+ * Almost no shipped record carries `seasons` (8/144 — the curated crops, and
+ * only those), so this dimension reports `unknown-plant` across nearly the
+ * whole current dataset.
  */
 
 import type { MonthNumber, MonthRange, Plant } from '../schema/plant.ts';

@@ -17,6 +17,17 @@ import { evaluatePlot } from './evaluate';
  * companions/antagonist refresh changes these counts again, that is the
  * signal that the warnings/companions engine now has more (or different)
  * real data to work with, not a broken test.
+ *
+ * Stage 6.0 tripped it a second time, and in the direction that proves the
+ * merge's referential-integrity rule rather than the companion data: excluding
+ * 24 crops that can't be grown outdoors in Britain (ADR 0025) orphaned nine
+ * companion links whose owner or target had left the dataset (pea↔orange,
+ * cabbage↔cumin, mint↔pomegranate, rosemary↔olive, and the one-directional
+ * links owned by black-eyed pea and peanut). The merge dropped every one of
+ * them with a stated reason — none dangled, none needed hand-editing out of
+ * `companions/curated.ts` — so the count fell from 85 links on 56 records to
+ * 76 on 50. The antagonist pairs are untouched: all eight involve crops that
+ * grow here perfectly well.
  */
 
 const DATASET_PATH = fileURLToPath(new URL('../../../../data/plants.json', import.meta.url));
@@ -36,20 +47,20 @@ const BY_ID = new Map(PLANTS.map((plant) => [plant.id, plant]));
 
 describe('the shipped companion/antagonist data (ADR 0008)', () => {
   it('is the dataset these expectations were written against', () => {
-    expect(PLANTS).toHaveLength(162);
+    expect(PLANTS).toHaveLength(144);
   });
 
-  it('carries companions on exactly 56/162 records, 85 links, 3 well-supported and 82 traditional', () => {
+  it('carries companions on exactly 50/144 records, 76 links, 3 well-supported and 73 traditional', () => {
     const withCompanions = PLANTS.filter((plant) => plant.companions !== undefined);
-    expect(withCompanions).toHaveLength(56);
+    expect(withCompanions).toHaveLength(50);
 
     const links = withCompanions.flatMap((plant) => plant.companions ?? []);
-    expect(links).toHaveLength(85);
+    expect(links).toHaveLength(76);
     expect(links.filter((link) => link.evidence === 'well-supported')).toHaveLength(3);
-    expect(links.filter((link) => link.evidence === 'traditional')).toHaveLength(82);
+    expect(links.filter((link) => link.evidence === 'traditional')).toHaveLength(73);
   });
 
-  it('carries antagonists on exactly 8/162 records, 8 links -- four reciprocal pairs', () => {
+  it('carries antagonists on exactly 8/144 records, 8 links -- four reciprocal pairs', () => {
     // Stage 1.7's curated `broad-bean` is the fourth pair: the Stage 1.4
     // `leek`/`broad-bean` antagonist link (ADR 0008) had no plant to attach to
     // until this stage gave broad-bean one (ADR 0009's documented gap, closed

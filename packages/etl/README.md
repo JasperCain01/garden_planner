@@ -12,7 +12,7 @@ Full design reasoning: [`docs/adr/0005-gbif-name-resolver.md`](../../docs/adr/00
 [`docs/adr/0006-openfarm-source-adapter.md`](../../docs/adr/0006-openfarm-source-adapter.md)
 (the first source adapter).
 
-## Status (Stage 1.7)
+## Status (Stage 6.0)
 
 What exists today:
 
@@ -110,15 +110,20 @@ This is the step that writes the app's shipped data. It:
    "hand-verified spacing wins" one level up (ADR 0009 §2 / ADR 0021). A
    non-colliding curated plant is simply added as a new plant. From here on a
    curated plant is an ordinary `Plant` — no special-casing in the steps below.
-4. **Merges** the hand-verified spacing (which _wins_ over OpenFarm's scraped row
+4. **Drops the excluded crops** (`src/exclusions/table.ts`, Stage 6.0): 24 crops
+   that cannot be grown outdoors in Britain leave the dataset here, before
+   anything joins onto them, so a spacing row or companion link aimed at one is
+   reported as unattached/dropped by the ordinary machinery rather than
+   dangling (ADR 0025).
+5. **Merges** the hand-verified spacing (which _wins_ over OpenFarm's scraped row
    spacing) and the companion/antagonist links onto the right plants, joining by
    GBIF id → unambiguous scientific name → shared slug / a small curated alias
    table (`beetroot`→`beet`, `french-bean`→`green-bean`), and remapping
    companion-link ids through the same unification so nothing dangles.
-5. Runs the **hard-fail validation gate** (schema + referential integrity +
+6. Runs the **hard-fail validation gate** (schema + referential integrity +
    sanity bounds) over the whole set — the build fails loudly, listing every
    problem, if any record is malformed, dangling-referenced, or absurd.
-6. Writes `data/plants.json` and reports what it attached, remapped, and dropped.
+7. Writes `data/plants.json` and reports what it attached, remapped, and dropped.
 
 The reconciliation policy and the licensing decision are documented in
 [`docs/adr/0009`](../../docs/adr/0009-dataset-merge-and-licensing.md); the
@@ -148,12 +153,19 @@ facts, exactly like the spacing table and companion data.
   `spacing/table.ts`'s convention of a plain array plus a schema-validating
   test file (`plants.test.ts`) rather than `companions/curated.ts`'s "the type
   covers it" style, since a full `Plant` is a much bigger record to typo.
-- **Two crops ship today**: `broad-bean` (closes the gap ADR 0009 documented —
-  OpenFarm has no mappable _Vicia faba_, so the Stage 1.3 spacing row and the
-  `leek` antagonist link had nothing to attach to until now) and
-  `jerusalem-artichoke` (a plain new addition, proving the no-collision path).
-  Both are **link-free** by design — see the ADR for why that's sufficient for
+- **Eight crops ship today.** Stage 1.7 added two to prove the channel:
+  `broad-bean` (closes the gap ADR 0009 documented — OpenFarm has no mappable
+  _Vicia faba_, so the Stage 1.3 spacing row and the `leek` antagonist link had
+  nothing to attach to until then) and `jerusalem-artichoke` (a plain new
+  addition, proving the no-collision path). Stage 6.0 then used it for real,
+  adding the six British staples the OpenFarm-derived catalogue never had:
+  `apple`, `pear`, `raspberry`, `brussels-sprouts`, `swede` and `pumpkin`, each
+  with RHS-cited spacing, hardiness, soil and season data. All eight are
+  **link-free** by design — see the ADR for why that's sufficient for
   referential integrity without weakening the existing gate.
+- **These eight are the whole of the dataset's hardiness and season coverage**
+  (8/144). Adding a curated crop with those fields filled is currently the only
+  way the suitability engine gets to score on more than light and soil.
 - **Conflict rule**: a curated plant's `id` colliding with an OpenFarm plant's
   (directly or via `SLUG_ALIASES`) makes the curated record replace it
   wholesale, keeping the surviving canonical id (`merge.ts`'s step 0). See
@@ -179,9 +191,12 @@ facts, exactly like the spacing table and companion data.
    build-dataset suites (fold-in behaviour, override reconciliation, the
    gate failing on a broken curated record).
 5. `npm run build:data -w @garden-planner/etl` regenerates `data/plants.json`
-   with the new crop. If it needs its own icon rather than the generic
-   fallback, see `docs/icon-style-guide.md` and re-run
-   `tools/icons/generate.ts` (Stage 4.1).
+   with the new crop, then give it an icon: add its id to `CROP_ARCHETYPES` in
+   `tools/icons/classification.ts` and re-run
+   `node --experimental-strip-types tools/icons/generate.ts` (Stage 4.1; see
+   `docs/icon-style-guide.md`). This is not optional — `app/src/icons/
+resolveIcon.test.ts` fails if a shipped id has no icon, and the generator
+   fails if a classified id no longer ships.
 
 ## Offline-first: the cache
 
@@ -255,9 +270,10 @@ these are spacing figures hand-verified against authoritative charts.
 ## Curated soil-moisture table (`src/moisture/`)
 
 A thin enrichment slice, added because the shipped dataset had soil data on 2
-of 162 records — so the suitability engine's `soil` dimension was inert and the
-plot form's "Soil moisture" dropdown asked a question nothing could use. With
-148 of 162 crops `full-sun`, that left spacing as the app's only working axis.
+of its then-162 records — so the suitability engine's `soil` dimension was
+inert and the plot form's "Soil moisture" dropdown asked a question nothing
+could use. With almost every crop `full-sun`, that left spacing as the app's
+only working axis. It takes soil coverage to 80 of the 144 crops shipped today.
 
 It follows the spacing table's pattern exactly: original curation keyed to a
 crop id, folded into the Stage 1.5 merge, **not** a `SourceAdapter`.
@@ -295,6 +311,51 @@ Append to `CURATED_MOISTURE` in `src/moisture/table.ts`:
 Then `npm run build:data` from this package and commit the regenerated
 `data/plants.json`. If you'd rather say nothing about a crop, **omit the row** —
 absent scores as `unknown-plant`, which is the honest answer.
+
+## UK-outdoor exclusion list (`src/exclusions/`)
+
+The one curation slice that **removes** rather than enriches (Stage 6.0, full
+reasoning in [`docs/adr/0025`](../../docs/adr/0025-uk-outdoor-crop-exclusions.md)).
+The dataset's OpenFarm ancestry is North-American-leaning, so it arrived
+carrying tropical fruit, citrus and heat-demanding annuals that no British
+gardener can grow outdoors. `EXCLUDED_CROPS` names 24 of them and the merge
+drops each one before anything joins onto it.
+
+The test every row had to pass: **in an average British summer, can this crop
+give a usable harvest outdoors, with no greenhouse or polytunnel?** Twenty-four
+fail it, on one of two grounds — `too-tender` (a British winter kills it, and it
+can't be grown to a harvest as a summer annual either) or `wont-ripen` (it lives
+here quite happily and never gives you anything).
+
+Two things it deliberately is not:
+
+- **Not a de-duplication pass.** Cultivar padding (four onions, seven squashes,
+  six peppers) all grows here perfectly well and stays.
+- **Not a flag.** An excluded crop is absent from `data/plants.json`, not
+  marked. What the list keeps is the _reasoning_ — the ADR explains why that
+  trade is the right one, and Stage 3.6's in-app add-crop form is the escape
+  hatch that makes it safe.
+
+### Adding an exclusion
+
+Append to `EXCLUDED_CROPS` in `src/exclusions/table.ts`:
+
+```ts
+{
+  id: 'papaya',                  // must be an id the merge would otherwise ship
+  commonName: 'Papaya',          // legible once the record is gone from the artifact
+  basis: 'too-tender',           // or 'wont-ripen'
+  note: 'Killed outright at around 0°C, and needs a year of continuous warmth to fruit.',
+},
+```
+
+Then `npm run build:data` from this package, remove the crop's line from
+`tools/icons/classification.ts`, re-run the icon generator, and commit both the
+regenerated `data/plants.json` and the icon change. `exclusions/table.test.ts`
+checks the id would really have shipped (a typo excludes nothing), and the
+engine's `suitability/dataset.test.ts` and `spacing/dataset.test.ts` will need
+their pinned counts updating — that failure is the signal the change reached
+the engine.
 
 ## Companion-planting data (`src/companions/`)
 
@@ -436,6 +497,10 @@ src/
     openfarm-derived.ts       Mechanical extraction from OpenFarm's companions field.
     relationships.ts          Combines both; PlantLink-shaped output for Stage 1.5.
                               Not a source adapter — see docs/adr/0008.
+  exclusions/               UK-outdoor exclusion list (Stage 6.0).
+    schema.ts                ExcludedCrop schema: id + common name + basis + reason.
+    table.ts                 The 24 crops that can't be grown outdoors in Britain,
+                             each with its stated ground. See docs/adr/0025.
   moisture/                 Curated soil-moisture enrichment slice.
     schema.ts                MoistureRecord schema: reuses the engine's
                              SoilMoistureSchema; requires a reason per row

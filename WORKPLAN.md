@@ -30,10 +30,10 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 1.2 Source adapters                             | ⚠️ partial | ADR [0006](./docs/adr/0006-openfarm-source-adapter.md); **OpenFarm only.** PFAF/Permapeople adapters are **no longer planned** — Stage 6.0 fills the gaps by curation instead, and records why                                                                                                                                                                                                                                                |
 | 1.3 Hand-verified spacing table ⭐              | ✅         | ADR [0007](./docs/adr/0007-hand-verified-spacing.md); `packages/etl/src/spacing/`                                                                                                                                                                                                                                                                                                                                                             |
 | 1.4 Companion-planting data                     | ✅         | ADR [0008](./docs/adr/0008-companion-planting-data.md); 85 companion + 6 antagonist links (8 antagonist links ship today — Stage 1.7 added two)                                                                                                                                                                                                                                                                                               |
-| 1.5 Dataset build, merge & validation ⭐        | ✅         | ADR [0009](./docs/adr/0009-dataset-merge-and-licensing.md); `data/plants.json` (160 crops then; **162 today** — Stage 1.7)                                                                                                                                                                                                                                                                                                                    |
+| 1.5 Dataset build, merge & validation ⭐        | ✅         | ADR [0009](./docs/adr/0009-dataset-merge-and-licensing.md); `data/plants.json` (160 crops then; **144 today** — Stage 1.7 added two, Stage 6.0 added six and pruned 24)                                                                                                                                                                                                                                                                       |
 | 1.6 Location & climate static data              | ✅         | ADR [0010](./docs/adr/0010-location-climate-static-data.md); `packages/engine/src/climate/`                                                                                                                                                                                                                                                                                                                                                   |
-| 1.7 Curated full-plant input                    | ✅         | ADR [0021](./docs/adr/0021-curated-plant-input.md); `packages/etl/src/curated/` (`broad-bean`, `jerusalem-artichoke`); `data/plants.json` now 162 crops                                                                                                                                                                                                                                                                                       |
-| 1.8 Curated soil-moisture table                 | ✅         | `packages/etl/src/moisture/`; 72 crops gained `soil.moisture`, taking soil coverage from 2/162 to 74/162 — the engine's second working dimension (see Stage 6.0)                                                                                                                                                                                                                                                                              |
+| 1.7 Curated full-plant input                    | ✅         | ADR [0021](./docs/adr/0021-curated-plant-input.md); `packages/etl/src/curated/` (`broad-bean`, `jerusalem-artichoke`, and Stage 6.0's six British staples); the channel every hardiness/season record in the dataset comes through                                                                                                                                                                                                            |
+| 1.8 Curated soil-moisture table                 | ✅         | `packages/etl/src/moisture/`; 72 crops gained `soil.moisture` — the engine's second working dimension; soil coverage is 80/144 today (see Stage 6.0)                                                                                                                                                                                                                                                                                          |
 | 2.1 Suitability scoring engine ⭐               | ✅         | ADR [0012](./docs/adr/0012-suitability-scoring.md); `src/suitability/`, `rankPlants`                                                                                                                                                                                                                                                                                                                                                          |
 | 2.2 Spacing / density calculator ⭐             | ✅         | ADR [0013](./docs/adr/0013-spacing-density-calculator.md); `src/spacing/`, `fitPlant`, `PlotRegionSchema`                                                                                                                                                                                                                                                                                                                                     |
 | 2.3 Warnings & companion suggestions            | ✅         | ADR [0014](./docs/adr/0014-warnings-and-companion-suggestions.md); `src/warnings/`, `evaluatePlot`                                                                                                                                                                                                                                                                                                                                            |
@@ -44,10 +44,11 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 3.5 Warnings overlay & companion suggestions UI | ✅         | ADR [0018](./docs/adr/0018-placement-derivation-for-warnings.md); `app/src/warnings/`; E2E in `app/e2e/warnings-overlay.spec.ts`                                                                                                                                                                                                                                                                                                              |
 | 3.6 User-defined crops                          | ✅         | `app/src/user-crops/`; icon-picker scoping decision (fallback icon, no picker — Stage 4.1 hasn't landed) recorded in `docs/architecture.md`; E2E in `app/e2e/add-custom-crop.spec.ts`                                                                                                                                                                                                                                                         |
 | 3.7 Plot-image export                           | ✅         | ADR [0020](./docs/adr/0020-plot-export-canvas-compositing.md); `app/src/canvas/export.ts` (legend builder + export pipeline), "Export image" button in `PlotCanvasSection.tsx`; E2E in `app/e2e/plot-export.spec.ts`                                                                                                                                                                                                                          |
-| 4.1 SVG crop icon set                           | ✅         | ADR [0019](./docs/adr/0019-icon-set-archetypes-and-resolution.md); `app/src/icons/` (160 crop icons + 1 fallback then; **162 + 1 today** — Stage 1.7 added two crops and their icons, `resolveIcon`); `tools/icons/` (generator); [`docs/icon-style-guide.md`](./docs/icon-style-guide.md)                                                                                                                                                    |
+| 4.1 SVG crop icon set                           | ✅         | ADR [0019](./docs/adr/0019-icon-set-archetypes-and-resolution.md); `app/src/icons/` (160 crop icons + 1 fallback then; **144 + 1 today** — one per shipped id, kept exact by test through Stage 1.7's and Stage 6.0's crop-list changes, `resolveIcon`); `tools/icons/` (generator); [`docs/icon-style-guide.md`](./docs/icon-style-guide.md)                                                                                                 |
 | 4.2 Wire icons into palette & canvas            | ✅         | `app/src/icons/useIconImage.ts` (image loader); `PlantPalette.tsx` renders icons; `PlotCanvas.tsx` layers icons over category circles; component + E2E tests cover resolved and fallback cases                                                                                                                                                                                                                                                |
 | 5.1 PWA / offline support                       | ✅         | ADR [0022](./docs/adr/0022-pwa-offline-support.md); `vite-plugin-pwa` in `app/vite.config.ts`; manifest icons in `app/public/`; E2E in `app/e2e/offline.spec.ts`; Lighthouse PWA audit command + score in `README.md`                                                                                                                                                                                                                         |
 | 5.2 GitHub Pages deployment                     | ✅         | ADR [0024](./docs/adr/0024-github-pages-manual-deploy.md); root `deploy` script (`gh-pages`); manual Pages-settings prerequisite + deploy command documented in `README.md`; post-deploy smoke check (`app/playwright.pages.config.ts`, `app/e2e/deployed-smoke.spec.ts`, `npm run smoke:deployed`); **no `.github/workflows/` added** (§1.4); actual live deploy not completed/verified from this sandboxed session — see the ADR and README |
+| 6.0 Fill the data gaps that actually matter ⭐  | ✅         | ADR [0025](./docs/adr/0025-uk-outdoor-crop-exclusions.md); `packages/etl/src/exclusions/` (24 crops that can't be grown outdoors in Britain, deleted not flagged) + six British staples via `packages/etl/src/curated/` (`apple`, `pear`, `raspberry`, `brussels-sprouts`, `swede`, `pumpkin`); **`data/plants.json` now 144 crops**; the engine's pinned coverage tests re-pinned to the new real numbers                                    |
 
 **In one line:** the data layer and the engine's whole brain — suitability
 scoring, spacing/density, and warnings & companion suggestions — are built and
@@ -66,9 +67,9 @@ core loop with user-defined crops (Stage 3.6: an add-crop form validated via
 `safeValidateUserPlantInput`, an id-collision check, edit/remove gated on
 `isUserPlant`, and a generic fallback icon in place of a real picker since
 Stage 4.1's icon set hadn't landed yet). Phase 4 (Content & assets) is
-complete: Stage 4.1 ships the bundled SVG icon set — 162 crop icons plus a
-generic fallback, generated from a small reusable shape library rather than
-hand-drawn (`tools/icons/`) — and Stage 4.2 wires the tested `resolveIcon(plant)`
+complete: Stage 4.1 ships the bundled SVG icon set — one crop icon per shipped
+id plus a generic fallback, generated from a small reusable shape library rather
+than hand-drawn (`tools/icons/`) — and Stage 4.2 wires the tested `resolveIcon(plant)`
 lookup (`app/src/icons/`) into both the palette (`PlantPalette.tsx`) and the
 canvas (`PlotCanvas.tsx`), replacing the coloured-circle-plus-initial
 placeholder. Phase 3 (Frontend MVP) now closes out too: Stage 3.7 adds
@@ -84,25 +85,34 @@ unrelaxed `validatePlant` bar as every OpenFarm-sourced record, folded into
 the Stage 1.5 merge as a fourth input where a curated crop colliding with an
 OpenFarm one replaces it outright (curated wins, ADR 0021). Two crops ship
 today — `broad-bean` (closing a gap ADR 0009 had left open) and
-`jerusalem-artichoke` — bringing the shipped dataset to 162 plants. **Phases
+`jerusalem-artichoke` — bringing the shipped dataset to 162 plants at the time.
+**Phases
 2, 3 and 4 are complete; Phase 1 is complete apart from Stage 1.2**, which
 remains ⚠️ partial — OpenFarm is still the only source adapter, and PFAF and
 Permapeople have never landed. That is not a bookkeeping detail: they are the
-sources carrying hardiness and soil, so 160 of the 162 shipped records have
-light data and nothing else, and three of the suitability engine's four
-dimensions report `unknown-plant` for almost the whole catalogue (see
+sources carrying hardiness and soil, so at that point 160 of 162 shipped records
+had light data and nothing else, and three of the suitability engine's four
+dimensions reported `unknown-plant` for almost the whole catalogue (see
 [`docs/review-pre-deployment.md`](./docs/review-pre-deployment.md) §3.9).
-**Stage 6.0** now closes that gap by curation rather than by ingesting another
-source — the reasoning, and the measurements behind it, are recorded in the
-stage itself. Its first half has landed: a **curated soil-moisture table**
-(`packages/etl/src/moisture/`) gave 72 core British crops a `soil.moisture`
-preference, taking soil coverage from 2/162 to 74/162 and giving the app a
-second working axis — on a plot that names its moisture, drought-tolerant crops
-now genuinely outrank thirsty ones, where before every full-sun crop tied. Its
-second half — adding the missing British staples (apple, pear, raspberry,
-Brussels sprouts, swede) and pruning the ~32 crops that can't grow outdoors
-here — is still to do. CI, deferred since Stage 0.1 by §1.4, is scheduled last
-as **Stage 6.4**.
+**Stage 6.0** closes as much of that gap as curation can, rather than ingesting
+another source — the reasoning, and the measurements behind it, are recorded in
+the stage itself, and it is now **complete**. Its first half was a **curated
+soil-moisture table** (`packages/etl/src/moisture/`) giving 72 core British
+crops a `soil.moisture` preference and the app a second working axis: on a plot
+that names its moisture, drought-tolerant crops genuinely outrank thirsty ones,
+where before every full-sun crop tied. Its second half re-curated the **crop
+list itself** — six British staples added through the Stage 1.7 curated channel
+(`apple`, `pear`, `raspberry`, `brussels-sprouts`, `swede`, `pumpkin`, each with
+RHS-cited spacing, hardiness, soil and season data) and **24 crops that can't be
+grown outdoors in Britain removed** (`packages/etl/src/exclusions/`, ADR
+[0025](./docs/adr/0025-uk-outdoor-crop-exclusions.md), which records the
+delete-rather-than-flag decision the stage left open). The dataset now ships
+**144 crops**: light 144/144 (133 full-sun, 11 partial-shade), soil 80/144,
+hardiness and seasons 8/144, companion links 76 across 50 records. The ranking's
+top eight places are now decided by real data rather than the alphabet — but
+8/144 is still thin, and closing the hardiness/season gap properly needs a new
+source (Stage 1.2's unstarted adapters), not more curation. CI, deferred since
+Stage 0.1 by §1.4, is scheduled last as **Stage 6.4**.
 Phase 5 (Offline & deployment) is now complete:
 Stage 5.1 adds **PWA / offline support** (ADR 0022) — a service worker and
 web app manifest via `vite-plugin-pwa`'s `generateSW` strategy
@@ -126,8 +136,10 @@ Pages itself is a one-time, repo-admin-only Settings step no automated
 session can perform, and this session's own outbound network couldn't reach
 the live Pages URL or complete a real branch push either — both are
 documented as the maintainer's next manual step (`README.md`, ADR 0024)
-rather than asserted as done. **Phase 6** (community readiness) is next —
-see Stage 6.0 below for what's already landed there and what remains.
+rather than asserted as done. **Phase 6** (community readiness) is under way:
+**Stage 6.0 is complete** (both halves — see above and the stage entry below),
+leaving 6.1 (documentation pass), 6.2 (accessibility & responsive polish), 6.3
+(final validation) and 6.4 (CI, deliberately last).
 
 ---
 
@@ -787,8 +799,8 @@ it is the kind of thing a fresh session would otherwise re-derive:
 - **The adapter work is mostly not acquisition.** Of the OpenFarm adapter's 730
   lines, only ~15% is transport and caching. The rest is mapping and
   classification — and much of _that_ wouldn't apply, because the goal here is
-  to **enrich 162 existing records**, not create new ones.
-- **The join would have been the real cost.** Only 95 of 162 records join
+  to **enrich the 162 records that existed then**, not create new ones.
+- **The join would have been the real cost.** Only 95 of those 162 records join
   uniquely by scientific name; **67 (41%) sit in 16 ambiguous species groups** —
   _Brassica oleracea_ alone covers 11 crops. And PFAF has one row per species,
   so its hardiness could honestly be broadcast to all 11 while its _sowing
@@ -824,32 +836,68 @@ Deliberately **moisture only** — no texture, no pH. Those matter far less for
 annual veg, a gardener rarely knows their pH, and skipping them cut the job by
 two-thirds without costing anything the app needed.
 
-##### Still to do: the crop list
+##### Done: the crop list
 
-The 162 shipped crops overstate what's actually there. Roughly **32 can't be
-grown outdoors in Britain** (dragon fruit, papaya, pineapple, star fruit, two
-strawberry guavas, olive, grapefruit, lemongrass, okra, peanut…) and a good deal
-of the rest is cultivar padding (4 onions, 3 cauliflowers, 3 carrots, 4
-radishes, 7 squashes, 6 peppers). Meanwhile **apple, pear, raspberry, Brussels
-sprouts, swede and pumpkin are all absent** — a British allotmenteer notices
-that in the first five minutes.
+The 162 shipped crops overstated what was actually there: a fifth of them could
+not be grown outdoors in Britain, while **apple, pear, raspberry, Brussels
+sprouts, swede and pumpkin were all absent** — something a British allotmenteer
+notices in the first five minutes. Both halves of that are now fixed, and the
+result is a catalogue curated for the same thing every other field in this
+dataset already was.
 
-- **Deliverables:** add the missing staples through the Stage 1.7 curated input
-  (`packages/etl/src/curated/plants.ts`), and prune or de-prioritise the crops
-  that can't grow here. Decide explicitly whether pruning means deleting records
-  or flagging them — the in-app add-crop form (Stage 3.6) means a user can
-  always restore anything you remove, which is what makes pruning safe.
-- **Watch the icon set.** `app/src/icons/` holds one icon per shipped id and a
-  test enforces the correspondence exactly; adding or removing a crop means
-  adding or removing an icon in the same change.
-- **Expect `suitability/dataset.test.ts` and `spacing/dataset.test.ts` to fail
-  and need re-pinning.** They pin today's coverage on purpose — that is how you
-  know the change reached the engine. Re-pin them; don't loosen them.
+**Six staples added** through the Stage 1.7 curated input
+(`packages/etl/src/curated/plants.ts`), each with RHS-cited spacing, hardiness,
+soil and season data. They are the first records to carry a _full_ set of
+requirement fields, which is why they — and only they — let the engine score on
+all four dimensions.
+
+**Twenty-four crops removed** (`packages/etl/src/exclusions/`) — the ones
+failing one stated test: _in an average British summer, can this crop give a
+usable harvest outdoors, with no greenhouse or polytunnel?_ Twelve are
+`too-tender` (a British winter kills them and they can't be grown to a harvest
+as summer annuals either: the tropicals, citrus, lemongrass, ginger, olive),
+twelve `wont-ripen` (they live here quite happily and never give you anything:
+okra, peanut, cowpea, cumin, the three melons, loquat, pomegranate, persimmon,
+feijoa, pawpaw).
+
+The open question this entry left — **delete or flag?** — is answered in ADR
+[0025](./docs/adr/0025-uk-outdoor-crop-exclusions.md): **delete**, because
+flagging would need a new field on the keystone schema, a new scoring rule, new
+UI, and a location model to be relative to — against an undo the app already
+ships (Stage 3.6's add-crop form). What is _kept_ is the reasoning: one row per
+crop, with the ground it fails on and a sentence a reader can disagree with, so
+the judgement stays reviewable in version control even though the record is
+gone.
+
+Three things worth carrying forward:
+
+- **The list is 24, not the ~32 this entry estimated.** The estimate predated
+  anyone enumerating it. The difference is crops British gardeners really do
+  grow outdoors, awkwardly but successfully — aubergine, chillies, sweet potato,
+  soya, cape gooseberry, tomatillo, the tender herbs. Marginal is what a
+  suitability score is _for_; hiding those would be the app answering a question
+  it should be ranking.
+- **Cultivar padding was deliberately left alone** (4 onions, 3 cauliflowers, 3
+  carrots, 4 radishes, 7 squashes, 6 peppers). Every one grows here perfectly
+  well, so removing them is a tidiness decision on entirely different grounds —
+  worth doing one day, with its own argument, not smuggled into this one.
+- **The merge needed no special-casing for the fallout.** Nine companion links
+  pointed at, or were owned by, an excluded crop; the existing
+  referential-integrity step dropped every one with a stated reason, because
+  exclusion runs before anything joins onto a plant.
+
+The coverage tests behaved exactly as this entry predicted — and one more than
+it predicted: `suitability/`, `spacing/` **and** `warnings/dataset.test.ts` all
+failed, and all were re-pinned to the new real numbers (144 crops; light
+144/144, 133 full-sun and 11 partial-shade; soil 80/144; hardiness and seasons
+8/144; 76 companion links on 50 records). The icon set moved with the dataset in
+the same change (144 + 1 fallback).
+
 - **Model:** **Sonnet.** Horticultural judgement about what a British plot
   actually grows, plus mechanical curation against a settled schema.
-- **Verification:** the hard-fail gate passes on the rebuilt dataset; every
-  shipped id still has an icon; the coverage tests are re-pinned rather than
-  relaxed.
+- **Verification:** ✅ `npm run verify` green; the hard-fail gate passes on the
+  rebuilt dataset; every shipped id has exactly one icon; the coverage tests
+  were re-pinned rather than relaxed.
 
 #### Stage 6.1 — Documentation pass ⭐ (directly serves "easy to clone")
 

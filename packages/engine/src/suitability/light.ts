@@ -2,7 +2,7 @@
  * The **light** dimension: how well a plot's light level suits a crop.
  *
  * This is the only requirement dimension with real coverage in today's shipped
- * dataset (162/162 records, but only two distinct values — 148 full-sun and 14
+ * dataset (144/144 records, but only two distinct values — 133 full-sun and 11
  * partial-shade), and it is required on both `Plant` and `PlotConditions`, so it
  * is the one dimension that is *always* assessed.
  *

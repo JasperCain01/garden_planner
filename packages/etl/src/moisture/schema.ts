@@ -4,11 +4,12 @@
  *
  * ## Why this exists as its own slice
  *
- * The shipped dataset had soil data on 2 of 162 records, so the suitability
- * engine's `soil` dimension reported `unknown-plant` for effectively the whole
- * catalogue and the plot form's "Soil moisture" dropdown asked a question
- * nothing could use. Light is no help either — 148 of 162 crops are
- * `full-sun` — so without this, spacing was the app's only working axis.
+ * The shipped dataset had soil data on 2 of its then-162 records, so the
+ * suitability engine's `soil` dimension reported `unknown-plant` for
+ * effectively the whole catalogue and the plot form's "Soil moisture" dropdown
+ * asked a question nothing could use. Light is no help either — 133 of the 144
+ * crops shipped today are `full-sun` — so without this, spacing was the app's
+ * only working axis. This slice took soil coverage to 80/144.
  *
  * This slice follows the **hand-verified spacing table's** pattern (Stage 1.3,
  * `../spacing/`): original curation keyed to a crop id, folded into the Stage

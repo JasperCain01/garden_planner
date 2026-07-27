@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { validatePlant, type Plant, type PlantLink } from '@garden-planner/engine';
 import { validateSpacingRecord, type SpacingRecord } from '../spacing/schema.ts';
 import type { MoistureRecord } from '../moisture/schema.ts';
+import type { ExcludedCrop } from '../exclusions/schema.ts';
 import type { PlantLinksByKind } from '../companions/relationships.ts';
 import { mergeDataset } from './merge.ts';
 
@@ -54,6 +55,7 @@ describe('mergeDataset — spacing', () => {
       openFarmPlants: [plant({ spacing: { row: { inRowCm: 8, betweenRowCm: 30 } } })],
       spacingRecords: [spacingRow()],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: new Map(),
     });
     const onion = result.plants.find((p) => p.id === 'onion')!;
@@ -84,6 +86,7 @@ describe('mergeDataset — spacing', () => {
         spacingRow({ id: 'beetroot', commonName: 'Beetroot', scientificName: 'Beta vulgaris' }),
       ],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: new Map(),
       aliases: { beetroot: 'beet' },
     });
@@ -98,6 +101,7 @@ describe('mergeDataset — spacing', () => {
       openFarmPlants: [plant()],
       spacingRecords: [spacingRow({ id: 'broad-bean', scientificName: 'Vicia faba' })],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: new Map(),
     });
     expect(result.report.spacingUnattached).toEqual([
@@ -117,6 +121,7 @@ describe('mergeDataset — spacing', () => {
       ],
       spacingRecords: [],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: new Map(),
     });
     expect(result.plants).toEqual([]);
@@ -133,6 +138,7 @@ describe('mergeDataset — spacing', () => {
       ],
       spacingRecords: [spacingRow({ id: 'onion' })],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: new Map(),
     });
     expect(result.plants.map((p) => p.id)).toEqual(['onion']);
@@ -149,6 +155,7 @@ describe('mergeDataset — spacing', () => {
           spacingRow({ id: 'yellow-onion', scientificName: 'Allium cepa' }),
         ],
         moistureRecords: [],
+        excludedCrops: [],
         linksById: new Map(),
       }),
     ).toThrow(/two spacing rows resolve to the same plant/);
@@ -165,6 +172,7 @@ describe('mergeDataset — companion/antagonist links', () => {
       ],
       spacingRecords: [],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: linksMap({ onion: { companions: [link('carrot')] } }),
     });
     const onion = result.plants.find((p) => p.id === 'onion')!;
@@ -182,6 +190,7 @@ describe('mergeDataset — companion/antagonist links', () => {
       ],
       spacingRecords: [],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: linksMap({
         'french-bean': { antagonists: [link('garlic')] },
         garlic: { antagonists: [link('french-bean')] },
@@ -201,6 +210,7 @@ describe('mergeDataset — companion/antagonist links', () => {
       openFarmPlants: [plant({ id: 'leek', scientificName: 'Allium porrum' })],
       spacingRecords: [],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: linksMap({
         leek: { antagonists: [link('broad-bean')] },
         'broad-bean': { antagonists: [link('leek')] },
@@ -221,6 +231,7 @@ describe('mergeDataset — companion/antagonist links', () => {
       spacingRecords: [],
       // green-bean links to french-bean, which aliases back to green-bean itself.
       moistureRecords: [],
+      excludedCrops: [],
       linksById: linksMap({ 'green-bean': { companions: [link('french-bean')] } }),
       aliases: { 'french-bean': 'green-bean' },
     });
@@ -251,6 +262,7 @@ describe('mergeDataset — curated plants (Stage 1.7)', () => {
       curatedPlants: [curated()],
       spacingRecords: [],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: new Map(),
     });
     expect(result.plants.map((p) => p.id)).toEqual(['jerusalem-artichoke', 'onion']);
@@ -269,6 +281,7 @@ describe('mergeDataset — curated plants (Stage 1.7)', () => {
       curatedPlants: [curated({ commonName: 'Jerusalem artichoke (curated)' })],
       spacingRecords: [],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: new Map(),
     });
     // Exactly one record ships under the shared id — never a silent duplicate.
@@ -287,6 +300,7 @@ describe('mergeDataset — curated plants (Stage 1.7)', () => {
       ],
       spacingRecords: [],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: new Map(),
       aliases: { beetroot: 'beet' },
     });
@@ -317,6 +331,7 @@ describe('mergeDataset — curated plants (Stage 1.7)', () => {
       ],
       spacingRecords: [spacingRow({ id: 'broad-bean', scientificName: 'Vicia faba' })],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: linksMap({
         leek: { antagonists: [link('broad-bean')] },
         'broad-bean': { antagonists: [link('leek')] },
@@ -339,6 +354,7 @@ describe('mergeDataset — output', () => {
       ],
       spacingRecords: [],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: new Map(),
     });
     expect(result.plants.map((p) => p.id)).toEqual(['carrot', 'onion']);
@@ -361,6 +377,7 @@ describe('mergeDataset — soil moisture', () => {
       openFarmPlants: [plant()],
       spacingRecords: [],
       moistureRecords: [moistureRow()],
+      excludedCrops: [],
       linksById: new Map(),
     });
 
@@ -377,6 +394,7 @@ describe('mergeDataset — soil moisture', () => {
       openFarmPlants: [plant()],
       spacingRecords: [],
       moistureRecords: [moistureRow()],
+      excludedCrops: [],
       linksById: new Map(),
     });
 
@@ -403,6 +421,7 @@ describe('mergeDataset — soil moisture', () => {
       openFarmPlants: [],
       spacingRecords: [],
       moistureRecords: [moistureRow({ moisture: ['wet'] })],
+      excludedCrops: [],
       linksById: new Map(),
     });
 
@@ -425,6 +444,7 @@ describe('mergeDataset — soil moisture', () => {
       openFarmPlants: [],
       spacingRecords: [],
       moistureRecords: [moistureRow()],
+      excludedCrops: [],
       linksById: new Map(),
     });
 
@@ -440,6 +460,7 @@ describe('mergeDataset — soil moisture', () => {
       openFarmPlants: [plant()],
       spacingRecords: [],
       moistureRecords: [moistureRow({ id: 'not-a-crop' })],
+      excludedCrops: [],
       linksById: new Map(),
     });
 
@@ -458,11 +479,113 @@ describe('mergeDataset — soil moisture', () => {
       openFarmPlants: [plant()],
       spacingRecords: [],
       moistureRecords: [],
+      excludedCrops: [],
       linksById: new Map(),
     });
 
     // "We don't know" stays "we don't know" — the scorer reports
     // `unknown-plant` rather than being handed a guess.
     expect(result.plants.find((p) => p.id === 'onion')!.soil).toBeUndefined();
+  });
+});
+
+describe('mergeDataset — UK-outdoor exclusions (Stage 6.0, ADR 0025)', () => {
+  function exclusion(id: string): ExcludedCrop {
+    return {
+      id,
+      commonName: id,
+      basis: 'too-tender',
+      note: 'test exclusion — cannot be grown outdoors in Britain',
+    };
+  }
+
+  it('drops an excluded crop from the merged dataset and says so in the report', () => {
+    const result = mergeDataset({
+      curatedPlants: [],
+      openFarmPlants: [plant(), plant({ id: 'papaya', commonName: 'Papaya' })],
+      spacingRecords: [],
+      moistureRecords: [],
+      excludedCrops: [exclusion('papaya')],
+      linksById: new Map(),
+    });
+
+    expect(result.plants.map((p) => p.id)).toEqual(['onion']);
+    expect(result.report.cropsExcluded).toEqual([{ plantId: 'papaya', basis: 'too-tender' }]);
+    expect(result.report.exclusionsUnmatched).toEqual([]);
+  });
+
+  it('excludes a curated record too — the rule is about the shipped id, not the source', () => {
+    // No curated crop is excluded today, and none should be: writing one by
+    // hand and then excluding it would be a contradiction a maintainer should
+    // resolve by deleting the record. Pinned anyway so the rule has one
+    // meaning rather than two, and so a future collision can't ship silently.
+    const result = mergeDataset({
+      curatedPlants: [plant({ id: 'papaya', commonName: 'Papaya' })],
+      openFarmPlants: [],
+      spacingRecords: [],
+      moistureRecords: [],
+      excludedCrops: [exclusion('papaya')],
+      linksById: new Map(),
+    });
+
+    expect(result.plants).toEqual([]);
+    expect(result.report.cropsExcluded).toEqual([{ plantId: 'papaya', basis: 'too-tender' }]);
+  });
+
+  it('drops companion links pointing at an excluded crop instead of dangling them', () => {
+    // The reason exclusion happens before the companion remap: the existing
+    // referential-integrity machinery handles the fallout, with a stated
+    // reason, and needs no special case for exclusions.
+    const result = mergeDataset({
+      curatedPlants: [],
+      openFarmPlants: [plant(), plant({ id: 'papaya', commonName: 'Papaya' })],
+      spacingRecords: [],
+      moistureRecords: [],
+      excludedCrops: [exclusion('papaya')],
+      linksById: linksMap({
+        onion: { companions: [link('papaya')] },
+        papaya: { companions: [link('onion')] },
+      }),
+    });
+
+    expect(result.plants.find((p) => p.id === 'onion')!.companions).toBeUndefined();
+    expect(result.report.companionLinksKept).toBe(0);
+    expect(result.report.companionLinksDropped).toEqual([
+      {
+        ownerId: 'onion',
+        targetId: 'papaya',
+        kind: 'companion',
+        reason: 'target "papaya" is not a plant in the merged dataset',
+      },
+      {
+        ownerId: 'papaya',
+        targetId: 'onion',
+        kind: 'companion',
+        reason: 'owner "papaya" is not a plant in the merged dataset',
+      },
+    ]);
+  });
+
+  it('reports an exclusion that matched nothing rather than failing the build', () => {
+    // A stale exclusion is a curation drift the exclusion list's own test
+    // catches (`exclusions/table.test.ts`); here it is reported, exactly as an
+    // unattached spacing or moisture row is.
+    const result = mergeDataset({
+      curatedPlants: [],
+      openFarmPlants: [plant()],
+      spacingRecords: [],
+      moistureRecords: [],
+      excludedCrops: [exclusion('not-a-crop')],
+      linksById: new Map(),
+    });
+
+    expect(result.plants.map((p) => p.id)).toEqual(['onion']);
+    expect(result.report.cropsExcluded).toEqual([]);
+    expect(result.report.exclusionsUnmatched).toEqual([
+      {
+        excludedId: 'not-a-crop',
+        reason: 'no plant with id "not-a-crop" reached the merge — a stale or mistyped exclusion',
+      },
+    ]);
   });
 });

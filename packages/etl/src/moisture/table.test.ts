@@ -64,7 +64,7 @@ describe('the curated moisture table', () => {
     const distinct = new Set(CURATED_MOISTURE.map((row) => row.moisture.join('+')));
     // A table that said 'moist' for everything would pass every other test here
     // and be worthless — it would rank crops identically, which is the failure
-    // mode `light` already has (148 of 162 crops are full-sun).
+    // mode `light` already has (133 of 144 crops are full-sun).
     expect(distinct.size).toBeGreaterThanOrEqual(3);
     const drySide = CURATED_MOISTURE.filter((row) => row.moisture.includes('dry'));
     const wetSide = CURATED_MOISTURE.filter((row) => row.moisture.includes('wet'));
