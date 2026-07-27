@@ -7,14 +7,17 @@ spacing, and how to arrange them — with drag-and-drop and live warnings. You c
 also **add your own crops** from a seed packet and **export a picture** of the
 finished plot.
 
-> **Status: Phases 1–4 complete; Phase 5 (offline & deployment) under way.**
+> **Status: Phases 1–4 complete; Phase 5 (offline & deployment) complete.**
 > The data pipeline, the framework-free suitability/spacing/warnings engine,
 > and the full drag-and-drop React UI (plot definition, ranked palette,
 > canvas, warnings overlay, user-defined crops, plot-image export, a bundled
 > SVG icon set) are all built and green — see [`WORKPLAN.md`](./WORKPLAN.md)'s
-> Progress table for the stage-by-stage detail. Stage 5.1 now adds **PWA /
-> offline support**: the app installs and works with the network off (see
-> below). Stage 5.2 (GitHub Pages deployment) is next.
+> Progress table for the stage-by-stage detail. Stage 5.1 added **PWA /
+> offline support** (installs, works with the network off — see below); Stage
+> 5.2 adds a **manual GitHub Pages deploy path** (see "Deployment" below —
+> deliberately a hand-run command, not CI: see `WORKPLAN.md` §1.4). Phase 6
+> (community readiness, including finishing the crop-list gaps Stage 6.0
+> describes) is next.
 
 ### A caveat worth knowing before you judge the rankings
 
@@ -126,6 +129,69 @@ the category is the honest way to get a runnable, numeric PWA audit locally
 until an equivalent replacement exists. `--view` opens the HTML report in a
 browser; drop it (and add `--output=json --output-path=<file>` instead) for
 a scriptable result.
+
+## Deployment (GitHub Pages)
+
+The app is a fully static build (`app/dist/`), so hosting it is "build with
+the right base path and publish `dist/`" — no server, no environment
+variables the deployed app reads at runtime. Per `WORKPLAN.md` §1.4, this
+stays a **manual, maintainer-run command**; there is no
+`.github/workflows/` directory and this stage does not add one — CI/CD
+automation (including "deploy on merge") is deliberately deferred to Stage
+6.4.
+
+### One-time prerequisite (repo-admin only)
+
+GitHub Pages must be turned on once, in the repo's own settings — no script
+or session without repo-admin access can do this step:
+
+**Settings → Pages → Build and deployment → Source: "Deploy from a branch" →
+Branch: `gh-pages` / `(root)`.**
+
+### Deploy command
+
+From the repo root, with git push access to `origin`:
+
+```bash
+npm run deploy
+```
+
+This is exactly `GITHUB_PAGES=true npm run build -w app && gh-pages -d app/dist`
+— a production build with the Pages base path (`/garden_planner/`) baked in,
+published to the `gh-pages` branch via the [`gh-pages`](https://www.npmjs.com/package/gh-pages)
+package (a `devDependency`, wired in Stage 5.2 — see
+[ADR 0024](./docs/adr/0024-github-pages-manual-deploy.md)). Re-run it after
+every change you want live; there is no deploy-on-merge.
+
+### Post-deploy smoke check (manual — not a CI gate)
+
+After a deploy, confirm the live site actually works with a small Playwright
+check against the real URL (not the local preview server the rest of the
+E2E suite uses):
+
+```bash
+npm run smoke:deployed
+# or, to point at a different URL (e.g. before Pages is enabled on a fork):
+DEPLOYED_URL=https://<owner>.github.io/garden_planner/ npm run smoke:deployed
+```
+
+It loads the deployed app under its real base path, confirms the service
+worker registers, and repeats the core plot → palette → drag-a-crop-onto-
+the-canvas journey against production assets. Deliberately excluded from
+`npm run e2e`/`verify` (see `app/playwright.config.ts`'s `testIgnore`) so
+those stay reproducible with no network dependency beyond `localhost`.
+
+### Live site
+
+Expected at **<https://jaspercain01.github.io/garden_planner/>** once a
+maintainer has completed the two steps above. **Not yet confirmed live from
+this repository** — Stage 5.2 was built and verified (build output inspected
+by hand for the correct base path; see ADR 0024) from a sandboxed session
+whose outbound network is blocked beyond package installs and the GitHub
+API, so neither the actual `gh-pages` push nor a request to the live URL
+could be completed or observed here. The GitHub API confirms Pages is not
+yet enabled on the real repo (`has_pages: false` as of this writing). Update
+this line once a real deploy has been run and the URL checked by hand.
 
 ## Repository layout
 

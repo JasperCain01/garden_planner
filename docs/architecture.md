@@ -494,6 +494,36 @@ command is recorded in the root `README.md` (today's score: see that section
 category entirely, so the documented command pins an older major version
 that still has it, with the gap this causes explained inline).
 
+## Stage 5.2 — GitHub Pages deployment
+
+Stage 5.2 ([`adr/0024`](./adr/0024-github-pages-manual-deploy.md)) turns the
+already-static, already-offline-capable build into an actually-hosted one —
+without adding automation `WORKPLAN.md` §1.4 defers to Stage 6.4. Three
+pieces:
+
+- **The deploy command**: a root `deploy` script
+  (`GITHUB_PAGES=true npm run build -w app && gh-pages -d app/dist`) using
+  the `gh-pages` npm package to publish `app/dist` to the `gh-pages` branch.
+  No app code changed — `app/vite.config.ts`'s `base` env-gating (Stage 0.1,
+  extended for the PWA manifest in Stage 5.1) was already correct, confirmed
+  again by building with the flag and inspecting `dist/index.html` and
+  `dist/manifest.webmanifest` by hand.
+- **The one-time manual prerequisite**: enabling Pages itself
+  (Settings → Pages → source branch) needs repo-admin access no automated
+  session has — documented as a manual step in the root `README.md`, not
+  attempted here.
+- **A post-deploy smoke check**: a second Playwright config
+  (`app/playwright.pages.config.ts`) and spec (`app/e2e/deployed-smoke.spec.ts`)
+  pointed at the live URL, run via `npm run smoke:deployed` — deliberately
+  excluded from `npm run e2e`/`verify` so those stay free of any network
+  dependency beyond `localhost`.
+
+Whether an actual deploy has been completed and verified live is recorded
+honestly in the README's "Deployment" section rather than assumed — see the
+ADR's "What could and couldn't be verified" section for exactly what a
+sandboxed session could and couldn't do here (builds and local checks: yes;
+an actual `gh-pages` push or a request to the live Pages URL: no).
+
 ## Why a monorepo with these boundaries
 
 Keeping `engine` and `etl` free of any UI-framework dependency means the
@@ -507,9 +537,14 @@ Four capabilities were added to the plan after Phase 1's original scope: the
 curated dataset input (Stage 1.7), user-defined crops (Stage 3.6), the icon
 set plus wiring (Stages 4.1–4.2), and plot-image export (Stage 3.7). All four
 are now built, closing out Phases 1–4 in full. Phase 5 (offline & deployment)
-is now under way too: Stage 5.1 (above) adds PWA/offline support.
-`WORKPLAN.md`'s Progress table and dependency map cover what's next
-(Stage 5.2, GitHub Pages deployment, and Phase 6, community readiness).
+is complete too: Stage 5.1 (above) adds PWA/offline support, and Stage 5.2
+adds a manual GitHub Pages deploy path (`gh-pages`, a root `deploy` script, a
+post-deploy Playwright smoke check against the live URL — see
+[ADR 0024](./adr/0024-github-pages-manual-deploy.md) and the README's
+"Deployment" section; deliberately no `.github/workflows/`, per
+`WORKPLAN.md` §1.4). `WORKPLAN.md`'s Progress table and dependency map cover
+what's next (Phase 6, community readiness, starting with finishing Stage
+6.0's crop-list gaps).
 
 ## Where to look next
 
