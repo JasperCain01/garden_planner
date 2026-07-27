@@ -38,7 +38,12 @@ What exists today:
 - **Companion-planting data: Stage 1.4** (`src/companions/`), evidence-tagged
   (`well-supported`/`traditional`) companion and antagonist relationships: 8
   hand-curated, cited relationships plus 78 mechanically derived from
-  OpenFarm's own `companions` field. Also **not a source adapter** — see the
+  OpenFarm's own `companions` field — what this module authors, before the
+  merge's referential-integrity step. The **shipped** artifact carries fewer:
+  Stage 6.0's exclusions dropped 9 links whose owner or target left the
+  dataset, leaving 76 companion links across 50 records today (pinned in
+  `packages/engine/src/warnings/dataset.test.ts`; antagonists are unaffected
+  at 8 links on 8 records). Also **not a source adapter** — see the
   section below and
   [`docs/adr/0008`](../../docs/adr/0008-companion-planting-data.md).
 
