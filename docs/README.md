@@ -57,6 +57,15 @@ image", next to the canvas) rather than a guide — see
 [ADR 0020](./adr/0020-plot-export-canvas-compositing.md) if you want to know
 how the export pipeline itself works.
 
+## I want to run through a release QA pass, or see what's still a known gap
+
+[`docs/qa-checklist.md`](./qa-checklist.md) (Workplan Stage 6.3) — a by-hand
+checklist covering the core journey, the "beyond the core loop" capabilities
+(custom crops, plot-image export), offline behaviour, and the exact commands
+for the automated-but-manual checks (E2E, axe, keyboard walkthrough,
+Lighthouse) with their last-recorded results — plus a pointer at every known
+a11y gap so a release note doesn't have to be reconstructed from scratch.
+
 ## I want to know how accessible or responsive the app is
 
 [`docs/accessibility.md`](./accessibility.md) (Workplan Stage 6.2) — the

@@ -121,7 +121,9 @@ npx lighthouse@11 http://localhost:4173/ --only-categories=pwa \
   --chrome-flags="--headless=new" --view
 ```
 
-**Today's recorded score: 0.88 / 1.00** (7 of 8 weighted points). Breakdown:
+**Today's recorded score: 0.88 / 1.00** (7 of 8 weighted points; re-confirmed
+unchanged at Stage 6.3, 2026-07-27 — see
+[`docs/qa-checklist.md`](./docs/qa-checklist.md)). Breakdown:
 
 | Audit                      | Result  | Notes                                                                                                                                                                            |
 | -------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -165,7 +167,8 @@ placing a crop via the keyboard-operable "Add to plot" button — checking the
 `wcag2a`/`wcag2aa`/`wcag21a`/`wcag21aa` rule tags with
 [`@axe-core/playwright`](https://www.npmjs.com/package/@axe-core/playwright).
 
-**Today's recorded result: 0 violations, in both states.**
+**Today's recorded result: 0 violations, in both states** (re-confirmed
+unchanged at Stage 6.3, 2026-07-27).
 
 ```
 Running 2 tests using 1 worker
