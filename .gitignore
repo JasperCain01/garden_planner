@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+app/dist/
+packages/*/dist/
+
+# Test / tooling output
+coverage/
+playwright-report/
+test-results/
+.vitest/
+
+# ETL working cache (downloaded source data is cached here during builds;
+# the *committed* dataset artifact lives in /data and is NOT ignored)
+etl/.cache/
+packages/etl/.cache/
+
+# Editor / OS
+.DS_Store
+*.log
+.idea/
+.vscode/
