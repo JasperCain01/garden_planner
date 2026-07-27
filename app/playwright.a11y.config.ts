@@ -1,9 +1,10 @@
 import { defineConfig } from '@playwright/test';
 
-// The locally-runnable axe accessibility check (Workplan Stage 6.2). Run **by
-// hand**: there is no `.github/workflows/` directory yet (WORKPLAN.md §1.4),
-// so this mirrors Stage 5.1's Lighthouse audit — a documented command whose
-// result is recorded in README.md, not a CI gate. Deliberately its own config
+// The axe accessibility check (Workplan Stage 6.2). Runnable by hand with the
+// command below, and — since Stage 6.4 — run on every push and pull request as
+// its own blocking job in `.github/workflows/checks.yml` (ADR 0027 records why
+// this one gates while the Lighthouse audit only reports). Its last-recorded
+// result stays in README.md either way. Deliberately its own config
 // (same pattern as `playwright.pages.config.ts`) rather than folded into
 // `playwright.config.ts`'s `testDir`, so `npm run e2e`/`verify` never runs it
 // by accident:

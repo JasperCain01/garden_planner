@@ -46,3 +46,5 @@ old one and mark the old one `Superseded`.
 - [0024 — GitHub Pages deployment: `gh-pages`, script placement, and a manual post-deploy smoke check](./0024-github-pages-manual-deploy.md)
 - [0025 — Pruning the crop list: delete the crops Britain can't grow, keep the reasoning](./0025-uk-outdoor-crop-exclusions.md)
 - [0026 — Keyboard placement without pixel-drag, and severity glyphs alongside colour](./0026-keyboard-placement-and-severity-glyphs.md)
+- [0027 — CI: what the checks workflow runs, and which checks gate a merge](./0027-ci-checks-workflow-and-blocking-policy.md)
+- [0028 — Deploy-on-merge: the constraint lifted, and we still didn't automate it](./0028-deploy-on-merge-not-automated.md)

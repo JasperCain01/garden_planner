@@ -1,0 +1,253 @@
+# The checks gate — Workplan Stage 6.4, the automation WORKPLAN.md §1.4 has
+# deferred since Stage 0.1 ("automating them in GitHub Actions is deliberately
+# deferred until the project is complete").
+#
+# §1.4 is also the specification, and it is a tight one: automate exactly
+# `npm run verify` plus the offline, a11y and Lighthouse runs the later stages
+# describe — "nothing that isn't already a check a contributor can run by
+# hand." Every command below is one a contributor can run locally, unchanged,
+# from the repo root; they are listed in `docs/qa-checklist.md` §4 with their
+# last-recorded results. Nothing CI-only lives here.
+#
+# Which of these gate a merge and which only report is a deliberate,
+# non-obvious call — see ADR 0027
+# (`docs/adr/0027-ci-checks-workflow-and-blocking-policy.md`).
+#
+#   verify   (blocking)      lint → typecheck → format:check → test → build → e2e
+#                            The offline check rides along here: `offline.spec.ts`
+#                            is a normal spec in `app/e2e/`, and
+#                            `app/playwright.config.ts` only `testIgnore`s
+#                            `deployed-smoke.spec.ts` and `a11y.spec.ts`, so
+#                            `npm run e2e` already runs it. It needs no job of
+#                            its own, and giving it one would run it twice.
+#   a11y     (blocking)      `npm run a11y -w app` — the axe check, 0 violations.
+#   audits   (informational) Lighthouse PWA score + the keyboard-only
+#                            walkthrough. Reported, never merge-blocking.
+name: checks
+
+on:
+  # A pull request is the thing being gated, so `pull_request` is the trigger
+  # that matters; `push` is restricted to `main` so a branch with an open PR
+  # doesn't run the whole suite twice for one commit. Between them every
+  # commit that can reach `main` is checked.
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: nothing here writes to the repository, publishes a package,
+# or posts a comment. Read access to the checked-out code is the whole need, so
+# a compromised dependency anywhere in the test suite has no token that can
+# push. No secrets are referenced either, and the trigger is `pull_request`
+# rather than `pull_request_target`, so a fork's code never runs with write
+# access to this repository. Deployment deliberately has no workflow at all —
+# ADR 0028.
+permissions:
+  contents: read
+
+# One in-flight run per branch/PR; a new push supersedes the old run rather
+# than queueing behind it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned to the floor the root `package.json` declares (`"engines": { "node":
+  # ">=20" }`). CI deliberately tests the *minimum* supported version rather
+  # than the maintainer's local one (Node 22), so a change that quietly needs
+  # a newer Node fails here instead of on a contributor's machine.
+  NODE_VERSION: '20'
+
+jobs:
+  # ── The gate. This is `npm run verify`, unabridged. ────────────────────────
+  verify:
+    name: verify (lint · typecheck · format · test · build · e2e)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Third-party actions are pinned by commit SHA, not by tag: a tag is
+      # mutable and can be repointed at new code by whoever controls the
+      # action's repository, which is the standard Actions supply-chain risk.
+      # The trailing comment records which release each SHA is, so a human can
+      # still read the version at a glance.
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          # Caches `~/.npm` keyed on package-lock.json.
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Playwright's browser download is the slowest thing in this workflow, so
+      # it gets its own cache keyed on the resolved Playwright version — a new
+      # Playwright needs a new browser build, and reusing the old one produces
+      # confusing version-mismatch failures.
+      - name: Resolve the Playwright version
+        id: playwright
+        run: |
+          echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the Playwright browser cache
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      # Only Chromium: `app/playwright.config.ts` declares no `projects`, so
+      # Playwright runs the default Chromium project and nothing else.
+      # `--with-deps` installs the OS libraries the browser needs, which are not
+      # part of the cached browser directory, so it runs on a cache hit too.
+      - name: Install the Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # PW_EXECUTABLE_PATH is deliberately *not* set: that override exists for
+      # sandboxes that ship their own Chromium (README.md), and a runner that
+      # just ran `playwright install` should use Playwright's own managed build.
+      - name: npm run verify
+        run: npm run verify
+
+  # ── The accessibility gate. ───────────────────────────────────────────────
+  # Its own job rather than a step of `verify`, because `npm run a11y` has its
+  # own Playwright config (`app/playwright.a11y.config.ts`) that builds and
+  # serves the app itself, and because a11y failing tells a reviewer something
+  # different from "a unit test broke".
+  a11y:
+    name: a11y (axe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve the Playwright version
+        id: playwright
+        run: |
+          echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the Playwright browser cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install the Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # The config's own `webServer` block builds the app and serves the
+      # production preview on :4173 first, so there is nothing to start here.
+      - name: npm run a11y -w app
+        run: npm run a11y -w app
+
+  # ── The informational audits. These report; they never block a merge. ─────
+  # Both share one preview server because both drive the same production build.
+  # See ADR 0027 for why these two are reported rather than gated — in short:
+  # Lighthouse's PWA category comes from an externally-fetched, deprecated
+  # major whose one failing audit is a permanent accepted gap, and the keyboard
+  # walkthrough's own doc comment (`app/keyboard-walkthrough.mjs`, Stage 6.2)
+  # says explicitly that it is "the recorded proof of a manual check, not a
+  # regression gate" because the tab counts it measures are expected to drift.
+  audits:
+    name: audits (Lighthouse PWA · keyboard walkthrough) — informational
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve the Playwright version
+        id: playwright
+        run: |
+          echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the Playwright browser cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      # The walkthrough drives Playwright's Chromium, and Lighthouse is pointed
+      # at the same binary below so both audits measure the same browser the
+      # E2E suite does, rather than whatever Chrome the runner image happens to
+      # ship this month.
+      - name: Install the Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # Deliberately a plain poll rather than a `wait-on`/`start-server-and-test`
+      # dependency: this workflow should not install anything a contributor
+      # doesn't already have when they run the same two commands by hand.
+      - name: Build and serve the production preview
+        run: |
+          npm run build -w app
+          npm run preview -w app &
+          for _ in $(seq 1 60); do
+            if curl --silent --fail --output /dev/null http://localhost:4173/; then
+              echo "preview server is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error title=Preview server::the preview server never came up on :4173"
+          exit 1
+
+      # Exactly the command README.md documents for a maintainer to run by
+      # hand, with `--output=json` instead of `--view` so the score is
+      # machine-readable (README.md names that swap too).
+      #
+      # `lighthouse@11` is pinned because the current major removed the scored
+      # PWA category outright — see README.md's "Why lighthouse@11" note.
+      - name: Lighthouse PWA audit (informational)
+        env:
+          LIGHTHOUSE_BASELINE: '0.88'
+        run: |
+          set +e
+          CHROME_PATH="$(node -p "require('@playwright/test').chromium.executablePath()")"
+          export CHROME_PATH
+          npx --yes lighthouse@11 http://localhost:4173/ \
+            --only-categories=pwa \
+            --chrome-flags="--headless=new --no-sandbox" \
+            --output=json --output-path=./lighthouse-pwa.json
+          audit_status=$?
+          set -e
+          node .github/scripts/report-lighthouse-pwa.mjs \
+            ./lighthouse-pwa.json "$audit_status" "$LIGHTHOUSE_BASELINE"
+
+      - name: Keyboard-only walkthrough (informational)
+        working-directory: app
+        run: |
+          set +e
+          node keyboard-walkthrough.mjs | tee ../keyboard-walkthrough.log
+          walkthrough_status=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "## Keyboard-only walkthrough (informational)"
+            echo
+            echo '```'
+            cat ../keyboard-walkthrough.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$walkthrough_status" -ne 0 ]; then
+            echo "::warning title=Keyboard walkthrough::A step of the keyboard-only walkthrough failed. This is reported, not gated (ADR 0027) — read the run summary and docs/accessibility.md before treating it as a regression."
+          fi

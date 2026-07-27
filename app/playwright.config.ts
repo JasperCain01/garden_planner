@@ -9,14 +9,26 @@ import { defineConfig } from '@playwright/test';
 // config (`playwright.pages.config.ts`, `npm run smoke:deployed`) — a manual,
 // by-hand check per WORKPLAN.md §1.4, not part of `npm run e2e`/`verify`.
 //
-// `a11y.spec.ts` is excluded for the same reason (Workplan Stage 6.2): it's a
-// locally-runnable axe check (`playwright.a11y.config.ts`, `npm run a11y`),
-// not a CI gate — §1.4 holds until Stage 6.4, so this stays a documented
-// manual command whose result is recorded in README.md, same shape as Stage
-// 5.1's Lighthouse audit.
+// `a11y.spec.ts` is excluded for a related reason (Workplan Stage 6.2): it has
+// its own config (`playwright.a11y.config.ts`, `npm run a11y`) so it can be run
+// on its own, and Stage 6.4's CI workflow gives it its own job for the same
+// reason — an accessibility failure says something different from a broken
+// unit test. It is still a blocking check, just not one `npm run e2e` runs.
 export default defineConfig({
   testDir: './e2e',
   testIgnore: ['**/deployed-smoke.spec.ts', '**/a11y.spec.ts'],
+  // `plot-export.spec.ts` has been observed to fail once and pass on retry
+  // under the default two-worker parallelism, across several sessions (see
+  // `docs/qa-checklist.md` §4). One retry in CI is the honest fix for a known
+  // flake: the spec still has to pass, and a genuinely broken export fails
+  // both attempts — unlike a workflow-level `continue-on-error`, which would
+  // let a real failure through silently. Locally the default of 0 stands, so a
+  // flake stays visible to whoever is working on the code.
+  retries: process.env.CI ? 1 : 0,
+  // A stray `test.only` reduces the suite to one spec while still reporting
+  // success. On a developer's machine that's a convenience; in CI it is a gate
+  // that silently stops gating, so CI refuses the run instead.
+  forbidOnly: !!process.env.CI,
   use: {
     baseURL: 'http://localhost:4173',
     // Escape hatch for environments that ship a pre-installed browser whose

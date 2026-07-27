@@ -7,9 +7,10 @@ import { dragCropOntoCanvas } from './drag.ts';
 // and that the core journey still works against real production assets, not
 // just the local preview server `smoke.spec.ts` and friends test against. Run
 // by hand via `npm run smoke:deployed -w app` (see `playwright.pages.config.ts`
-// and README.md) — never part of `npm run e2e` or `verify` (WORKPLAN.md §1.4:
-// no CI, and those must stay reproducible with no network dependency beyond
-// `localhost`).
+// and README.md) — never part of `npm run e2e` or `verify`, which must stay
+// reproducible with no network dependency beyond `localhost` (WORKPLAN.md
+// §1.4). That is exactly what lets `verify` run unchanged in CI, and why this
+// spec is not in the Stage 6.4 workflow: it needs a real deployment first.
 //
 // Tall viewport for the same reason as `plot-canvas.spec.ts`/`offline.spec.ts`:
 // keeps the palette entry and the canvas on-screen at once for `page.mouse`,
