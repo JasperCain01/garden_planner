@@ -19,7 +19,9 @@
     "dev": "npm run dev -w app",
     "preview": "npm run preview -w app",
     "e2e": "npm run e2e -w app",
-    "verify": "npm run lint && npm run typecheck && npm run format:check && npm test && npm run build && npm run e2e"
+    "verify": "npm run lint && npm run typecheck && npm run format:check && npm test && npm run build && npm run e2e",
+    "deploy": "GITHUB_PAGES=true npm run build -w app && gh-pages -d app/dist",
+    "smoke:deployed": "npm run smoke:deployed -w app"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
@@ -27,6 +29,7 @@
     "eslint": "^9.15.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react-hooks": "^5.1.0",
+    "gh-pages": "^6.3.0",
     "globals": "^15.12.0",
     "prettier": "^3.4.0",
     "svgo": "^4.0.2",
