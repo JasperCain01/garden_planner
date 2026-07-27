@@ -8,8 +8,9 @@ brief concentrates the requirements so you don't have to reconstruct them
 from the diff.
 
 Stages 0.1–1.7 (**except 1.2, which is still ⚠️ partial — OpenFarm only**),
-all of Phase 2, all of Phase 3 (3.1–3.7), all of Phase 4 (4.1–4.2), and Stage
-5.1 (PWA/offline support) are merged into `main` — **branch from `main`**.
+all of Phase 2, all of Phase 3 (3.1–3.7), all of Phase 4 (4.1–4.2), Stage 1.8
+(the curated soil-moisture table) and Stage 5.1 (PWA/offline support) are
+merged into `main` — **branch from `main`**.
 
 **Read [`docs/review-pre-deployment.md`](./review-pre-deployment.md) first.**
 A full review of Stages 0.1–5.1 landed just before this stage. Everything it
@@ -17,9 +18,13 @@ found has been fixed, but two of its conclusions bear directly on 5.2:
 
 - `npm run verify` now exists and is the check to run (see "Constraints"
   below).
-- §3.9 records that the shipped dataset only feeds one of the suitability
-  engine's four dimensions, and the README now says so publicly. If you add a
-  live-site link, don't oversell what a visitor will see.
+- §3.9 recorded that the shipped dataset fed only one of the suitability
+  engine's four dimensions. Stage 1.8 (the curated moisture table) has since
+  taken that to two — soil coverage went 2/162 → 74/162. The README's caveat
+  section states the current position honestly; if you add a live-site link,
+  match that tone and don't oversell what a visitor will see.
+- **The dataset is now CC0-1.0** (ADR 0023), not CC BY-NC-SA. If your README
+  changes touch licensing, that is the current answer.
 
 ## Why this stage
 
