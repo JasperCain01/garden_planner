@@ -207,6 +207,19 @@ fourth outcome category.
 
 ## Addendum: PFAF, Permapeople, and substitute sources — blocked, not built
 
+> **Dated note (Stage 6.4, 2026-07-27 — the project's closing consistency
+> pass).** This addendum reads as "blocked, to be picked up later", and that is
+> no longer the plan. **Stage 6.0 decided not to ingest a second source at
+> all** — it measured what a PFAF adapter would actually buy (only 95 of 162
+> records joined uniquely by scientific name; _Brassica oleracea_ alone covers
+> 11 distinct crops) and filled the gaps by curation instead. PFAF and
+> Permapeople are **not planned**, and the licence anticipation this addendum's
+> ShareAlike analysis fed into has been dropped with them (ADR
+> [0023](./0023-dataset-licence-cc0.md)). The research below is kept as-is
+> because it is still the right starting point for anyone who ever revisits the
+> question — it just isn't a to-do list any more. `WORKPLAN.md`'s Stage 1.2 row
+> and its closing backlog record the same disposition.
+
 Stage 1.2 as scoped in `WORKPLAN.md` names three sources (PFAF, OpenFarm,
 Permapeople); this ADR covers OpenFarm. A later session in the same stage
 investigated PFAF and Permapeople directly, hit hard access blockers on both,

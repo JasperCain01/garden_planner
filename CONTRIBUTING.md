@@ -31,10 +31,17 @@ npm test
 npm run build
 ```
 
-Run them yourself before opening a pull request. **There is deliberately no CI
-workflow in this repository yet** — GitHub Actions are being left until the
-project is complete (see `WORKPLAN.md` §1.4), so nothing will run these checks
-for you.
+Run them yourself before opening a pull request. Since Workplan Stage 6.4,
+[`.github/workflows/checks.yml`](./.github/workflows/checks.yml) also runs them
+on every pull request — `npm run verify` (which is the list above _plus_
+`format:check` and the Playwright end-to-end suite) and the axe accessibility
+check as blocking checks, with the Lighthouse PWA audit and the keyboard-only
+walkthrough reported but not gated ([ADR
+0027](./docs/adr/0027-ci-checks-workflow-and-blocking-policy.md)).
+
+CI deliberately runs **nothing you can't run yourself** with a documented
+command (`WORKPLAN.md` §1.4), so a red check always reproduces locally. Running
+`npm run verify` before you push is still the fastest way to find out.
 
 ## Development workflow
 

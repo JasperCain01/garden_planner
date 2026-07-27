@@ -52,6 +52,7 @@ green, commented, ADR written, docs updated, and the next brief handed off.
 | 6.1 Documentation pass ⭐                       | ✅         | No ADR (a docs reorganisation, not a decision — see the stage entry below for why); [`docs/README.md`](./docs/README.md) (new docs index); [`docs/data-provenance-and-licensing.md`](./docs/data-provenance-and-licensing.md) (new, consolidates `NOTICE` + `data/README.md` + ADRs 0009/0023/0025); stale companion-link figure fixed (WORKPLAN's own Stage 1.4 row, `packages/etl/README.md`); code-comment audit found the codebase (including `app/`) already meets §0.2's bar — no thin modules found to improve                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 6.2 Accessibility & responsive polish           | ✅         | ADR [0026](./docs/adr/0026-keyboard-placement-and-severity-glyphs.md); [`docs/accessibility.md`](./docs/accessibility.md) (new — the full writeup, findings and known gaps); "Add to plot" keyboard-operable placement + on-canvas arrow-key nudge + Previous/Next-placement selection (`app/src/palette/PlantPalette.tsx`, `app/src/canvas/PlotCanvas.tsx`, `PlotCanvasSection.tsx`) plus a "Skip to plot canvas" link (`app/src/plot/SkipToCanvasLink.tsx`); contrast fixes to `BAND_COLORS`/`SEVERITY_COLORS` and a severity glyph so the canvas badge isn't colour-only (`app/src/warnings/severity.ts`); the palette's unbounded crop list capped to a scrolling `65vh` box — the actual fix for the canvas-3500px-down-the-page finding — plus `overflow-x` containers so a large plot can't force the whole page to scroll horizontally (`PlantPalette.tsx`, `PlotCanvasSection.tsx`, `PlotOutlineEditor.tsx`); locally-runnable axe check (`app/e2e/a11y.spec.ts`, `npm run a11y`, 0 violations today — recorded in `README.md`) and a scripted keyboard-only walkthrough (`app/keyboard-walkthrough.mjs`, `npm run keyboard-walkthrough`) with its findings recorded honestly, gaps included (the free-form outline-corner editor stays pointer-only)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | 6.3 Final validation & coverage pass            | ✅         | No ADR (a confirmation pass following established test patterns, not a non-obvious decision — see the stage entry below); coverage audit closed real gaps in `packages/engine/` (`suitability/model.test.ts` new — the `bandForScore` "poor" band boundary was never exercised; `warnings/adjacency.test.ts` — a "+"-shaped polygon overlap where neither region's vertices lie inside the other, and a degenerate zero-length edge; `warnings/model.test.ts` new — `formatCm`'s decimal-formatting branch) and `packages/etl/` (`merge/sanity.test.ts` — the `plantsPerSquare` floor and `perSquareMetre` ceiling in the Stage 1.5 gate's own sanity bounds; `merge/validate.test.ts` — the empty-dataset structural check and the positional-id fallback for an unusably-broken record; `merge/join.test.ts` — a stale curated-alias entry pointing at no known plant; new `exclusions/schema.test.ts` and `moisture/schema.test.ts`, mirroring `spacing/schema.test.ts`'s existing split, covering each table's own invalid-row/duplicate-id error paths; `resolve/gbif-resolver.test.ts` — a non-`Error` transport rejection); engine coverage 99.73%→99.83% statements, 95.33%→96.06% branches; etl 95.67%→96.54% statements, 93.54%→95.22% branches (remaining gaps are schema-guaranteed-unreachable defensive fallbacks or barrel re-exports, left alone per the "not a rewrite" constraint); full E2E regression (`npm run e2e`, 7/7 passing, no flake this run) plus the by-hand offline/a11y/keyboard-walkthrough/Lighthouse checks, all re-confirmed unchanged from their last-recorded results (axe 0 violations, Lighthouse 0.88/1.00); new [`docs/qa-checklist.md`](./docs/qa-checklist.md) (indexed from `docs/README.md`) — the release QA checklist covering the core journey, custom crops, plot export, offline behaviour, and a pointer at every known a11y gap so it isn't rediscovered |
+| 6.4 Continuous integration (the last stage)     | ✅         | ADRs [0027](./docs/adr/0027-ci-checks-workflow-and-blocking-policy.md) (what CI runs, and which jobs gate a merge) and [0028](./docs/adr/0028-deploy-on-merge-not-automated.md) (why deploy-on-merge was declined, with a ready-to-adopt recipe); `.github/workflows/checks.yml` — `verify` and `a11y` blocking, `audits` (Lighthouse PWA + keyboard walkthrough) informational, Node pinned to the `engines` floor, actions pinned by SHA, `permissions: contents: read`, npm + Playwright browser caches; `.github/scripts/report-lighthouse-pwa.mjs` (reports the score _and_ warns when no score could be measured, so a silently-broken informational check can't read as a pass); `retries: CI ? 1 : 0` and `forbidOnly` in `app/playwright.config.ts` (the `plot-export.spec.ts` flake fixed where it lives, not with a workflow-level `continue-on-error`); proven green→red→green on PR [#23](https://github.com/JasperCain01/garden_planner/pull/23). Also the project's closing pass: [`docs/security-review.md`](./docs/security-review.md) (new), an ADR consistency audit (dated notes on ADRs 0005/0006/0024 where later stages overtook them), README/CONTRIBUTING/architecture/QA-checklist brought in line with a repository that now has CI, and the v1 sign-off + post-v1 backlog in §5 below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 **In one line:** the data layer and the engine's whole brain — suitability
 scoring, spacing/density, and warnings & companion suggestions — are built and
@@ -139,9 +140,12 @@ Pages itself is a one-time, repo-admin-only Settings step no automated
 session can perform, and this session's own outbound network couldn't reach
 the live Pages URL or complete a real branch push either — both are
 documented as the maintainer's next manual step (`README.md`, ADR 0024)
-rather than asserted as done. **Phase 6** (community readiness) is under way:
-**Stages 6.0, 6.1 and now 6.2 are complete** (see above and the stage entries
-below). Stage 6.2 (accessibility & responsive polish) gives every
+rather than asserted as done. (Stage 6.4 later found that Pages **is** enabled
+on the real repository — but on the `main` branch, not the `gh-pages` branch
+`npm run deploy` publishes to, so the app is still not live. See README.md's
+"Live site" and §5.2's backlog.) **Phase 6** (community readiness) is
+**complete**: Stages 6.0, 6.1, 6.2, 6.3 and 6.4 all landed (see above and the
+stage entries below). Stage 6.2 (accessibility & responsive polish) gives every
 drag-and-drop interaction a keyboard-operable alternative — an "Add to plot"
 button per palette entry (placing at the plot's centre and selecting it, no
 pixel-drag math involved, ADR 0026) plus arrow-key nudging and
@@ -171,8 +175,18 @@ and a new [`docs/qa-checklist.md`](./docs/qa-checklist.md) gives a release
 manager a single by-hand checklist for the core journey, the two
 beyond-the-core-loop capabilities, offline behaviour, and every known a11y
 gap, so none of Stage 6.2's honestly-recorded findings need rediscovering.
-Left to do in Phase 6, and in the whole plan: **6.4** (CI, deliberately
-last).
+**Stage 6.4 closes the plan.** It lifts the one constraint that has held
+since Stage 0.1 — §1.4's ban on `.github/workflows/` — and automates exactly
+the list §1.4 named and nothing more: `npm run verify` and the axe check as
+blocking jobs, the Lighthouse PWA audit and the keyboard-only walkthrough as
+informational ones (ADR
+[0027](./docs/adr/0027-ci-checks-workflow-and-blocking-policy.md)), with the
+gate proven green→red→green on a real pull request rather than asserted. The
+deploy stays manual, now by choice rather than by rule (ADR
+[0028](./docs/adr/0028-deploy-on-merge-not-automated.md)). **Nothing is left
+to do in this plan** — see §5, "v1: what this is, and what it isn't", for the
+sign-off and for the explicit disposition of every gap that is deliberately
+not in v1.
 
 ---
 
@@ -364,8 +378,11 @@ by different stages.
 - **Offline test.** An E2E run that loads the app, goes offline, and confirms it
   still functions — this is a _requirement_, so it gets an explicit test.
 - **PWA / performance audit.** A Lighthouse check for installability and
-  offline readiness — a documented, locally-runnable command (§1.4: no CI
-  workflow exists yet, so this stays a manual check until Actions land).
+  offline readiness — a documented, locally-runnable command. Since Stage 6.4
+  it also runs in CI, as an **informational** job that reports the score
+  without gating a merge (ADR
+  [0027](./docs/adr/0027-ci-checks-workflow-and-blocking-policy.md) explains
+  why this one reports and the axe check blocks).
 
 ### 1.4 Continuous validation (the safety net)
 
@@ -373,11 +390,16 @@ The checks themselves are the safety net, and they are **not optional**: lint �
 typecheck → format → unit → component → build → E2E → dataset validation. A
 stage that breaks any of these is not done (§0.3).
 
-**Automating them in GitHub Actions is deliberately deferred until the project
-is complete.** There is no `.github/workflows/` directory, and stages should not
-add one — that includes the Pages deploy in Stage 5.2, which stays a manual
-deploy until then. Run the checks locally, from the repo root, before calling a
-stage done:
+**Automating them in GitHub Actions was deliberately deferred until the project
+was complete — and Stage 6.4 has now landed them.** For the whole build, from
+Stage 0.1 to Stage 6.3, there was no `.github/workflows/` directory and no
+stage was allowed to add one (that included the Pages deploy in Stage 5.2,
+which stayed a manual deploy throughout). That rule has served its purpose and
+is spent; `.github/workflows/checks.yml` exists as of Stage 6.4. **What has not
+changed is the rule underneath it:** every check CI runs is a check a
+contributor can run locally with a documented command, so a red build always
+reproduces on a laptop. Run them locally, from the repo root, before calling a
+change done — don't wait for CI to tell you:
 
 ```bash
 npm run verify
@@ -393,11 +415,24 @@ how a racy `plot-export.spec.ts` reached `main` unnoticed (see
 list in the paragraph above says "E2E" for a reason; `npm run verify` is the
 single command that honours it.
 
-**Stage 6.4 is the stage that finally lands them**, last in the plan. When it
-does, it should automate exactly `npm run verify` plus the offline, a11y and
-Lighthouse runs the later stages describe — nothing that isn't already a check
-a contributor can run by hand. Until then every stage, including 6.1–6.3, runs
-these by hand and must not depend on CI in its verification.
+**Stage 6.4 landed them, last in the plan**, and automated exactly what this
+section specified: `npm run verify` plus the offline, a11y and Lighthouse runs
+the later stages describe — and nothing else. Concretely:
+
+| Job      | Command                                                         | Blocking?     |
+| -------- | --------------------------------------------------------------- | ------------- |
+| `verify` | `npm run verify` (the offline spec runs inside its `e2e` step)  | **yes**       |
+| `a11y`   | `npm run a11y -w app`                                           | **yes**       |
+| `audits` | the `lighthouse@11` PWA command; `npm run keyboard-walkthrough` | no — reported |
+
+The blocking-vs-informational split is a real decision with real consequences
+(a Lighthouse regression is a warning annotation, not a red build), so it is
+recorded in ADR
+[0027](./docs/adr/0027-ci-checks-workflow-and-blocking-policy.md) rather than
+left implicit. There is deliberately **no** coverage gate, bundle budget,
+dependency-review action or Node matrix: each would be a check nobody can
+reproduce by hand, which is the failure mode this whole deferral was
+protecting against.
 
 ---
 
@@ -781,8 +816,10 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   manifest; offline-first data loading.
 - **Model:** **Sonnet.**
 - **Verification:** The **offline E2E test** (§1.3) passes; a locally-run
-  Lighthouse PWA audit's score is recorded (no CI workflow exists — §1.4 — so
-  this stays a documented manual command, not a gate).
+  Lighthouse PWA audit's score is recorded. (At the time this stage ran there
+  was no CI at all — §1.4 — so the audit stayed a documented manual command.
+  Stage 6.4 wired it in, and deliberately kept it a **reported** figure rather
+  than a gate: ADR 0027.)
 
 #### Stage 5.2 — GitHub Pages deployment
 
@@ -1109,11 +1146,31 @@ future stage to pick up.
   Expect to pin the workflow to the same Node version `engines` declares.
 - **Model:** **Sonnet**, or **Haiku** following a standard Node-workspace
   Actions recipe. The judgement call is scope discipline — resisting the pull
-  to add checks CI could run but a contributor can't.
-- **Verification:** The workflow goes green on a real pull request, and fails
-  on a deliberately-broken one (break a test, confirm the run goes red, revert)
-  — the same "prove the gate actually gates" standard Stage 1.5 set for the
-  dataset gate.
+  to add checks CI could run but a contributor can't. _(Run on **Opus** in the
+  end, because the stage also carried the project's closing cross-cutting audit
+  — see the closing section below.)_
+- **Verification:** ✅ **Proven green → red → green on a real pull request**
+  ([#23](https://github.com/JasperCain01/garden_planner/pull/23)), the same
+  "prove the gate actually gates" standard Stage 1.5 set for the dataset gate:
+  - **Green** — run
+    [30304247320](https://github.com/JasperCain01/garden_planner/actions/runs/30304247320)
+    on the first commit: all three jobs pass. The `audits` job measured the PWA
+    score at **0.88/1.00** with the same single failing audit, and the keyboard
+    walkthrough at **35 tab presses** — both identical to the by-hand figures
+    Stage 6.3 recorded, which is the evidence that the workflow is measuring the
+    same thing the documented commands do.
+  - **Red** — run
+    [30304630722](https://github.com/JasperCain01/garden_planner/actions/runs/30304630722),
+    after deliberately breaking one assertion in
+    `packages/engine/src/suitability/model.test.ts`: `verify` fails (`Process
+completed with exit code 1`) while `a11y` and `audits` correctly stay green,
+    since neither runs the unit suites. The gate really gates, and it gates on
+    the right job.
+  - **Green again** — run
+    [30304805688](https://github.com/JasperCain01/garden_planner/actions/runs/30304805688)
+    on the revert: all three jobs pass.
+  - `npm run verify` also green locally throughout (166 app tests, 7/7 E2E, no
+    flake).
 
 ---
 
@@ -1156,7 +1213,81 @@ project's self-hostable ethos.
 
 ---
 
-## 5. First step
+## 5. v1: what this is, and what it isn't
+
+> **This build plan is complete.** Every stage from 0.1 to 6.4 is ✅ in the
+> Progress table above. There is no Stage 6.5 and no next brief — §0.6's
+> hand-off discipline ends here, deliberately, because there is no next stage
+> to hand off to. What follows is the sign-off: what v1 actually is, what is
+> deliberately outside it, and where each excluded thing is tracked.
+
+### 5.1 What v1 is
+
+A **fully static, offline-capable, client-side planner for edible gardens and
+allotments**, deployable to GitHub Pages with no server and no runtime
+database (§0.1, ADR 0003):
+
+- **A curated dataset of 144 crops** for British outdoor growing, built by a
+  build-time ETL pipeline and committed as a plain-JSON artifact that fails
+  the build loudly if any record is invalid (Phase 1, ADR 0009's gate). CC0-1.0
+  (ADR 0023), with per-record provenance kept for checkability rather than for
+  licence compliance.
+- **A framework-free engine** — suitability scoring with an explicit
+  missing-data policy, a method-aware spacing/density calculator over an
+  arbitrary polygon, and warnings plus companion suggestions (Phase 2, ADRs
+  0012–0014).
+- **The whole core loop as a working UI** — describe a plot, see a ranked and
+  filterable palette, drag crops onto a canvas with live density feedback, and
+  get warnings that clear when you move things apart (Phase 3) — plus two
+  capabilities beyond it: user-defined crops from a seed packet, and plot-image
+  export.
+- **A bundled SVG icon per shipped crop**, generated rather than hand-drawn
+  (Phase 4, ADR 0019).
+- **Installable and genuinely offline** after one visit, proven by an E2E test
+  that turns the network off and re-runs the core journey (Stage 5.1), with a
+  documented one-command Pages deploy (Stage 5.2).
+- **A keyboard-operable alternative to every drag interaction**, an audited
+  colour-contrast/ARIA pass, and a bounded, phone-usable layout (Stage 6.2).
+- **Every check automated on push and pull request** (Stage 6.4), with the
+  deliberate constraint that CI runs nothing a contributor can't reproduce
+  locally.
+
+### 5.2 The post-v1 backlog — every parked gap, with its disposition
+
+Nothing here is an oversight, and nothing here is "someone should probably
+look at this someday". Each item is **intentionally deferred as post-v1
+backlog, tracked here**, with the reason it was parked and what would unblock
+it. Anyone picking one up should read the linked record first — the reasoning
+is already written down.
+
+| Gap                                                                        | Disposition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **The free-form outline editor's corner handles are pointer-only.**        | Intentionally deferred as post-v1 backlog. Stage 6.2 scoped the keyboard-drag work to exactly two places (palette→canvas, on-canvas move/remove) and did both; the corner handles carry `role="button"` but deliberately **no** `tabIndex`, because a focusable-but-inert control is worse than an unfocusable one (ADR 0026). Unblocked by designing a real keyboard interaction for reshaping an outline — a design question, not a wiring one.                                                                                                                                                                                                                                             |
+| **No real screen-reader testing** (NVDA/VoiceOver/JAWS).                   | Intentionally deferred as post-v1 backlog. Every automated session that has worked on this repository has been headless, and axe plus a scripted keyboard walkthrough prove reachability and operability, not that state changes are _announced_ usefully. Unblocked by a human with assistive-tech software, not by more code. Recorded in `docs/accessibility.md` §5.                                                                                                                                                                                                                                                                                                                       |
+| **Hardiness/season data covers 8 of 144 crops.**                           | Intentionally deferred as post-v1 backlog, and it is a **data** gap, not an engine bug — the engine says so per-crop, with a confidence figure. Stage 6.0 measured that curation can't close it at scale and that PFAF/Permapeople (Stage 1.2's unstarted adapters) are **not planned** (ADR 0023's context, ADR 0006's dated note). Unblocked only by a new, freely-licensed source with cultivar-level data.                                                                                                                                                                                                                                                                                |
+| **Lighthouse's splash-screen audit fails (0.88, not 1.00).**               | Intentionally deferred as post-v1 backlog, and arguably won't-fix. The legacy audit hard-requires a **PNG** icon ≥512px; this project ships SVG icons throughout (ADR 0022). Closing it means shipping a raster icon purely to satisfy one audit. Unblocked by deciding that trade is worth it — the score is reported in CI on every run, so the number can't drift unnoticed.                                                                                                                                                                                                                                                                                                               |
+| **GitHub Pages is enabled on the wrong source, and the app is not live.**  | Deferred as post-v1 backlog, but **half-closed at Stage 6.4**: `npm run deploy` was run for real for the first time, so the `gh-pages` branch now exists and carries a verified build (correct base path, right files at the root). What remains is the repo-admin half no session can do — Pages still builds from `main`, so **Settings → Pages → Source must be switched to `gh-pages`**, then `npm run smoke:deployed`. The first real deploy also surfaced two untidy-but-harmless details recorded in README.md: `gh-pages` leaves root dotfiles from the old branch content behind, and there is no `.nojekyll` guard. See README.md's "Deployment" section and ADR 0024's dated note. |
+| **No deploy-on-merge workflow.**                                           | Intentionally deferred as post-v1 backlog, with a full decision record and a ready-to-paste workflow in ADR [0028](./docs/adr/0028-deploy-on-merge-not-automated.md). Unblocked by the row above: automating a deploy to a branch nothing serves would be automation that looks like it works.                                                                                                                                                                                                                                                                                                                                                                                                |
+| **`react-router`'s RSC-mode CSRF advisory stays unpatched.**               | Intentionally deferred as post-v1 backlog, and **deliberately not "fixed"**: the advisory is server-side-only and this app has no server, no RSC and no route actions, and the only available "fix" is a downgrade that discards seven minor versions. Triaged in full in [`docs/security-review.md`](./docs/security-review.md) §1. Unblocked by upstream shipping a patched 7.x.                                                                                                                                                                                                                                                                                                            |
+| **Build-time glob/template DoS advisories** (eslint / workbox chain).      | Intentionally deferred as post-v1 backlog. Build-time only, never shipped, and the only inputs are this repository's own config globs. Fixing them needs major bumps of `vite-plugin-pwa`/`eslint` that buy nothing. See [`docs/security-review.md`](./docs/security-review.md) §1.                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **GBIF ids are `null` for all 144 records.**                               | Intentionally deferred as post-v1 backlog. GBIF has been unreachable from every environment that has run the build, so the resolver has never had a live answer to cache. It costs nothing today (OpenFarm is the only full-plant source, so there is nothing to reconcile _across_), and the join design upgrades for free if the block ever lifts — ADR 0005's dated note has the detail.                                                                                                                                                                                                                                                                                                   |
+| **`focus` after "Add to plot" takes ~35 tab presses to reach the canvas.** | Intentionally deferred as post-v1 backlog. Real friction, not a dead end, and the obvious fix (move focus automatically) is itself an accessibility anti-pattern if done carelessly. Recorded with its trade-offs in `docs/accessibility.md` §5.                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+
+### 5.3 If you are picking this up cold
+
+Read [`docs/README.md`](./docs/README.md) first — it is the "where do I look
+for X?" index, and it will get you to the right file faster than this plan
+will. For _why_ something is the way it is, [`docs/adr/`](./docs/adr/) has one
+record per non-obvious decision. For _what was built when_, the Progress table
+at the top of this file, and `docs/architecture.md` for the same story in
+prose. The per-stage briefs (`docs/stage-*-brief.md`) are historical hand-offs:
+each one describes the repository as it was **before** that stage, so read the
+one for the work you're picking up, not the others.
+
+## 6. Appendix — the original first step
 
 Start with **Stage 0.1** (Sonnet). It's self-contained, unblocks everything, and
 establishes the conventions the rest of the plan assumes.
+
+_(Kept for the record. Stage 0.1 shipped long ago and every stage after it is
+now ✅ — see the Progress table.)_

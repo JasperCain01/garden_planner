@@ -323,21 +323,45 @@ selection — worth settling before the ETL work begins.
 
 ---
 
-## Open questions to resolve next
+## Open questions to resolve next — all now resolved
 
 - ~~Commercial vs. non-commercial licensing of the _dataset_.~~ **Settled:**
   the dataset is **CC0-1.0** (public domain). PFAF — the CC BY-NC-SA source
   whose terms would have forced non-commercial — is not ingested and is no
   longer planned, and everything that does ship is CC0 or original curation.
   See `docs/adr/0023-dataset-licence-cc0.md`.
-- Depth of the "light level" model: one value per plot, or per-area shade
-  mapping (the latter is much more powerful but more UI work).
-- Which growing method(s) to support in the spacing calculator — row, intensive,
-  or let the user toggle (recommended).
-- How opinionated to be about companion planting given the mixed evidence base.
-- Web-only, or PWA/native for offline use in the garden.
-- Illustration sourcing: commission a custom set, or adapt a permissively-licensed
-  icon library as a starting point.
+- ~~Depth of the "light level" model: one value per plot, or per-area shade
+  mapping.~~ **Settled: one value per plot.** `PlotConditionsInputSchema`'s
+  `light` is the single condition every plot has
+  (`app/src/state/plot-store.ts`), set once in the conditions form. Per-area
+  shade mapping was not built — it would need the plot canvas to carry a second
+  spatial layer, and the ranking already does real work from one value.
+- ~~Which growing method(s) to support in the spacing calculator — row,
+  intensive, or let the user toggle (recommended).~~ **Settled: both, with a
+  documented fallback rule.** The schema is method-aware (ADR 0004), `fitPlant`
+  packs by whichever method is asked for, and where a crop records only rows but
+  intensive is wanted it re-lays the rows rather than guessing — see ADR
+  [0013](./docs/adr/0013-spacing-density-calculator.md)'s method-fallback rule.
+- ~~How opinionated to be about companion planting given the mixed evidence
+  base.~~ **Settled: not opinionated — tagged.** Every relationship carries an
+  evidence tag (well-supported vs. traditional) authored with the data (ADR
+  [0008](./docs/adr/0008-companion-planting-data.md)), and the UI shows the tag
+  alongside the suggestion rather than presenting folklore as fact.
+- ~~Web-only, or PWA/native for offline use in the garden.~~ **Settled: PWA.**
+  A service worker and manifest via `vite-plugin-pwa` (ADR
+  [0022](./docs/adr/0022-pwa-offline-support.md)), with an E2E test that turns
+  the network off and re-runs the core journey. No native app.
+- ~~Illustration sourcing: commission a custom set, or adapt a
+  permissively-licensed icon library as a starting point.~~ **Settled: neither
+  — generated.** One icon per shipped crop, produced from a small in-repo shape
+  library rather than drawn or adapted (ADR
+  [0019](./docs/adr/0019-icon-set-archetypes-and-resolution.md), `tools/icons/`),
+  which is why they can stay MIT original work and stay in step with the crop
+  list automatically.
+
+None of the questions above is still open. `WORKPLAN.md` §5 records what v1 is,
+and §5.2 lists everything deliberately left out of it with a disposition for
+each.
 
 ---
 

@@ -1,5 +1,27 @@
 # 0024 — GitHub Pages deployment: `gh-pages`, script placement, and a manual post-deploy smoke check
 
+> **Dated note (Stage 6.4, 2026-07-27).** Two things in this ADR have moved on:
+>
+> - **§1.4's `.github/workflows/` ban has lifted.** Stage 6.4 added the checks
+>   gate. Deployment is _still_ manual, but now by choice rather than by rule —
+>   ADR [0028](./0028-deploy-on-merge-not-automated.md) records the decision and
+>   a ready-to-adopt workflow recipe. "No `.github/workflows/` directory was
+>   added — §1.4 holds", below, was true of Stage 5.2 and is no longer true of
+>   the repository.
+> - **Pages is now enabled — on the wrong source — and the ordering below was
+>   backwards.** This ADR recorded `has_pages: false`, correctly, at the time.
+>   The repository's Actions history now shows GitHub's own Pages build
+>   succeeding against **`main`** (most recently for commit `c6d49ae`), so
+>   Pages _is_ on — but it is serving the repository's own files rather than
+>   the built app. More importantly: **there is no `gh-pages` branch** —
+>   verified against the remote, which has only `main` and feature branches.
+>   That makes this ADR's "one-time prerequisite, then deploy" sequence
+>   impossible to follow as written, because the Settings → Pages branch
+>   dropdown cannot offer a branch that doesn't exist. `npm run deploy` is what
+>   creates it, so it must run **first**, and the Settings change second.
+>   README.md's "Deployment" section now says so in that order. Nothing else
+>   below is wrong about _how_ to deploy.
+
 - **Status:** Accepted
 - **Date:** 2026-07-27
 - **Workplan stage:** 5.2 — GitHub Pages deployment

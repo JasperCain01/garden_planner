@@ -1,5 +1,14 @@
 # 0013 — Spacing / density calculator: the region model, the packing geometry, and the method-fallback rule
 
+> **Dated note (Stage 6.4, 2026-07-27 — the project's closing consistency
+> pass).** The spacing-shape table below measured the dataset **as it was at
+> Stage 2.2** and is kept as the record of what the fallback rule was designed
+> against. Re-measured today against `data/plants.json` (144 records): `row`
+> only **135/144**, `row` **and** `intensive` **9/144** (the same nine crops),
+> `intensive` only **0/144**. The proportion barely moved — 94% of the
+> catalogue still has no intensive figure of its own — so the method-fallback
+> rule this ADR decides on is doing exactly as much work as it was built to do.
+
 - **Status:** Accepted
 - **Date:** 2026-07-25
 - **Workplan stage:** 2.2 (⭐ algorithmic) — spacing / density calculator

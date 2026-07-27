@@ -64,7 +64,13 @@ What exists today:
   [`docs/adr/0009`](../../docs/adr/0009-dataset-merge-and-licensing.md) /
   [`docs/adr/0021`](../../docs/adr/0021-curated-plant-input.md).
 
-**PFAF and Permapeople adapters (the rest of 1.2) are blocked, not skipped.**
+**PFAF and Permapeople adapters (the rest of 1.2) are no longer planned.**
+They were blocked rather than skipped, and then Stage 6.0 decided not to ingest
+a second source at all — it measured what a PFAF adapter would actually buy
+(only 95 of 162 records joined uniquely by scientific name) and filled the gaps
+by curation instead, which is also why the dataset could be relicensed CC0 (ADR
+[0023](../../docs/adr/0023-dataset-licence-cc0.md)). The blockers, recorded at
+the time and still accurate if anyone revisits the question:
 PFAF's bulk database is paywalled ($30–150, no free bulk download exists);
 Permapeople's API needs a signed-up account's API key. A substitute source
 (USDA PLANTS) turned out to be unreachable from this sandbox, and the one

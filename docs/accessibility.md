@@ -136,8 +136,10 @@ canvas appear above the fold on first load.
 
 ## 4. Automated a11y check (axe)
 
-A locally-runnable command, not a CI gate (`WORKPLAN.md` §1.4 — no
-`.github/workflows/` exists yet):
+A locally-runnable command — and, since Workplan Stage 6.4, a **blocking CI
+check** on every push and pull request (`.github/workflows/checks.yml`, ADR
+[0027](./adr/0027-ci-checks-workflow-and-blocking-policy.md)). A new axe
+violation now fails the build:
 
 ```bash
 npm run build -w app && npm run preview -w app   # serve the production build at :4173, in one terminal
@@ -253,4 +255,7 @@ All steps passed.
   contrast decisions.
 - [`docs/stage-6.2-brief.md`](./stage-6.2-brief.md) — the brief this stage
   worked from.
-- [`docs/stage-6.3-brief.md`](./stage-6.3-brief.md) — the next stage.
+- [`WORKPLAN.md`](../WORKPLAN.md) §5.2 — the post-v1 backlog, where the two
+  gaps this page records honestly (the pointer-only outline corners, and the
+  absence of real screen-reader testing) each get an explicit disposition
+  rather than being left as open questions.

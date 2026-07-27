@@ -46,9 +46,11 @@ Everything below follows from that.
                                               └────────────────────────────┘
 ```
 
-- **`packages/etl`** runs only on a contributor's machine. It pulls from PFAF,
-  Permapeople, the OpenFarm crops rescue dataset, GBIF, etc., and writes the
-  static dataset. The deployed app never calls those sources — which is what
+- **`packages/etl`** runs only on a contributor's machine. It pulls from the
+  OpenFarm crops rescue dataset and GBIF (and, in the original plan, PFAF and
+  Permapeople — which were investigated, blocked, and finally dropped in favour
+  of curation: ADR 0006's dated note), then writes the static dataset. The
+  deployed app never calls those sources — which is what
   makes it offline-safe. As of Stage 1.1
   (`packages/etl/README.md`, [`adr/0005`](./adr/0005-gbif-name-resolver.md))
   it has a runnable pipeline shell, a documented `SourceAdapter` extension
@@ -60,7 +62,10 @@ Everything below follows from that.
   resolved. Stage 1.2 ([`adr/0006`](./adr/0006-openfarm-source-adapter.md))
   adds the first real `SourceAdapter` — OpenFarm, via a community-rescued
   dump since no official one was ever published — establishing the
-  raw-shape/cache/mapper/adapter pattern PFAF and Permapeople follow next.
+  raw-shape/cache/mapper/adapter pattern a second source would follow. (It
+  remains the only source adapter: PFAF was paywalled and Permapeople
+  access-blocked, and Stage 6.0 chose curation over a second ingest rather than
+  leaving the gap open — ADR 0006's addendum and its dated note.)
   Stage 1.3 ([`adr/0007`](./adr/0007-hand-verified-spacing.md)) adds the one
   part of the pipeline that is **original curation, not ingestion**: a
   hand-verified, method-aware spacing table (`packages/etl/src/spacing/`) for a
@@ -526,8 +531,10 @@ that still has it, with the gap this causes explained inline).
 
 Stage 5.2 ([`adr/0024`](./adr/0024-github-pages-manual-deploy.md)) turns the
 already-static, already-offline-capable build into an actually-hosted one —
-without adding automation `WORKPLAN.md` §1.4 defers to Stage 6.4. Three
-pieces:
+at the time, without adding automation `WORKPLAN.md` §1.4 deferred to Stage
+6.4. (Stage 6.4 has since landed and the deploy is _still_ manual, now by
+choice — see [`adr/0028`](./adr/0028-deploy-on-merge-not-automated.md) and the
+Stage 6.4 section below.) Three pieces:
 
 - **The deploy command**: a root `deploy` script
   (`GITHUB_PAGES=true npm run build -w app && gh-pages -d app/dist`) using
@@ -536,10 +543,12 @@ pieces:
   extended for the PWA manifest in Stage 5.1) was already correct, confirmed
   again by building with the flag and inspecting `dist/index.html` and
   `dist/manifest.webmanifest` by hand.
-- **The one-time manual prerequisite**: enabling Pages itself
+- **The one-time manual step**: pointing Pages at the right branch
   (Settings → Pages → source branch) needs repo-admin access no automated
-  session has — documented as a manual step in the root `README.md`, not
-  attempted here.
+  session has — documented in the root `README.md`, not attempted here. Stage
+  6.4 found that this stage had the order backwards: no `gh-pages` branch
+  exists yet, and `npm run deploy` is what creates it, so the deploy runs
+  **first** and the Settings change second. README.md now says so.
 - **A post-deploy smoke check**: a second Playwright config
   (`app/playwright.pages.config.ts`) and spec (`app/e2e/deployed-smoke.spec.ts`)
   pointed at the live URL, run via `npm run smoke:deployed` — deliberately
@@ -569,10 +578,9 @@ is complete too: Stage 5.1 (above) adds PWA/offline support, and Stage 5.2
 adds a manual GitHub Pages deploy path (`gh-pages`, a root `deploy` script, a
 post-deploy Playwright smoke check against the live URL — see
 [ADR 0024](./adr/0024-github-pages-manual-deploy.md) and the README's
-"Deployment" section; deliberately no `.github/workflows/`, per
-`WORKPLAN.md` §1.4). Phase 6 (community readiness) is now under way — see the
-Stage 6.0 section below; `WORKPLAN.md`'s Progress table and dependency map
-cover what remains.
+"Deployment" section). Phase 6 (community readiness) is complete too — see the
+Stage 6.0 and Stage 6.4 sections below; `WORKPLAN.md`'s Progress table records
+every stage and its closing section states what v1 deliberately excludes.
 
 ## Stage 6.0 — the crop list itself
 
@@ -654,48 +662,84 @@ keyboard-walkthrough`), both recorded honestly in `docs/accessibility.md` —
 including the gaps that remain (the free-form outline-corner editor stays
 pointer-only; no real screen-reader testing yet).
 
+## Stage 6.4 — continuous integration, and what it deliberately doesn't do
+
+The last stage in the plan. `WORKPLAN.md` §1.4 had banned
+`.github/workflows/` since Stage 0.1 — "automating them in GitHub Actions is
+deliberately deferred until the project is complete" — and this is where that
+lifts. What matters architecturally is not the YAML but the two constraints it
+holds itself to, both recorded in ADR
+[0027](./adr/0027-ci-checks-workflow-and-blocking-policy.md):
+
+**Everything CI runs is a command a contributor can run.** `npm run verify`,
+`npm run a11y -w app`, the documented `lighthouse@11` invocation, and
+`node keyboard-walkthrough.mjs` — nothing else. No coverage gate, no bundle
+budget, no Node matrix. A check that only exists in CI is a check nobody can
+reproduce, and §1.4 spent the whole project protecting against that.
+
+**Not every check is a gate.** `verify` and the axe check block a merge; the
+Lighthouse PWA score and the keyboard walkthrough report into the run summary
+and don't. The Lighthouse call in particular is not squeamishness: the
+property that score approximates — installable, works offline — is asserted
+directly and blockingly by `app/e2e/offline.spec.ts` inside `verify`, while
+the score itself comes from an externally-fetched deprecated major and sits
+permanently one accepted gap (the PNG splash-screen audit) below 1.00. The
+walkthrough's non-gating status was decided earlier still, in Stage 6.2, by
+the script's own doc comment.
+
+The flake fix belongs here too: `app/playwright.config.ts` retries once under
+`CI`, so `plot-export.spec.ts`'s known race survives without a workflow-level
+`continue-on-error` that would hide a real failure, and `forbidOnly` stops a
+stray `test.only` from turning the gate into a no-op that still reports green.
+
+**Deployment stayed manual** — now by choice rather than by rule (ADR
+[0028](./adr/0028-deploy-on-merge-not-automated.md)).
+
 ## Where to look next
 
-| Topic                                                             | File                                                                          |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Concept, data-source assessment, licensing rationale              | [`DESIGN.md`](../DESIGN.md)                                                   |
-| Staged build plan, per-stage models, verification                 | [`WORKPLAN.md`](../WORKPLAN.md)                                               |
-| Specific decisions and their alternatives                         | [`adr/`](./adr/)                                                              |
-| The plant-record schema (types + validation)                      | `packages/engine/src/schema/`                                                 |
-| User-crop input schema and its upcast to a `Plant`                | `packages/engine/src/schema/user-plant.ts`                                    |
-| Location/climate static data and `resolveClimate`                 | `packages/engine/src/climate/`                                                |
-| Suitability scoring, its reasoning, and `rankPlants`              | `packages/engine/src/suitability/`                                            |
-| The plot-region polygon, packing geometry, `fitPlant`             | `packages/engine/src/spacing/`                                                |
-| Warnings, companion suggestions, `evaluatePlot`                   | `packages/engine/src/warnings/`                                               |
-| App shell, routing, GitHub Pages basename                         | `app/src/routes/`                                                             |
-| Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`                                           |
-| The user-plant overlay store and merged `usePlantList`            | `app/src/state/`                                                              |
-| The plot-definition page, shape picker, outline editor            | `app/src/plot/`                                                               |
-| The plot store (current region + conditions input)                | `app/src/state/plot-store.ts`                                                 |
-| The ranked/searchable/filterable plant palette                    | `app/src/palette/`                                                            |
-| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)     | `app/src/canvas/`                                                             |
-| The placements store (what's placed on the canvas)                | `app/src/state/placements-store.ts`                                           |
-| The drag-and-drop E2E journey                                     | `app/e2e/plot-canvas.spec.ts`                                                 |
-| The warnings overlay, companion suggestions, placement derivation | `app/src/warnings/`                                                           |
-| The warnings-overlay E2E journey                                  | `app/e2e/warnings-overlay.spec.ts`                                            |
-| The add-crop form, id-collision check, edit/remove                | `app/src/user-crops/`                                                         |
-| The add-custom-crop E2E journey                                   | `app/e2e/add-custom-crop.spec.ts`                                             |
-| The icon set, `resolveIcon`, and its style guide                  | `app/src/icons/`, [`docs/icon-style-guide.md`](./icon-style-guide.md)         |
-| The icon generator (developer tool, not shipped)                  | `tools/icons/`                                                                |
-| The plot-image export pipeline and legend builder                 | `app/src/canvas/export.ts`                                                    |
-| The plot-export E2E journey                                       | `app/e2e/plot-export.spec.ts`                                                 |
-| The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                                                      |
-| The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                                                   |
-| Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`                                                |
-| Maintainer-curated full-plant input                               | `packages/etl/src/curated/`                                                   |
-| The UK-outdoor exclusion list (which crops are pruned, and why)   | `packages/etl/src/exclusions/`                                                |
-| The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                                                     |
-| The committed dataset artifact and its caveats                    | `data/README.md`                                                              |
-| Service worker + manifest config (`VitePWA`)                      | `app/vite.config.ts`                                                          |
-| Manifest icons (`any` + maskable)                                 | `app/public/pwa-icon.svg`, `app/public/maskable-icon.svg`                     |
-| The offline E2E journey                                           | `app/e2e/offline.spec.ts`                                                     |
-| Lighthouse PWA audit command and today's recorded score           | root `README.md`                                                              |
-| Accessibility writeup, contrast/ARIA findings, responsive fix     | [`docs/accessibility.md`](./accessibility.md)                                 |
-| The axe check (locally-runnable, today's result recorded)         | `app/e2e/a11y.spec.ts`, root `README.md`                                      |
-| The keyboard-only walkthrough script and its recorded findings    | `app/keyboard-walkthrough.mjs`, [`docs/accessibility.md`](./accessibility.md) |
-| The "Skip to plot canvas" link                                    | `app/src/plot/SkipToCanvasLink.tsx`                                           |
+| Topic                                                             | File                                                                                               |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Concept, data-source assessment, licensing rationale              | [`DESIGN.md`](../DESIGN.md)                                                                        |
+| Staged build plan, per-stage models, verification                 | [`WORKPLAN.md`](../WORKPLAN.md)                                                                    |
+| Specific decisions and their alternatives                         | [`adr/`](./adr/)                                                                                   |
+| The plant-record schema (types + validation)                      | `packages/engine/src/schema/`                                                                      |
+| User-crop input schema and its upcast to a `Plant`                | `packages/engine/src/schema/user-plant.ts`                                                         |
+| Location/climate static data and `resolveClimate`                 | `packages/engine/src/climate/`                                                                     |
+| Suitability scoring, its reasoning, and `rankPlants`              | `packages/engine/src/suitability/`                                                                 |
+| The plot-region polygon, packing geometry, `fitPlant`             | `packages/engine/src/spacing/`                                                                     |
+| Warnings, companion suggestions, `evaluatePlot`                   | `packages/engine/src/warnings/`                                                                    |
+| App shell, routing, GitHub Pages basename                         | `app/src/routes/`                                                                                  |
+| Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`                                                                |
+| The user-plant overlay store and merged `usePlantList`            | `app/src/state/`                                                                                   |
+| The plot-definition page, shape picker, outline editor            | `app/src/plot/`                                                                                    |
+| The plot store (current region + conditions input)                | `app/src/state/plot-store.ts`                                                                      |
+| The ranked/searchable/filterable plant palette                    | `app/src/palette/`                                                                                 |
+| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)     | `app/src/canvas/`                                                                                  |
+| The placements store (what's placed on the canvas)                | `app/src/state/placements-store.ts`                                                                |
+| The drag-and-drop E2E journey                                     | `app/e2e/plot-canvas.spec.ts`                                                                      |
+| The warnings overlay, companion suggestions, placement derivation | `app/src/warnings/`                                                                                |
+| The warnings-overlay E2E journey                                  | `app/e2e/warnings-overlay.spec.ts`                                                                 |
+| The add-crop form, id-collision check, edit/remove                | `app/src/user-crops/`                                                                              |
+| The add-custom-crop E2E journey                                   | `app/e2e/add-custom-crop.spec.ts`                                                                  |
+| The icon set, `resolveIcon`, and its style guide                  | `app/src/icons/`, [`docs/icon-style-guide.md`](./icon-style-guide.md)                              |
+| The icon generator (developer tool, not shipped)                  | `tools/icons/`                                                                                     |
+| The plot-image export pipeline and legend builder                 | `app/src/canvas/export.ts`                                                                         |
+| The plot-export E2E journey                                       | `app/e2e/plot-export.spec.ts`                                                                      |
+| The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                                                                           |
+| The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                                                                        |
+| Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`                                                                     |
+| Maintainer-curated full-plant input                               | `packages/etl/src/curated/`                                                                        |
+| The UK-outdoor exclusion list (which crops are pruned, and why)   | `packages/etl/src/exclusions/`                                                                     |
+| The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                                                                          |
+| The committed dataset artifact and its caveats                    | `data/README.md`                                                                                   |
+| Service worker + manifest config (`VitePWA`)                      | `app/vite.config.ts`                                                                               |
+| Manifest icons (`any` + maskable)                                 | `app/public/pwa-icon.svg`, `app/public/maskable-icon.svg`                                          |
+| The offline E2E journey                                           | `app/e2e/offline.spec.ts`                                                                          |
+| Lighthouse PWA audit command and today's recorded score           | root `README.md`                                                                                   |
+| Accessibility writeup, contrast/ARIA findings, responsive fix     | [`docs/accessibility.md`](./accessibility.md)                                                      |
+| The axe check (locally-runnable, today's result recorded)         | `app/e2e/a11y.spec.ts`, root `README.md`                                                           |
+| The keyboard-only walkthrough script and its recorded findings    | `app/keyboard-walkthrough.mjs`, [`docs/accessibility.md`](./accessibility.md)                      |
+| The "Skip to plot canvas" link                                    | `app/src/plot/SkipToCanvasLink.tsx`                                                                |
+| The CI checks workflow and what each job gates                    | `.github/workflows/checks.yml`, [`adr/0027`](./adr/0027-ci-checks-workflow-and-blocking-policy.md) |
+| Why there is no deploy-on-merge, and the recipe if you want one   | [`adr/0028`](./adr/0028-deploy-on-merge-not-automated.md)                                          |
+| The closing security review (npm audit triage, XSS check)         | [`docs/security-review.md`](./security-review.md)                                                  |

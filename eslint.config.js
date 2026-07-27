@@ -52,6 +52,13 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
 
+  // `.github/scripts/` (Workplan Stage 6.4): small Node scripts the CI workflow
+  // calls — plain Node, no browser side, so Node globals only.
+  {
+    files: ['.github/scripts/**/*.mjs'],
+    languageOptions: { globals: globals.node },
+  },
+
   // Turn off stylistic rules that Prettier owns. Must come last.
   prettier,
 );
