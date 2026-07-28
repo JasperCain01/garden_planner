@@ -39,8 +39,14 @@ export function worseSeverity(a: WarningSeverity, b: WarningSeverity): WarningSe
  * short — so it's darkened one step (a standard "700"-weight amber, same hue)
  * to `#b45309` (5.02:1); `info` (5.17:1) and `severe` (4.83:1) already
  * cleared the bar and are unchanged.
+ *
+ * **Mirrored in CSS (UI redesign Phase 0).** Konva needs these as literal
+ * strings for the canvas badge, so they stay here; `styles/tokens.css` carries
+ * the same values as `--severity-*` for the DOM warnings list, and
+ * `styles/tokens.test.ts` fails if the two copies drift apart. Exported for
+ * that test — `severityColor` below is still how a component asks for one.
  */
-const SEVERITY_COLORS: Readonly<Record<WarningSeverity, string>> = {
+export const SEVERITY_COLORS: Readonly<Record<WarningSeverity, string>> = {
   info: '#2563eb',
   warning: '#b45309',
   severe: '#dc2626',

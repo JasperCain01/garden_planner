@@ -1,0 +1,52 @@
+/*
+ * Shape-picker layout (UI redesign Phase 0). The fieldset's etched border is
+ * gone (`global.css`); grouping is now the surrounding card, and this module
+ * only lays the controls out with the spacing scale.
+ *
+ * Turning the three radios into visual shape *tiles* — which is what a
+ * choice-of-shape really wants to be — is Phase 4's job
+ * (`docs/ui-aesthetic-review.md`); this keeps the radio group exactly as it is.
+ */
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: var(--space-2) 0 var(--space-4);
+}
+
+/* Label and its radio on one baseline, with a real gap between them — the
+ * "Rectangle" text used to sit flush against its own control. */
+.preset {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+/* Dimension fields: as many per row as fit, each label stacked over its input
+ * (the old markup let "Width (m)" and its number field run together on one
+ * line, reading as "Width (m)3"). */
+.dimensions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.error {
+  margin: var(--space-3) 0 0;
+  color: var(--danger);
+  font-size: var(--text-sm);
+}

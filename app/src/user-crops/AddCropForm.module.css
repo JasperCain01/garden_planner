@@ -1,0 +1,105 @@
+/*
+ * Add-crop form layout (UI redesign Phase 0).
+ *
+ * This form is the app's longest, and it was the worst hit by having no
+ * stylesheet: seven fieldsets of etched boxes, labels flush against their
+ * controls. `global.css` removes the boxes; this module gives the form a
+ * rhythm — one gap between groups, labels above their controls, checkbox
+ * options in wrapping rows.
+ *
+ * The rules below reach into descendants (`.group label`) rather than adding a
+ * class to all forty-odd controls. That's a deliberate trade: this whole form
+ * moves into a modal dialog in Phase 1 (`docs/ui-aesthetic-review.md`), so the
+ * markup here is not worth churning twice.
+ */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* One labelled control. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: flex-start;
+}
+
+.field > label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* A `<fieldset>`: grouping semantics kept, border gone (`global.css`), a
+ * hairline rule instead so the groups still read as groups. */
+.group {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.group label {
+  display: block;
+  margin: var(--space-3) 0 var(--space-1);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Several labelled controls side by side (the spacing and season fields). */
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+
+/* Radio choices (row vs. intensive spacing) sit on one line each with their
+ * control, not stacked like the text fields above. */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.choices label,
+.checkboxGroup label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--text);
+  font-weight: 400;
+  cursor: pointer;
+}
+
+/* The soil facets: a wrapping row of checkbox options per facet. */
+.checkboxGroup {
+  margin-top: var(--space-3);
+}
+
+.checkboxOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

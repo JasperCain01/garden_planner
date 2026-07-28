@@ -1,0 +1,80 @@
+/*
+ * Canvas-section styling (UI redesign Phase 0). The buttons that used to sit
+ * in loose `<p>` tags below the canvas now form one toolbar row, and the
+ * selected-placement readout is a card beside them rather than another
+ * paragraph.
+ *
+ * The canvas itself is still a fixed-scale Konva stage in a scrolling box —
+ * making it fill its region, scale to fit and carry a grid is Phase 2's job
+ * (`docs/ui-aesthetic-review.md`).
+ */
+
+/*
+ * Workplan Stage 6.2: a plot large enough to make the canvas wider than a
+ * phone's viewport must not force the whole *page* to scroll horizontally —
+ * that would also drag the growing-conditions form, palette and warnings panel
+ * out sideways with it. Scrolling contained to this box, instead, keeps the
+ * canvas at full resolution (unlike shrinking its pixels-per-cm to fit, which
+ * would make plant icons illegible on a large plot) at the cost of a
+ * horizontal scrollbar on the canvas itself for those plots — an accepted
+ * trade-off recorded in ADR 0026.
+ */
+.viewport {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--soil-100);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.selected {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--green-700);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+}
+
+.selectedName {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  margin: 0;
+  font-weight: 600;
+}
+
+.selectedWarnings {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+/* The severity word, coloured by `--severity-*` (mirrored from
+ * `warnings/severity.ts`, which Konva needs as literals — see
+ * `styles/tokens.css`). The word itself carries the meaning; colour only
+ * reinforces it. This card is white, which is the background those values were
+ * contrast-checked against. */
+.severity {
+  font-weight: 700;
+}
+
+.severity[data-severity='info'] {
+  color: var(--severity-info);
+}
+
+.severity[data-severity='warning'] {
+  color: var(--severity-warning);
+}
+
+.severity[data-severity='severe'] {
+  color: var(--severity-severe);
+}

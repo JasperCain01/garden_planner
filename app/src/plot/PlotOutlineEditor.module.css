@@ -1,0 +1,61 @@
+/*
+ * Outline-editor styling (UI redesign Phase 0). The SVG's colours used to be
+ * literal `fill`/`stroke` attributes on the shapes; they're CSS now, so the
+ * plot green here is the *same* green as everywhere else in the app (SVG
+ * presentation attributes can't read a custom property, CSS properties can).
+ *
+ * Everything else about the editor — the drag maths, the midpoint handles, the
+ * "double-click to remove" affordance — is untouched. Merging this editor into
+ * the main canvas so there is only ever one picture of the plot is Phase 2's
+ * job (`docs/ui-aesthetic-review.md`).
+ */
+
+/* Workplan Stage 6.2: a large outline can render wider than a phone viewport
+ * at this fixed scale; scrolling here (not the whole page) keeps the rest of
+ * the layout from being dragged sideways with it — same reasoning as
+ * `canvas/PlotCanvasSection.module.css`'s canvas wrapper. */
+.viewport {
+  max-width: 100%;
+  margin: var(--space-4) 0;
+  padding: var(--space-3);
+  overflow-x: auto;
+  border-radius: var(--radius);
+  background: var(--soil-100);
+}
+
+.outline {
+  fill: var(--green-100);
+  stroke: var(--green-700);
+}
+
+/* An outline that doesn't validate keeps its shape but turns red — the message
+ * below it says why. */
+.outlineInvalid {
+  stroke: var(--danger);
+}
+
+.corner {
+  fill: var(--green-700);
+  cursor: grab;
+  transition: fill var(--motion-fast) ease;
+}
+
+.corner:hover {
+  fill: var(--green-900);
+}
+
+.midpoint {
+  fill: var(--sky-500);
+  cursor: copy;
+  transition: fill var(--motion-fast) ease;
+}
+
+.midpoint:hover {
+  fill: var(--sky-600);
+}
+
+.error {
+  margin: var(--space-2) 0 0;
+  color: var(--danger);
+  font-size: var(--text-sm);
+}

@@ -26,6 +26,14 @@
  * so the legend can name the location and hardiness band alongside the placed
  * crops. See `export.ts`'s own doc comment for why the legend is composited
  * with the 2D Canvas API rather than a Konva `Group`.
+ *
+ * **Styling (UI redesign Phase 0).** The scattered `<p>`-wrapped default
+ * buttons become one toolbar row, the selected-placement readout becomes a
+ * small card, and the severity word takes its colour from the `--severity-*`
+ * tokens (the CSS mirror of `warnings/severity.ts`, which stays the source of
+ * truth because Konva needs literals) instead of an inline `style`. The canvas
+ * is still a fixed-scale stage in a scrolling box — making it fill the
+ * available space is Phase 2's job (`docs/ui-aesthetic-review.md`).
  */
 
 import { useRef, useState } from 'react';
@@ -34,10 +42,10 @@ import { resolvePlotConditions, type PlotConditions } from '@garden-planner/engi
 import { usePlotStore } from '../state/plot-store.ts';
 import { usePlacementsStore } from '../state/placements-store.ts';
 import type { CanvasWarnings } from '../warnings/evaluate-canvas.ts';
-import { severityColor } from '../warnings/severity.ts';
 import { exportPlotImage } from './export.ts';
 import { PlacementFeedbackPanel } from './PlacementFeedbackPanel.tsx';
 import { PlotCanvas } from './PlotCanvas.tsx';
+import styles from './PlotCanvasSection.module.css';
 
 export interface PlotCanvasSectionProps {
   /** `null` when the plot's growing conditions don't currently resolve (`useCanvasWarnings`'s own contract) — markers then show no badges and nothing is shown for the selected placement. */
@@ -100,7 +108,7 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
   }
 
   return (
-    <section>
+    <section className="card">
       <h2>3. Arrange your plants</h2>
       <p>
         Drag a plant from the palette above onto the plot below — or, without a pointer, use its
@@ -108,54 +116,43 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
         nudge it into place with the arrow keys (hold Shift to move further). Double-click, press
         Delete/Backspace, or use the Remove button to remove a selected plant.
       </p>
-      {/*
-       * Workplan Stage 6.2: a plot large enough to make the canvas wider
-       * than a phone's viewport must not force the whole *page* to scroll
-       * horizontally — that would also drag the growing-conditions form,
-       * palette and warnings panel out sideways with it. Scrolling
-       * contained to this box, instead, keeps the canvas at full resolution
-       * (unlike shrinking its pixels-per-cm to fit, which would make plant
-       * icons illegible on a large plot) at the cost of a horizontal
-       * scrollbar on the canvas itself for those plots — an accepted
-       * trade-off recorded in ADR 0026.
-       */}
-      <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
+      <div className={styles.viewport}>
         <PlotCanvas
           region={region}
           severityByPlacementId={canvasWarnings?.severityByPlacementId}
           stageRef={stageRef}
         />
       </div>
-      <p>
+      <div className={styles.toolbar}>
         <button type="button" onClick={handleExport} disabled={isExporting}>
           {isExporting ? 'Exporting…' : 'Export image'}
         </button>
-      </p>
-      {placements.length > 0 && (
-        <p>
-          <button type="button" onClick={() => selectRelative(-1)}>
-            ◀ Previous placement
-          </button>{' '}
-          <button type="button" onClick={() => selectRelative(1)}>
-            Next placement ▶
-          </button>
-        </p>
-      )}
+        {placements.length > 0 && (
+          <>
+            <button type="button" onClick={() => selectRelative(-1)}>
+              ◀ Previous placement
+            </button>
+            <button type="button" onClick={() => selectRelative(1)}>
+              Next placement ▶
+            </button>
+          </>
+        )}
+      </div>
       {selected !== null && (
-        <div>
-          <p>
+        <div className={styles.selected}>
+          <p className={styles.selectedName}>
             Selected: {selected.plant.commonName}{' '}
             <button type="button" onClick={() => removePlacement(selected.id)}>
               Remove
             </button>
           </p>
           {selectedWarnings.length > 0 && (
-            <ul>
+            <ul className={styles.selectedWarnings}>
               {selectedWarnings.map((warning) => (
                 <li
                   key={`${warning.kind}:${warning.subjects.map((subject) => subject.placementId).join(',')}`}
                 >
-                  <strong style={{ color: severityColor(warning.severity) }}>
+                  <strong className={styles.severity} data-severity={warning.severity}>
                     {warning.severity.toUpperCase()}
                   </strong>{' '}
                   {warning.reason}

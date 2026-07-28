@@ -22,6 +22,12 @@
  * one place origin-awareness belongs, and calling it here rather than
  * trusting the store's shape is what keeps that true even if this list is
  * ever combined with shipped crops later.
+ *
+ * **Styling (UI redesign Phase 0).** The section is a card and the added-crops
+ * list is a proper row list (`UserCropsSection.module.css`). Moving this whole
+ * capability out of the page flow and into a modal off the palette is Phase
+ * 1's job (`docs/ui-aesthetic-review.md`) — it takes ~800px of prime mid-page
+ * space today for something used rarely.
  */
 
 import { useState } from 'react';
@@ -29,6 +35,7 @@ import { isUserPlant, type UserPlantInput } from '@garden-planner/engine';
 import { useUserPlantsStore } from '../state/user-plants-store.ts';
 import { AddCropForm } from './AddCropForm.tsx';
 import { plantToUserPlantInput } from './plant-to-input.ts';
+import styles from './UserCropsSection.module.css';
 
 export function UserCropsSection() {
   const userPlants = useUserPlantsStore((state) => state.userPlants);
@@ -45,7 +52,7 @@ export function UserCropsSection() {
   }
 
   return (
-    <section>
+    <section className="card">
       <h2>Add your own crop</h2>
       <p>
         The shipped dataset can&rsquo;t cover every variety on every seed rack — add one by hand
@@ -63,22 +70,21 @@ export function UserCropsSection() {
       />
 
       {crops.length > 0 && (
-        <div>
+        <div className={styles.added}>
           <h3>Your added crops</h3>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
+          <ul className={styles.list}>
             {crops.map((plant) => (
-              <li key={plant.id}>
-                {plant.commonName}
+              <li key={plant.id} className={styles.crop}>
+                <span className={styles.cropName}>{plant.commonName}</span>
                 {isUserPlant(plant) && (
-                  <>
-                    {' '}
+                  <span className={styles.actions}>
                     <button type="button" onClick={() => setEditingId(plant.id)}>
                       Edit
                     </button>
                     <button type="button" onClick={() => removeUserPlant(plant.id)}>
                       Remove
                     </button>
-                  </>
+                  </span>
                 )}
               </li>
             ))}

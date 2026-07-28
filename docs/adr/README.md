@@ -48,3 +48,4 @@ old one and mark the old one `Superseded`.
 - [0026 — Keyboard placement without pixel-drag, and severity glyphs alongside colour](./0026-keyboard-placement-and-severity-glyphs.md)
 - [0027 — CI: what the checks workflow runs, and which checks gate a merge](./0027-ci-checks-workflow-and-blocking-policy.md)
 - [0028 — Deploy-on-merge: the constraint lifted, and we still didn't automate it](./0028-deploy-on-merge-not-automated.md)
+- [0029 — The design system: CSS custom properties + CSS Modules, and one self-hosted font](./0029-design-tokens-css-modules-and-self-hosted-font.md)

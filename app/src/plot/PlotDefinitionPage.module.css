@@ -1,0 +1,21 @@
+/*
+ * Page-level stacking for the four core-loop sections plus "Add your own crop"
+ * (UI redesign Phase 0). Each section renders itself as a `.card`
+ * (`styles/global.css`); this only sets the gap between them.
+ *
+ * It is still a vertical document — a single column of stacked sections that
+ * enforces a false 1→2→3→4 sequence over what is really a loop. Turning it
+ * into a workspace (palette, canvas and controls side by side, all visible at
+ * once) is Phase 1, the biggest win in `docs/ui-aesthetic-review.md`.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.intro {
+  margin: 0 0 var(--space-4);
+  color: var(--text-muted);
+}

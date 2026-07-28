@@ -40,6 +40,15 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * does nothing and the spec fails somewhere later with a confusing message
  * ("nothing placed yet" is still visible). {@link assertInViewport} turns that
  * into an immediate, self-explaining failure instead.
+ *
+ * **3. The palette scrolls inside itself, so "on-screen" isn't automatic.**
+ * The crop list is a fixed-height box with its own scrollbar
+ * (`palette/PlantPalette.module.css`), so a matching entry can be laid out
+ * below that box's own fold — rendered, reported visible, and yet nowhere the
+ * mouse can reach it. A search that matches several crops ("Tomato" matches
+ * five) hits this routinely. The fix is one `scrollIntoViewIfNeeded` before
+ * the boxes are read, below; it scrolls the *list*, which — because the list's
+ * height is fixed — leaves the canvas exactly where it was.
  */
 
 /**
@@ -117,6 +126,9 @@ export async function dragCropOntoCanvas(
 ): Promise<void> {
   const source = page.getByLabel(new RegExp(`^drag ${cropName} onto the plot to place it$`, 'i'));
   await expect(source).toBeVisible();
+  // Bring the entry into the palette's own scrollport before measuring
+  // anything — see trap 3 in the module doc.
+  await source.scrollIntoViewIfNeeded();
   const sourceBox = await source.boundingBox();
   if (sourceBox === null) throw new Error(`no bounding box for the "${cropName}" palette entry`);
 

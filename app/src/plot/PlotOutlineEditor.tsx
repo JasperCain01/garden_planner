@@ -23,12 +23,20 @@
  * delta to centimetres by dividing by `PX_PER_CM`. Listened for on `window`
  * rather than the dragged circle so the drag survives the pointer leaving the
  * small hit target.
+ *
+ * **Styling (UI redesign Phase 0).** The polygon's and handles' colours moved
+ * out of `fill`/`stroke` attributes into `PlotOutlineEditor.module.css`, so
+ * the plot green here is the same token green as the rest of the app rather
+ * than a second, slightly different one. Behaviour is unchanged; merging this
+ * editor into the main canvas (one picture of the plot, not two) is Phase 2's
+ * job — see `docs/ui-aesthetic-review.md`.
  */
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { PlotRegion, Vertex } from '@garden-planner/engine';
 import { safeValidatePlotRegion } from '@garden-planner/engine';
 import { insertMidpoint, moveVertex, removeVertexAt } from './outline-ops.ts';
+import styles from './PlotOutlineEditor.module.css';
 
 /** Rendered screen pixels per plot centimetre — see the module doc. */
 export const PX_PER_CM = 0.3;
@@ -161,8 +169,7 @@ export function PlotOutlineEditor({ region, onChange }: PlotOutlineEditorProps) 
 
   return (
     <div>
-      {/* Workplan Stage 6.2: a large outline can render wider than a phone viewport at this fixed PX_PER_CM; scrolling here (not the whole page) keeps the rest of the layout from being dragged sideways with it — same reasoning as `PlotCanvasSection.tsx`'s canvas wrapper. */}
-      <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
+      <div className={styles.viewport}>
         <svg
           role="img"
           aria-label="plot outline — drag a corner to adjust, or use the add/remove handles"
@@ -172,8 +179,9 @@ export function PlotOutlineEditor({ region, onChange }: PlotOutlineEditorProps) 
         >
           <polygon
             points={draftVertices.map((vertex) => `${vertex.x},${vertex.y}`).join(' ')}
-            fill="rgba(76, 175, 80, 0.25)"
-            stroke={error !== null ? '#c0392b' : '#2e7d32'}
+            className={
+              error !== null ? `${styles.outline} ${styles.outlineInvalid}` : styles.outline
+            }
             strokeWidth={4}
           />
           {/*
@@ -199,20 +207,20 @@ export function PlotOutlineEditor({ region, onChange }: PlotOutlineEditorProps) 
                   data-testid={`plot-corner-add-${index}`}
                   role="button"
                   aria-label={`add a corner after corner ${index + 1}`}
+                  className={styles.midpoint}
                   cx={midpoint.x}
                   cy={midpoint.y}
                   r={MIDPOINT_RADIUS_CM}
-                  fill="#90caf9"
                   onClick={() => handleAddMidpoint(index)}
                 />
                 <circle
                   data-testid={`plot-corner-${index}`}
                   role="button"
                   aria-label={`corner ${index + 1} — drag to move, double-click to remove`}
+                  className={styles.corner}
                   cx={vertex.x}
                   cy={vertex.y}
                   r={CORNER_RADIUS_CM}
-                  fill="#2e7d32"
                   onPointerDown={(event) => handleCornerPointerDown(index, event)}
                   onDoubleClick={() => handleRemove(index)}
                 />
@@ -221,7 +229,11 @@ export function PlotOutlineEditor({ region, onChange }: PlotOutlineEditorProps) 
           })}
         </svg>
       </div>
-      {error !== null && <p role="alert">{error}</p>}
+      {error !== null && (
+        <p role="alert" className={styles.error}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

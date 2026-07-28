@@ -17,6 +17,7 @@ import { useMemo } from 'react';
 import { fitPlant, type Plant, type PlotRegion } from '@garden-planner/engine';
 import type { PlacedPlant } from '../state/placements-store.ts';
 import { computePlacementTally } from './feedback.ts';
+import styles from './PlacementFeedbackPanel.module.css';
 
 export interface PlacementFeedbackPanelProps {
   readonly placements: readonly PlacedPlant[];
@@ -37,7 +38,7 @@ export function PlacementFeedbackPanel({
 
   if (placements.length === 0) {
     return (
-      <p>
+      <p className={styles.empty}>
         Nothing placed yet — drag a plant from the palette onto the plot (or use its &ldquo;Add to
         plot&rdquo; button) to see how many fit.
       </p>
@@ -45,9 +46,9 @@ export function PlacementFeedbackPanel({
   }
 
   return (
-    <div>
-      {headlineFit !== null && <p>{headlineFit.summary}</p>}
-      <ul>
+    <div className={styles.panel}>
+      {headlineFit !== null && <p className={styles.summary}>{headlineFit.summary}</p>}
+      <ul className={styles.tally}>
         {tally.map((row) => (
           <li key={row.plant.id}>
             <strong>{row.plant.commonName}:</strong> {row.placedCount} placed of {row.fit.count} the

@@ -1,0 +1,40 @@
+/*
+ * The one webfont this app ships: **Fraunces Variable**, used for headings and
+ * the wordmark (UI redesign Phase 0, `docs/ui-aesthetic-review.md`; ADR 0029).
+ *
+ * **Self-hosted, never a CDN.** The app is an offline-capable PWA (ADR 0022) —
+ * a `fonts.googleapis.com` link would make the first paint of an offline
+ * launch depend on a network that isn't there, and would leak a request to a
+ * third party besides. The `@fontsource-variable/fraunces` package vendors the
+ * same files into `node_modules`, and Vite fingerprints and emits whichever
+ * ones this file references; `vite.config.ts`'s Workbox `globPatterns`
+ * includes `woff2` so the service worker precaches it.
+ *
+ * **Why the `@font-face` is written out here rather than importing the
+ * package's own `index.css`.** That stylesheet declares the same family three
+ * times — latin, latin-ext and Vietnamese subsets — and Vite emits (and the
+ * service worker then precaches) all three files, ~110 kB, even though a
+ * browser only downloads the subsets a page's text actually needs. Declaring
+ * the latin face alone ships one 36 kB file. Its `unicode-range` is copied
+ * verbatim from the package so the browser's own subset matching is
+ * unchanged; U+0000–00FF covers every accented crop name in the dataset
+ * (jalapeño, mâche), and anything outside it falls through to the body stack
+ * rather than rendering blank.
+ *
+ * Licence: Fraunces is SIL Open Font License 1.1. The full licence ships with
+ * the app at `public/fonts/fraunces-OFL.txt` and is recorded in `/NOTICE`.
+ */
+
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-style: normal;
+  /* Show the fallback immediately and swap when the file lands — a heading
+   * that is invisible for 100ms is worse than one that reflows. */
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2')
+    format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}

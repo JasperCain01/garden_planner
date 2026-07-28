@@ -15,12 +15,21 @@
  * a notch as big as the plot); caught here and shown inline rather than
  * propagating, since a bad number in a form field is an ordinary user
  * mistake, not an exceptional one.
+ *
+ * **Styling (UI redesign Phase 0).** The `<fieldset>` keeps its grouping
+ * semantics but no longer draws a border (`styles/global.css`); the visual
+ * grouping is the card this renders into, and `ShapePicker.module.css` lays
+ * the radios and dimension fields out on the spacing scale — labels above
+ * their inputs, rather than running into them ("Width (m)3"). The markup is
+ * otherwise untouched: replacing the radio group with visual shape tiles is
+ * Phase 4's job (`docs/ui-aesthetic-review.md`).
  */
 
 import { useState } from 'react';
 import type { PlotRegion } from '@garden-planner/engine';
 import { circleRegion, lShapeRegion, rectangleRegion } from '@garden-planner/engine';
 import { metresToCm } from './units.ts';
+import styles from './ShapePicker.module.css';
 
 type Preset = 'rectangle' | 'l-shape' | 'circle';
 
@@ -67,116 +76,138 @@ export function ShapePicker({ onApply }: ShapePickerProps) {
     <fieldset>
       <legend>Shape</legend>
 
-      <label>
-        <input
-          type="radio"
-          name="plot-preset"
-          value="rectangle"
-          checked={preset === 'rectangle'}
-          onChange={() => setPreset('rectangle')}
-        />
-        Rectangle
-      </label>
-      <label>
-        <input
-          type="radio"
-          name="plot-preset"
-          value="l-shape"
-          checked={preset === 'l-shape'}
-          onChange={() => setPreset('l-shape')}
-        />
-        L-shape
-      </label>
-      <label>
-        <input
-          type="radio"
-          name="plot-preset"
-          value="circle"
-          checked={preset === 'circle'}
-          onChange={() => setPreset('circle')}
-        />
-        Circle
-      </label>
+      <div className={styles.presets}>
+        <label className={styles.preset}>
+          <input
+            type="radio"
+            name="plot-preset"
+            value="rectangle"
+            checked={preset === 'rectangle'}
+            onChange={() => setPreset('rectangle')}
+          />
+          Rectangle
+        </label>
+        <label className={styles.preset}>
+          <input
+            type="radio"
+            name="plot-preset"
+            value="l-shape"
+            checked={preset === 'l-shape'}
+            onChange={() => setPreset('l-shape')}
+          />
+          L-shape
+        </label>
+        <label className={styles.preset}>
+          <input
+            type="radio"
+            name="plot-preset"
+            value="circle"
+            checked={preset === 'circle'}
+            onChange={() => setPreset('circle')}
+          />
+          Circle
+        </label>
+      </div>
 
       {preset === 'rectangle' && (
-        <div>
-          <label htmlFor="plot-rect-width">Width (m)</label>
-          <input
-            id="plot-rect-width"
-            type="number"
-            value={rectangle.widthM}
-            onChange={(event) =>
-              setRectangle((r) => ({ ...r, widthM: Number(event.target.value) }))
-            }
-          />
-          <label htmlFor="plot-rect-height">Height (m)</label>
-          <input
-            id="plot-rect-height"
-            type="number"
-            value={rectangle.heightM}
-            onChange={(event) =>
-              setRectangle((r) => ({ ...r, heightM: Number(event.target.value) }))
-            }
-          />
+        <div className={styles.dimensions}>
+          <div className={styles.field}>
+            <label htmlFor="plot-rect-width">Width (m)</label>
+            <input
+              id="plot-rect-width"
+              type="number"
+              value={rectangle.widthM}
+              onChange={(event) =>
+                setRectangle((r) => ({ ...r, widthM: Number(event.target.value) }))
+              }
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="plot-rect-height">Height (m)</label>
+            <input
+              id="plot-rect-height"
+              type="number"
+              value={rectangle.heightM}
+              onChange={(event) =>
+                setRectangle((r) => ({ ...r, heightM: Number(event.target.value) }))
+              }
+            />
+          </div>
         </div>
       )}
 
       {preset === 'l-shape' && (
-        <div>
-          <label htmlFor="plot-lshape-width">Width (m)</label>
-          <input
-            id="plot-lshape-width"
-            type="number"
-            value={lShape.widthM}
-            onChange={(event) => setLShape((s) => ({ ...s, widthM: Number(event.target.value) }))}
-          />
-          <label htmlFor="plot-lshape-height">Height (m)</label>
-          <input
-            id="plot-lshape-height"
-            type="number"
-            value={lShape.heightM}
-            onChange={(event) => setLShape((s) => ({ ...s, heightM: Number(event.target.value) }))}
-          />
-          <label htmlFor="plot-lshape-notch-width">Notch width (m)</label>
-          <input
-            id="plot-lshape-notch-width"
-            type="number"
-            value={lShape.notchWidthM}
-            onChange={(event) =>
-              setLShape((s) => ({ ...s, notchWidthM: Number(event.target.value) }))
-            }
-          />
-          <label htmlFor="plot-lshape-notch-height">Notch height (m)</label>
-          <input
-            id="plot-lshape-notch-height"
-            type="number"
-            value={lShape.notchHeightM}
-            onChange={(event) =>
-              setLShape((s) => ({ ...s, notchHeightM: Number(event.target.value) }))
-            }
-          />
+        <div className={styles.dimensions}>
+          <div className={styles.field}>
+            <label htmlFor="plot-lshape-width">Width (m)</label>
+            <input
+              id="plot-lshape-width"
+              type="number"
+              value={lShape.widthM}
+              onChange={(event) => setLShape((s) => ({ ...s, widthM: Number(event.target.value) }))}
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="plot-lshape-height">Height (m)</label>
+            <input
+              id="plot-lshape-height"
+              type="number"
+              value={lShape.heightM}
+              onChange={(event) =>
+                setLShape((s) => ({ ...s, heightM: Number(event.target.value) }))
+              }
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="plot-lshape-notch-width">Notch width (m)</label>
+            <input
+              id="plot-lshape-notch-width"
+              type="number"
+              value={lShape.notchWidthM}
+              onChange={(event) =>
+                setLShape((s) => ({ ...s, notchWidthM: Number(event.target.value) }))
+              }
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="plot-lshape-notch-height">Notch height (m)</label>
+            <input
+              id="plot-lshape-notch-height"
+              type="number"
+              value={lShape.notchHeightM}
+              onChange={(event) =>
+                setLShape((s) => ({ ...s, notchHeightM: Number(event.target.value) }))
+              }
+            />
+          </div>
         </div>
       )}
 
       {preset === 'circle' && (
-        <div>
-          <label htmlFor="plot-circle-diameter">Diameter (m)</label>
-          <input
-            id="plot-circle-diameter"
-            type="number"
-            value={circle.diameterM}
-            onChange={(event) =>
-              setCircle((c) => ({ ...c, diameterM: Number(event.target.value) }))
-            }
-          />
+        <div className={styles.dimensions}>
+          <div className={styles.field}>
+            <label htmlFor="plot-circle-diameter">Diameter (m)</label>
+            <input
+              id="plot-circle-diameter"
+              type="number"
+              value={circle.diameterM}
+              onChange={(event) =>
+                setCircle((c) => ({ ...c, diameterM: Number(event.target.value) }))
+              }
+            />
+          </div>
         </div>
       )}
 
-      <button type="button" onClick={handleApply}>
+      <button type="button" data-variant="primary" onClick={handleApply}>
         Use this shape
       </button>
 
-      {error !== null && <p role="alert">{error}</p>}
+      {error !== null && (
+        <p role="alert" className={styles.error}>
+          {error}
+        </p>
+      )}
     </fieldset>
   );
 }

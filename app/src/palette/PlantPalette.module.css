@@ -1,0 +1,217 @@
+/*
+ * Plant-palette styling (UI redesign Phase 0).
+ *
+ * Phase 0's remit here is finish, not information architecture: the row still
+ * shows everything it showed before (icon, name, band, category, summary,
+ * confidence, per-dimension reasoning). Collapsing that to a compact card with
+ * the reasoning on demand is Phase 3's job (`docs/ui-aesthetic-review.md`) —
+ * what changes now is that the row is a real card with a hover state, the band
+ * is a chip instead of coloured text, and every colour and gap comes from a
+ * token.
+ */
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+  margin-bottom: var(--space-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* The "hide unsuitable" checkbox is a label wrapping its own control, so it
+ * lines up with the bottom of the fields beside it rather than stretching. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+  cursor: pointer;
+}
+
+.count {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/*
+ * **Bounded height, not the page (Workplan Stage 6.2 responsive fix).** Every
+ * matching crop used to render in full, unbounded — with all 144 shipped crops
+ * visible at once (the common case: no search, no category filter) that pushed
+ * everything below the palette, including the plot canvas, arbitrarily far
+ * down the page. `docs/review-pre-deployment.md` §2 measured the canvas at
+ * y ≈ 3500px because of exactly this, and the figure only grows as the dataset
+ * does. A capped, internally-scrolling list keeps the page's own height
+ * roughly constant regardless of how many crops match, which is what actually
+ * makes the canvas reachable on a phone — a media-query breakpoint wouldn't
+ * touch this, since the list was already a single column at every width.
+ *
+ * **The `40rem` half of that cap is new in UI redesign Phase 0.** `65vh` alone
+ * is only bounded *relative to* the viewport: on a tall screen the palette
+ * grows with it and pushes everything below it down just as far, which is the
+ * same unbounded-page problem in slower motion (it is also what makes the
+ * e2e specs' "very tall viewport" trick fight itself — at 4000px of viewport,
+ * `65vh` alone is a 2600px palette). Taking the smaller of the two keeps the
+ * phone behaviour Stage 6.2 chose (65vh wins under a ~985px-tall viewport) and
+ * stops the list running away on a desktop.
+ */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: min(65vh, 40rem);
+  margin: 0;
+  padding: var(--space-2);
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-sunken);
+}
+
+/* The card is the *row*, not the drag surface inside it: the "Add to plot"
+ * button has to be a sibling of the draggable element (see the component's
+ * `nested-interactive` note), and a card drawn around only the drag surface
+ * would leave that button floating outside it. */
+.row {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  transition:
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+.row:hover {
+  border-color: var(--green-500);
+  box-shadow: var(--shadow-card);
+}
+
+/* The drag surface itself: transparent, because the card around it is `.row`. */
+.entry {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  cursor: grab;
+  touch-action: none;
+}
+
+/* Unsuitable crops stay visible but muted — honest and tidy (the toggle above
+ * hides them outright for anyone who'd rather not see them at all). */
+.entry[data-band='unsuitable'] {
+  opacity: 0.6;
+}
+
+/* While dragging, the card follows the pointer via an inline transform (the
+ * one style that has to stay inline — it changes every pointer move); this
+ * fades the original so the drag reads as a lift. */
+.entry[data-dragging='true'] {
+  opacity: 0.4;
+  cursor: grabbing;
+  box-shadow: var(--shadow-overlay);
+}
+
+.icon {
+  width: 3rem;
+  height: 3rem;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  margin: 0;
+}
+
+/*
+ * The suitability band, as a chip. Colour is supplementary — the chip's own
+ * text is `BAND_LABELS`' wording ("Excellent match"), so nothing here depends
+ * on distinguishing hues (WCAG 1.4.1). Each pairing clears 4.5:1; the
+ * measurements, and why two of the five values moved, are recorded on the
+ * `--band-*` tokens in `styles/tokens.css`.
+ */
+.band {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.band[data-band='excellent'] {
+  color: var(--band-excellent);
+  background: var(--band-excellent-bg);
+}
+
+.band[data-band='good'] {
+  color: var(--band-good);
+  background: var(--band-good-bg);
+}
+
+.band[data-band='fair'] {
+  color: var(--band-fair);
+  background: var(--band-fair-bg);
+}
+
+.band[data-band='poor'] {
+  color: var(--band-poor);
+  background: var(--band-poor-bg);
+}
+
+.band[data-band='unsuitable'] {
+  color: var(--band-unsuitable);
+  background: var(--band-unsuitable-bg);
+}
+
+.category {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.summary {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+}
+
+.confidence {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.reasons {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.addButton {
+  margin-top: var(--space-2);
+}

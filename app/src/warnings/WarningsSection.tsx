@@ -26,7 +26,7 @@ export function WarningsSection({ canvasWarnings }: WarningsSectionProps) {
   const selectPlacement = usePlacementsStore((state) => state.selectPlacement);
 
   return (
-    <section>
+    <section className="card">
       <h2>4. Check for problems</h2>
       <p>
         Warnings and companion suggestions for what&rsquo;s currently placed, recomputed live as you

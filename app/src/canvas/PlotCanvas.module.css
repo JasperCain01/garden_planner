@@ -1,0 +1,27 @@
+/*
+ * The Konva stage's container (UI redesign Phase 0). Only the drop target's
+ * own chrome lives here — everything *inside* the stage is painted by Konva
+ * and so takes its colours from TypeScript (`CATEGORY_COLORS` in the component,
+ * `warnings/severity.ts` for badges), which `styles/tokens.css` mirrors.
+ *
+ * The stage's pixel width and height stay inline on the element: they're
+ * computed from the plot's own dimensions (`geometry.ts#canvasSizePx`) and
+ * change with the outline.
+ */
+
+.stage {
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  transition:
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+/* A plant is hovering over the canvas mid-drag: make the landing zone
+ * unmistakable. (Tinting the plot interior rather than the container is
+ * Phase 2's richer version of this.) */
+.stage[data-drop-target='true'] {
+  border-color: var(--green-700);
+  box-shadow: 0 0 0 3px var(--green-100);
+}

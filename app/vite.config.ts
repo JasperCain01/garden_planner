@@ -36,8 +36,13 @@ export default defineConfig({
         name: 'Garden Planner',
         short_name: 'Garden Planner',
         description: 'Offline-capable planner for edible gardens and allotments.',
-        theme_color: '#4f8a45',
-        background_color: '#f4f7f1',
+        // Match the design tokens (`src/styles/tokens.css`): `--green-700`
+        // for the browser/OS chrome, `--surface-page` for the splash the
+        // installed app shows while it boots, so an installed Garden Planner
+        // opens into the same warm cream the page itself uses (UI redesign
+        // Phase 0). `index.html`'s `theme-color` meta carries the same value.
+        theme_color: '#2d6a4f',
+        background_color: '#f6f3ea',
         display: 'standalone',
         start_url: base,
         scope: base,
@@ -79,7 +84,13 @@ export default defineConfig({
         // past the inline threshold and Vite starts emitting it as a separate
         // hashed file — at which point precaching it must not depend on
         // another session rediscovering all of the above.
-        globPatterns: ['**/*.{js,css,html,svg,webmanifest}'],
+        //
+        // `woff2` joined the list in UI redesign Phase 0, and unlike `svg` it
+        // is *not* speculative: the self-hosted heading font
+        // (`src/styles/fonts.css`) is 36 kB, comfortably over Vite's inline
+        // limit, so it is emitted as a real hashed file and would otherwise be
+        // the one asset an offline launch had to fetch and couldn't.
+        globPatterns: ['**/*.{js,css,html,svg,woff2,webmanifest}'],
         // Take over existing clients as soon as the new service worker
         // activates, instead of the default "wait until every tab with the
         // old SW closes". Also what lets an E2E test (`e2e/offline.spec.ts`)

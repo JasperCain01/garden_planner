@@ -66,9 +66,10 @@ describe('PlotCanvas icon rendering (Stage 4.2)', () => {
       <PlotCanvas region={rectangleRegion(300, 300)} severityByPlacementId={new Map()} />,
     );
 
-    // Stage div should be present (react-konva renders a div wrapper).
-    const stageDiv = container.querySelector('div[style*="border"]');
-    expect(stageDiv).toBeTruthy();
+    // The drop-target container (which wraps react-konva's own div) should be
+    // present. Queried by its id rather than its styling: since UI redesign
+    // Phase 0 the border lives in `PlotCanvas.module.css`, not an inline style.
+    expect(container.querySelector('#plot-canvas')).toBeTruthy();
   });
 
   it('renders when a placed user-defined crop with generic fallback icon is present', () => {
@@ -88,8 +89,7 @@ describe('PlotCanvas icon rendering (Stage 4.2)', () => {
       <PlotCanvas region={rectangleRegion(300, 300)} severityByPlacementId={new Map()} />,
     );
 
-    const stageDiv = container.querySelector('div[style*="border"]');
-    expect(stageDiv).toBeTruthy();
+    expect(container.querySelector('#plot-canvas')).toBeTruthy();
   });
 });
 

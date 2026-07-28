@@ -1,8 +1,8 @@
 # UI Aesthetic Review & Redesign Plan
 
 **Scope:** strictly aesthetic/UX. The engine, data pipeline, stores, and interaction logic are
-sound and out of scope. This document is a critique of how the app *looks, feels, and fits a
-laptop/desktop screen*, followed by a phased redesign plan written to be handed to
+sound and out of scope. This document is a critique of how the app _looks, feels, and fits a
+laptop/desktop screen_, followed by a phased redesign plan written to be handed to
 implementation sessions one phase at a time.
 
 **Method:** full read of `app/src` (shell, routes, plot forms, palette, canvas, warnings,
@@ -27,14 +27,14 @@ The five findings that matter most, in order:
 1. **The desktop screen is thrown away.** The shell hard-caps content at `40rem` (640px)
    and centres it (`AppShell.tsx:22`). At 1920×1080, 33% of the screen is used; 67% is
    blank white margin. Everything — forms, palette, canvas, warnings — is stacked in one
-   narrow column ~3,000px tall (measured 2,913px at 1440×900 with the palette *already*
+   narrow column ~3,000px tall (measured 2,913px at 1440×900 with the palette _already_
    capped at 65vh). A landscape screen is wide and short; this app is narrow and tall.
    It is the exact wrong shape for its medium.
 
 2. **The signature feature is invisible.** The plot canvas — the whole point of the app —
    renders the default 3×2m plot at ~228×168px (`PX_PER_CM = 0.6`, `geometry.ts:22`), a
-   pale green postage stamp buried two-thirds of the way down the page, *smaller than the
-   "Add your own crop" form above it*. The scale is fixed: a small plot is tiny, a large
+   pale green postage stamp buried two-thirds of the way down the page, _smaller than the
+   "Add your own crop" form above it_. The scale is fixed: a small plot is tiny, a large
    plot overflows into a scrollbox. The canvas never grows to use the screen.
 
 3. **The core interaction is physically broken by the layout.** The advertised gesture is
@@ -50,14 +50,14 @@ The five findings that matter most, in order:
    per-dimension reasoning list — ~200px per row, ~28,000px of virtual list in a 65vh
    scrollbox. The lovely crop icon SVGs (144 hand-made icons in `src/icons/crops/`!) are
    drowned at 3rem beside walls of text. Scanning for "what can I plant?" means reading
-   paragraphs. The reasoning is genuinely good content — it just must not be the *default*
+   paragraphs. The reasoning is genuinely good content — it just must not be the _default_
    altitude.
 
 5. **Zero identity, zero delight.** No colour system (the only colours are the band-label
    text colours and two greens on the plot fill), no typography beyond `system-ui`, no
    spacing rhythm (labels touch their inputs: "Width (m)3", "Light levelfull sun"), no
    hover states, no transitions, no drop feedback, no empty-state warmth. For a product
-   whose subject is *gardens* — colour, growth, play — the affect is a tax form.
+   whose subject is _gardens_ — colour, growth, play — the affect is a tax form.
 
 Smaller but real:
 
@@ -69,7 +69,7 @@ Smaller but real:
   inherently visual decision rendered as text.
 - Nested fieldsets three deep in "Growing conditions" produce a maze of etched boxes.
 - "Add your own crop" — an advanced, rarely-used capability — occupies ~800px of prime
-  mid-page real estate *between* the palette and the canvas, pushing the canvas further
+  mid-page real estate _between_ the palette and the canvas, pushing the canvas further
   out of reach.
 - Marker size is fixed (16px radius) regardless of plant footprint: a squash and a radish
   read identical, so spatial planning ("what fits?") gets no visual support even though
@@ -90,6 +90,7 @@ changes will require test updates in the same PR, and that is expected and fine.
 ## Part 2 — Detailed critique by area
 
 ### 2.1 App shell & first impression
+
 - `AppShell.tsx` is a centred 640px column with an `<h1>`. No header bar, no footer, no
   surface separation — content floats on bare white.
 - Above the fold at 1440×900 you see: heading, a paragraph, radio buttons, two number
@@ -100,15 +101,17 @@ changes will require test updates in the same PR, and that is expected and fine.
   reading; it should be under 10s.
 
 ### 2.2 Layout vs. landscape screens
+
 - Single column at every width; no breakpoints, no grid, no sidebars. At 1920px the
   content:whitespace ratio is 1:2.
 - The one layout constraint that exists (65vh palette scrollbox) was added to fix page
-  height on *phones* (`PlantPalette.tsx` comment) — desktop was never laid out at all.
+  height on _phones_ (`PlantPalette.tsx` comment) — desktop was never laid out at all.
 - The four numbered sections enforce a false sequence. Real use is a loop: tweak plot ↔
   browse plants ↔ arrange ↔ check warnings. A vertical document makes every loop
   iteration a scroll journey; a workspace layout makes it free.
 
 ### 2.3 Plot definition (shape picker, outline editor, conditions)
+
 - Shape picker: radio text + number fields; error text only after failure. Should be
   visual cards with shape glyphs and live dimension preview.
 - Outline editor: functional and clever (SVG, drag corners, midpoint-add) but visually
@@ -119,6 +122,7 @@ changes will require test updates in the same PR, and that is expected and fine.
   sure" defaults are good UX buried in bad chrome.
 
 ### 2.4 Palette
+
 - Always-expanded reasoning inverts the information hierarchy: identity (icon, name,
   band) should be instant; evidence (dimensions, confidence) should be on demand.
 - One column wastes width: at a sensible card size a desktop sidebar fits 1–2 columns,
@@ -131,14 +135,15 @@ changes will require test updates in the same PR, and that is expected and fine.
   not an action on the card.
 
 ### 2.5 Canvas
-- Fixed 0.6px/cm scale is the root problem: the canvas should *fit the available space*
+
+- Fixed 0.6px/cm scale is the root problem: the canvas should _fit the available space_
   (scale-to-fit with zoom), not the other way round.
 - No grid, no ruler, no north/sun indicator, no plot dimensions. For a tool about
-  *space*, the space itself is unlabelled.
+  _space_, the space itself is unlabelled.
 - Markers: uniform 16px circles; category colour + icon is good, but footprint-blind
   sizing means the layout you draw has no relationship to what fits (the engine knows —
-  `PlacementFeedbackPanel` prints "50 plants: 5 rows of 10 at 20 × 60 cm" as *text* below
-  the canvas instead of showing it *on* the canvas).
+  `PlacementFeedbackPanel` prints "50 plants: 5 rows of 10 at 20 × 60 cm" as _text_ below
+  the canvas instead of showing it _on_ the canvas).
 - Centre-stacking on "Add to plot" (`PaletteEntry.handleAddToPlot` →
   `regionCentre`) is the single worst first-run bug-that-isn't-a-bug.
 - Selection feedback is a stroke-width change; drop feedback is a dashed border on the
@@ -146,12 +151,14 @@ changes will require test updates in the same PR, and that is expected and fine.
 - Toolbar is scattered `<p>` tags of default buttons below the canvas.
 
 ### 2.6 Warnings
+
 - A plain text list at the very bottom — the least visible location for the highest-value
   live feedback the engine produces. Severity is an uppercase coloured word. Warnings
   belong beside/on the canvas (badges already exist there — good) with the list docked
   in view, not four screens away from the form that changes them.
 
 ### 2.7 Play & iteration ("easy to play around with different garden ideas")
+
 - No undo/redo — the store is Zustand; a temporal middleware is cheap. Without undo,
   experimentation is punished.
 - No saved designs / scenarios — one implicit plot, no "duplicate and try a variant",
@@ -171,6 +178,15 @@ structure working, keep axe green (`npm run a11y`), update unit/e2e tests in the
 change, touch no engine code.
 
 ### Phase 0 — Design system foundation (prerequisite, small)
+
+> **Status: implemented** (2026-07-28). Tokens in `app/src/styles/tokens.css`,
+> primitives in `global.css`, per-component CSS Modules, self-hosted Fraunces.
+> Decisions and the roads not taken: ADR
+> [0029](./adr/0029-design-tokens-css-modules-and-self-hosted-font.md); what
+> changed and why, in `docs/architecture.md`. Two band colours moved one hue-step
+> to stay above 4.5:1 on a tinted chip — measured, and recorded in
+> `docs/accessibility.md` §2. Everything below is what was asked for; the notes
+> in brackets are where the implementation differs.
 
 Introduce real styling infrastructure and tokens; migrate existing inline styles.
 
@@ -200,7 +216,11 @@ Introduce real styling infrastructure and tokens; migrate existing inline styles
   border, 8px radius, visible focus ring `--sky-500`), fieldset borders removed in
   favour of card grouping with a small bold group label.
 - **Acceptance:** no visual browser-default chrome remains; all existing tests pass;
-  axe green.
+  axe green. _(Met: `npm test` 168 passing, `npm run e2e` 7 passing, `npm run a11y`
+  0 violations. Two test files changed with the code — `SkipToCanvasLink.test.tsx`,
+  whose visually-hidden behaviour is now CSS rather than state, and
+  `PlotCanvas.test.tsx`, which queried the canvas container by its inline border.
+  `e2e/drag.ts` gained a `scrollIntoViewIfNeeded` — see ADR 0029's consequences.)_
 
 ### Phase 1 — Workspace layout (the big one)
 
@@ -228,7 +248,7 @@ This single phase fixes findings 1, 3, and half of 2.
   desktop. Below ~900px viewport width, collapse to the current stacked flow (the
   existing mobile reasoning in the code comments stays valid — keep it as the narrow
   breakpoint).
-- Palette (left) and canvas (centre) are now *always simultaneously visible* → drag and
+- Palette (left) and canvas (centre) are now _always simultaneously visible_ → drag and
   drop becomes a short, natural gesture. Keep the dnd-kit wiring exactly as is.
 - Right panel hosts: shape picker + outline editing controls, growing-conditions form,
   and the warnings list — the tweak-and-check loop sits beside the canvas it affects.
@@ -236,7 +256,7 @@ This single phase fixes findings 1, 3, and half of 2.
 - "Add your own crop" moves out of the flow entirely: a "+ Add your own crop" button at
   the bottom of the palette sidebar opening a modal dialog (focus-trapped, Esc to
   close). Same form inside, unchanged logic.
-- The numbered "1./2./3./4." headings retire; the workspace *is* the loop. Keep an
+- The numbered "1./2./3./4." headings retire; the workspace _is_ the loop. Keep an
   `aria-label`ed landmark per region and keep the skip-to-canvas link (retargeted).
 - **Acceptance:** at 1440×900 and 1920×1080 the canvas region occupies ≥50% of viewport
   area; palette→canvas drag completes without any page scroll; e2e specs updated;
@@ -306,7 +326,7 @@ This single phase fixes findings 1, 3, and half of 2.
   behind a "Describe your soil (optional)" disclosure; region picker one select.
 - Warnings dock (bottom of right panel): count badge by severity ("2 ⚠ 1 ℹ"), each
   warning a small card — severity icon, reason, "show me" (existing `onFocusPlacement`)
-  which selects *and pans/zooms to* the placement. Empty state: "No problems — looking
+  which selects _and pans/zooms to_ the placement. Empty state: "No problems — looking
   good 🌿".
 - **Acceptance:** full tweak loop (change shape → palette re-ranks → warnings update)
   happens with zero vertical page scroll at 1440×900.

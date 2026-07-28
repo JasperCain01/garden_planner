@@ -48,12 +48,41 @@ Every other band/severity colour already cleared 4.5:1 and was left alone.
 Unit tests (`severity.test.ts`, and the equivalent reasoning recorded in
 `PlantPalette.tsx`'s own comment) hold these ratios going forward.
 
+**Re-measured in UI redesign Phase 0 (2026-07-28), when the band became a
+chip.** The five band colours above were tuned against a **white** background,
+which is what they sat on. Phase 0 renders the band as a chip — the same text
+on a tint of its own hue — and a tint is darker than white, so every pairing
+had to be computed again rather than assumed to carry over. Three survived
+unchanged; two could not clear 4.5:1 against _any_ usable tint and were
+darkened one step in the same hue:
+
+| Band         | Chip pairing           | Ratio                                                                    |
+| ------------ | ---------------------- | ------------------------------------------------------------------------ |
+| `excellent`  | `#1a7f37` on `#eaf7ee` | 4.60:1 ✅ (colour unchanged)                                             |
+| `good`       | `#3f7522` on `#eef6e8` | 5.02:1 ✅ (colour unchanged)                                             |
+| `fair`       | `#8a6c00` on `#fcf7e8` | 4.64:1 ✅ (colour unchanged)                                             |
+| `poor`       | `#a85600` on `#fdf0e4` | 4.69:1 ✅ (was `#b35c00`, which tops out at 4.48:1 on any usable tint)   |
+| `unsuitable` | `#6b6b6b` on `#f0efed` | 4.64:1 ✅ (was `#767676`, which reaches only 4.54:1 even on plain white) |
+
+Both darkened values also still clear the bar on plain white (5.26:1 and
+5.33:1). The band colours now live as the `--band-*` tokens in
+`app/src/styles/tokens.css` — that file carries the working, and is where to
+change them — rather than as `PlantPalette.tsx`'s old `BAND_COLORS` map.
+
+Phase 0's own new pairings were measured the same way, and are recorded beside
+the tokens they belong to: body text 10.78:1 on the page background, muted text
+5.03:1, the focus ring 4.87:1, and `--border-input` at 3.47:1 against the page
+(WCAG 1.4.11's 3:1 bar for a control's boundary, not the text bar). The severity
+colours are unchanged, and every surface that shows a severity word is a white
+card — which is the background their 4.5:1 figures were measured against.
+
 **Colour-only meaning:** the brief named two candidates.
 
 - `BAND_COLORS` — **not actually colour-only**: `BAND_LABELS`'s text
   ("Excellent match", "Good match", …) renders right next to the colour, so a
   colour-blind or screen-reader user already gets the same information a
-  different way. No further change needed beyond the contrast fix above.
+  different way. No further change needed beyond the contrast fix above. (Still
+  true of Phase 0's chip: the chip's own content _is_ that text.)
 - The canvas's severity badges — **were** colour-only: every severity drew
   the same `"!"` glyph, so colour was the _only_ signal on the canvas itself
   (`WarningsPanel.tsx`'s own severity label already shows the word, so that

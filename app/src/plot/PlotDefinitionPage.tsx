@@ -40,6 +40,14 @@
  * **Skip link (Workplan Stage 6.2).** `SkipToCanvasLink` is the one addition
  * this stage's keyboard-only walkthrough turned up as worth making: see that
  * component's own doc for the friction it closes.
+ *
+ * **Styling (UI redesign Phase 0).** Each section is now a card
+ * (`styles/global.css`'s `.card`) and this page sets the gap between them
+ * (`PlotDefinitionPage.module.css`). The composition — which components
+ * render, in what order, inside one `DndContext` — is untouched: replacing
+ * this stacked document with a workspace layout where the palette and canvas
+ * are visible at the same time is Phase 1's job, and the single biggest win in
+ * `docs/ui-aesthetic-review.md`.
  */
 
 import { DndContext } from '@dnd-kit/core';
@@ -54,6 +62,7 @@ import { PlotConditionsForm } from './PlotConditionsForm.tsx';
 import { PlotOutlineEditor } from './PlotOutlineEditor.tsx';
 import { ShapePicker } from './ShapePicker.tsx';
 import { SkipToCanvasLink } from './SkipToCanvasLink.tsx';
+import styles from './PlotDefinitionPage.module.css';
 
 export function PlotDefinitionPage() {
   const region = usePlotStore((state) => state.region);
@@ -66,20 +75,22 @@ export function PlotDefinitionPage() {
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <SkipToCanvasLink />
-      <section>
-        <h2>1. Define your plot</h2>
-        <p>
-          Start from a preset shape, then drag, add or remove corners until the outline matches your
-          real plot.
-        </p>
-        <ShapePicker onApply={setRegion} />
-        <PlotOutlineEditor region={region} onChange={setRegion} />
-        <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
-      </section>
-      <PlantPalette />
-      <UserCropsSection />
-      <PlotCanvasSection canvasWarnings={canvasWarnings} />
-      <WarningsSection canvasWarnings={canvasWarnings} />
+      <div className={styles.page}>
+        <section className="card">
+          <h2>1. Define your plot</h2>
+          <p className={styles.intro}>
+            Start from a preset shape, then drag, add or remove corners until the outline matches
+            your real plot.
+          </p>
+          <ShapePicker onApply={setRegion} />
+          <PlotOutlineEditor region={region} onChange={setRegion} />
+          <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
+        </section>
+        <PlantPalette />
+        <UserCropsSection />
+        <PlotCanvasSection canvasWarnings={canvasWarnings} />
+        <WarningsSection canvasWarnings={canvasWarnings} />
+      </div>
     </DndContext>
   );
 }

@@ -1,0 +1,60 @@
+/*
+ * App-shell layout (UI redesign Phase 0). Deliberately still the *same shape*
+ * as the inline styles it replaces — a single centred reading column — because
+ * turning that column into a full-viewport workspace is Phase 1's whole job
+ * (`docs/ui-aesthetic-review.md` §"Phase 1 — Workspace layout"). What changes
+ * here is only the finish: a real header band, page-height surface, and the
+ * spacing rhythm coming from tokens instead of round `rem` guesses.
+ */
+
+.shell {
+  /* The page background is on `body`; this guarantees it covers the viewport
+   * even when a route renders very little (the not-found page). */
+  min-height: 100vh;
+}
+
+.header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-card);
+}
+
+/* Header contents and page contents share one column width and one gutter, so
+ * the wordmark lines up with the content beneath it.
+ *
+ * The gutter is what keeps content off both screen edges on a viewport
+ * narrower than the column (Workplan Stage 6.2's responsive pass) — with
+ * `box-sizing: border-box` from `global.css` doing the same job the inline
+ * `boxSizing` did: stopping that padding from pushing the container past 100%
+ * width and forcing a horizontal scrollbar.
+ */
+.column {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.header .column {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: var(--text-h1);
+  letter-spacing: -0.01em;
+}
+
+.wordmark a {
+  color: var(--green-900);
+  text-decoration: none;
+}
+
+.wordmark a:hover {
+  color: var(--green-700);
+}
+
+.main {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-8);
+}

@@ -16,10 +16,17 @@
  * verbatim: the engine's docs are explicit that these are deliverable
  * sentences, not debug aids, so this component never re-derives or
  * paraphrases one.
+ *
+ * **Styling (UI redesign Phase 0).** Each row is a card with a
+ * severity-coloured edge, styled from `WarningsPanel.module.css`; the severity
+ * colour now comes from the `--severity-*` tokens rather than an inline
+ * `style` fed by `severityColor` (which stays the source of truth for the
+ * Konva-drawn canvas badge — see `styles/tokens.css`). Docking this list
+ * beside the canvas is Phase 4's job (`docs/ui-aesthetic-review.md`).
  */
 
 import type { CompanionSuggestion, Plant, Warning } from '@garden-planner/engine';
-import { severityColor } from './severity.ts';
+import styles from './WarningsPanel.module.css';
 
 export interface WarningsPanelProps {
   readonly warnings: readonly Warning[];
@@ -45,23 +52,13 @@ export function WarningsPanel({
     <div>
       <h3>Warnings</h3>
       {warnings.length === 0 ? (
-        <p>No problems detected with what&rsquo;s currently placed.</p>
+        <p className={styles.empty}>No problems detected with what&rsquo;s currently placed.</p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+        <ul className={styles.list}>
           {warnings.map((warning) => (
-            <li
-              key={warningKey(warning)}
-              style={{
-                border: '1px solid #ccc',
-                borderRadius: '0.5rem',
-                padding: '0.5rem',
-                marginBottom: '0.5rem',
-              }}
-            >
-              <strong style={{ color: severityColor(warning.severity) }}>
-                {warning.severity.toUpperCase()}
-              </strong>{' '}
-              {warning.reason}{' '}
+            <li key={warningKey(warning)} className={styles.item} data-severity={warning.severity}>
+              <strong className={styles.severity}>{warning.severity.toUpperCase()}</strong>
+              <span className={styles.reason}>{warning.reason}</span>
               <button
                 type="button"
                 onClick={() => onFocusPlacement(warning.subjects[0].placementId)}
@@ -75,26 +72,21 @@ export function WarningsPanel({
 
       <h3>Companion suggestions</h3>
       {suggestions.length === 0 ? (
-        <p>No companion suggestions for what&rsquo;s currently placed.</p>
+        <p className={styles.empty}>No companion suggestions for what&rsquo;s currently placed.</p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+        <ul className={styles.list}>
           {suggestions.map((suggestion) => {
             const suggested = plants.find((plant) => plant.id === suggestion.suggestedPlantId);
             return (
               <li
                 key={`${suggestion.forPlacementId}:${suggestion.suggestedPlantId}`}
-                style={{
-                  border: '1px solid #ccc',
-                  borderRadius: '0.5rem',
-                  padding: '0.5rem',
-                  marginBottom: '0.5rem',
-                }}
+                className={styles.item}
               >
-                <strong>{suggested?.commonName ?? suggestion.suggestedPlantId}</strong>{' '}
-                <span style={{ fontStyle: 'italic' }}>
+                <strong>{suggested?.commonName ?? suggestion.suggestedPlantId}</strong>
+                <span className={styles.evidence}>
                   {suggestion.evidence === 'well-supported' ? 'Well-supported' : 'Traditional'}
-                </span>{' '}
-                {suggestion.reason}{' '}
+                </span>
+                <span className={styles.reason}>{suggestion.reason}</span>
                 <button type="button" onClick={() => onFocusPlacement(suggestion.forPlacementId)}>
                   Show me
                 </button>

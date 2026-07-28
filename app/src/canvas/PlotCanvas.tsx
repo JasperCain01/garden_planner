@@ -58,6 +58,7 @@ import { usePlacementsStore, type PlacedPlant } from '../state/placements-store.
 import { severityColor, severityGlyph } from '../warnings/severity.ts';
 import { CANVAS_DROPPABLE_ID } from './drop.ts';
 import { canvasSizePx, clampToBounds, cmToPx, pxToCm } from './geometry.ts';
+import styles from './PlotCanvas.module.css';
 
 /** How far one arrow-key press nudges the selected placement, in plot centimetres — the keyboard-operable alternative to Konva's pointer-only `draggable` (Workplan Stage 6.2, ADR 0026). */
 const NUDGE_STEP_CM = 10;
@@ -87,8 +88,15 @@ const NO_SEVERITIES: ReadonlyMap<string, WarningSeverity> = new Map();
  * icon (Stage 4.2). Provides immediate, at-a-glance category indication even
  * while the icon image is loading. Not a suitability cue — unrelated to the
  * palette's band colours.
+ *
+ * **Held here as literal strings, and mirrored in CSS (UI redesign Phase 0).**
+ * Konva paints a `<canvas>`, so it cannot read a CSS custom property — this
+ * map has to be TypeScript. The DOM side of the same idea (a category chip in
+ * the palette, a legend) reads `--category-*` from `styles/tokens.css`
+ * instead, so the values exist twice; `styles/tokens.test.ts` imports this map
+ * and fails if the two copies ever disagree. Exported for that test.
  */
-const CATEGORY_COLORS: Readonly<Record<EdibleCategory, string>> = {
+export const CATEGORY_COLORS: Readonly<Record<EdibleCategory, string>> = {
   vegetable: '#4c8c2b',
   herb: '#00796b',
   fruit: '#c0392b',
@@ -282,11 +290,11 @@ export function PlotCanvas({
       role="group"
       onKeyDown={handleKeyDown}
       aria-label="plot canvas — drag plants here to place them, or select one and use the arrow keys (hold Shift to move further) to nudge it; click a placed plant to select it"
-      style={{
-        width: size.width,
-        height: size.height,
-        border: isOver ? '2px dashed #2e7d32' : '1px solid #ccc',
-      }}
+      className={styles.stage}
+      data-drop-target={isOver}
+      // Size stays inline: it's computed from the plot's own dimensions and
+      // changes whenever the outline does (`geometry.ts#canvasSizePx`).
+      style={{ width: size.width, height: size.height }}
     >
       <Stage
         ref={stageRef}

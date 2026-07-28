@@ -8,48 +8,23 @@
  * palette row *and* the whole "Add your own crop" form first — over 20 tab
  * presses in that walkthrough's six-crop search match.
  *
- * Standard implementation: an `<a href="#plot-canvas">` that's visually
- * hidden until it receives keyboard focus, so sighted mouse users never see
- * it but a keyboard user tabbing from the top of the page meets it first.
- * No CSS file exists in this app (every other component uses inline
- * `style`), so "hidden until focused" is a small `useState` toggle on
- * `onFocus`/`onBlur` rather than a `:focus` pseudo-class — the same
- * inline-styles convention as everywhere else here, not a special case.
+ * Standard implementation: an `<a href="#plot-canvas">` that's visually hidden
+ * until it receives keyboard focus, so sighted mouse users never see it but a
+ * keyboard user tabbing from the top of the page meets it first.
+ *
+ * **Why this is now two CSS rules and no state (UI redesign Phase 0).** Stage
+ * 6.2 wrote "hidden until focused" as a `useState` toggle on `onFocus`/`onBlur`
+ * for one reason it stated plainly: there was no stylesheet in this app to put
+ * a `:focus` rule in. Phase 0 adds one, so the component drops the state and
+ * the two inline style objects for `SkipToCanvasLink.module.css` — the plain
+ * pattern, which also keeps working if React hasn't hydrated yet.
  */
 
-import { useState } from 'react';
+import styles from './SkipToCanvasLink.module.css';
 
 export function SkipToCanvasLink() {
-  const [isFocused, setIsFocused] = useState(false);
-
   return (
-    <a
-      href="#plot-canvas"
-      onFocus={() => setIsFocused(true)}
-      onBlur={() => setIsFocused(false)}
-      style={
-        isFocused
-          ? {
-              position: 'fixed',
-              top: '0.5rem',
-              left: '0.5rem',
-              zIndex: 10,
-              padding: '0.5rem 0.75rem',
-              background: '#1a7f37',
-              color: '#ffffff',
-              borderRadius: '0.25rem',
-              textDecoration: 'none',
-            }
-          : {
-              position: 'absolute',
-              width: 1,
-              height: 1,
-              overflow: 'hidden',
-              clip: 'rect(0, 0, 0, 0)',
-              whiteSpace: 'nowrap',
-            }
-      }
-    >
+    <a href="#plot-canvas" className={styles.skipLink}>
       Skip to plot canvas
     </a>
   );
