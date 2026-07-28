@@ -178,23 +178,27 @@ npm run a11y -w app
 
 Runs `app/e2e/a11y.spec.ts` (its own Playwright config,
 `app/playwright.a11y.config.ts`, so it's never part of `npm run e2e`/`verify`)
-against the plot-definition page in two states — a fresh load, and after
-placing a crop via the keyboard-operable "Add to plot" button — checking the
-`wcag2a`/`wcag2aa`/`wcag21a`/`wcag21aa` rule tags with
+against the plot-definition page in three states — a fresh load, after placing
+a crop via the keyboard-operable "Add to plot" button, and with the "Add your
+own crop" modal dialog open (that third one arrived with the dialog, in UI
+redesign Phase 1) — checking the `wcag2a`/`wcag2aa`/`wcag21a`/`wcag21aa` rule
+tags with
 [`@axe-core/playwright`](https://www.npmjs.com/package/@axe-core/playwright).
 
-**Today's recorded result: 0 violations, in both states** (re-confirmed
-unchanged at Stage 6.3, and now enforced on every push and pull request by the
-`a11y` job in [`.github/workflows/checks.yml`](./.github/workflows/checks.yml)
-— a new violation fails the build).
+**Today's recorded result: 0 violations, in all three states** (re-confirmed
+unchanged at Stage 6.3 and again after the UI redesign's layout phase, and
+enforced on every push and pull request by the `a11y` job in
+[`.github/workflows/checks.yml`](./.github/workflows/checks.yml) — a new
+violation fails the build).
 
 ```
-Running 2 tests using 1 worker
+Running 3 tests using 1 worker
 
   ✓  1 e2e/a11y.spec.ts:36:1 › the plot-definition page has no axe violations in its initial state
   ✓  2 e2e/a11y.spec.ts:44:1 › the plot-definition page has no axe violations once a plant is placed and selected
+  ✓  3 e2e/a11y.spec.ts:64:1 › the add-crop dialog has no axe violations while open
 
-  2 passed
+  3 passed
 ```
 
 What this can't check: the plot canvas renders to a single opaque

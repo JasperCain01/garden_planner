@@ -224,6 +224,16 @@ Introduce real styling infrastructure and tokens; migrate existing inline styles
 
 ### Phase 1 — Workspace layout (the big one)
 
+> **Status: implemented** (2026-07-28). Shell frame in
+> `app/src/routes/AppShell.tsx`, the three-column grid in
+> `app/src/plot/PlotDefinitionPage.tsx`, the add-crop modal in
+> `app/src/ui/ModalDialog.tsx` + `user-crops/AddCropDialog.tsx`. Decisions and
+> the roads not taken: ADR
+> [0030](./adr/0030-workspace-layout-not-a-document.md); what changed and why,
+> in `docs/architecture.md`; the keyboard consequences, measured, in
+> `docs/accessibility.md` §6. Everything below is what was asked for; the notes
+> in brackets are where the implementation differs.
+
 Replace the 640px vertical document with a full-viewport three-region workspace.
 This single phase fixes findings 1, 3, and half of 2.
 
@@ -247,7 +257,10 @@ This single phase fixes findings 1, 3, and half of 2.
   columns. Sidebars scroll internally; the page itself never scrolls vertically on
   desktop. Below ~900px viewport width, collapse to the current stacked flow (the
   existing mobile reasoning in the code comments stays valid — keep it as the narrow
-  breakpoint).
+  breakpoint). _(Split in two: `AppShell` is a `100dvh` two-row frame — header, plus
+  a content row of exactly the leftover height — and `PlotDefinitionPage` draws the
+  three columns inside it. The columns are route content and `NotFound` shares the
+  shell, so the seam sits where the router already put one. ADR 0030 §1.)_
 - Palette (left) and canvas (centre) are now _always simultaneously visible_ → drag and
   drop becomes a short, natural gesture. Keep the dnd-kit wiring exactly as is.
 - Right panel hosts: shape picker + outline editing controls, growing-conditions form,
@@ -255,12 +268,27 @@ This single phase fixes findings 1, 3, and half of 2.
   Sections are collapsible accordions (conditions open by default).
 - "Add your own crop" moves out of the flow entirely: a "+ Add your own crop" button at
   the bottom of the palette sidebar opening a modal dialog (focus-trapped, Esc to
-  close). Same form inside, unchanged logic.
+  close). Same form inside, unchanged logic. _(Done, as a real `<dialog>` +
+  `showModal()` — the focus trap, Esc, focus-return and backdrop are then the
+  browser's rather than ours. The button also shows a count, because behind a dialog
+  you can no longer simply see your own crops listed. ADR 0030 §4.)_
 - The numbered "1./2./3./4." headings retire; the workspace _is_ the loop. Keep an
   `aria-label`ed landmark per region and keep the skip-to-canvas link (retargeted).
+  _(Done, plus a **second** skip link. Reading order is now plants → plot →
+  settings, which puts the shape/conditions form behind the whole 144-crop palette
+  where it used to come first — a real cost of the layout, answered the way Stage 6.2
+  answered the same shape of problem. `SkipToCanvasLink` → `SkipLinks`; ADR 0030 §5
+  records why this rather than a DOM order that fights the visible columns.)_
 - **Acceptance:** at 1440×900 and 1920×1080 the canvas region occupies ≥50% of viewport
   area; palette→canvas drag completes without any page scroll; e2e specs updated;
-  keyboard walkthrough (`keyboard-walkthrough.mjs`) still completes.
+  keyboard walkthrough (`keyboard-walkthrough.mjs`) still completes. _(Met, and now
+  regression-guarded: `e2e/workspace-layout.spec.ts` measures the canvas region at
+  **53%** of viewport area at 1440×900 and **64%** at 1920×1080, asserts the page
+  doesn't scroll at either size, drags palette→canvas from the unfiltered default
+  state without scrolling, and checks the narrow breakpoint still stacks. `npm test`
+  176 passing, `npm run e2e` 13 passing, `npm run a11y` 0 violations across three
+  states (the modal got its own scan), keyboard walkthrough all steps passing — and
+  15 tab presses to the canvas where it used to be 35.)_
 
 ### Phase 2 — Canvas as hero
 

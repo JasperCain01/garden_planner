@@ -26,9 +26,9 @@ now have one:
   "Previous placement"/"Next placement" buttons
   (`app/src/canvas/PlotCanvasSection.tsx`) as a keyboard-only way to select
   one.
-- **A "Skip to plot canvas" link** (`app/src/plot/SkipToCanvasLink.tsx`), the
-  one thing the keyboard walkthrough below turned up as worth adding — see
-  §4.
+- **A "Skip to plot canvas" link** (`app/src/plot/SkipLinks.tsx` — one link at
+  the time, two as of UI redesign Phase 1, see §6), the one thing the keyboard
+  walkthrough below turned up as worth adding — see §4.
 
 ## 2. Colour contrast and ARIA
 
@@ -277,11 +277,132 @@ All steps passed.
   selected, not just see it). That's a real, recorded gap for whichever
   future session has access to real assistive-tech software to test with.
 
+## 6. Re-verified after the UI redesign's layout phase (2026-07-28)
+
+Phase 1 of [`docs/ui-aesthetic-review.md`](./ui-aesthetic-review.md) replaced
+the stacked document this page was written against with a three-region
+workspace (ADR [0030](./adr/0030-workspace-layout-not-a-document.md)). That
+moves reading order, tab order and every landmark in the app, so none of §1–§5
+could be assumed to carry over. What follows is what was re-run, and what
+changed.
+
+### The reading order moved, and cost something
+
+Reading order is now **plants → plot → settings**, so the shape-and-conditions
+form sits behind the whole 144-crop palette where it used to come first. That
+is a real cost, and it is paid the way Stage 6.2 paid the same kind of cost: a
+**second skip link**, "Skip to plot settings", alongside the existing one to the
+canvas (`app/src/plot/SkipLinks.tsx`, renamed from `SkipToCanvasLink.tsx`).
+
+The alternative considered and rejected: leave the settings column first in the
+DOM and move it into the third grid column with `grid-column`. That fixes the
+tab count by making focus jump from the right edge of the screen back to the
+left — precisely what WCAG 2.4.3 (Focus Order) exists to prevent. Recorded in
+ADR 0030 §5.
+
+### Structure: landmarks in place of the numbers
+
+The numbered "1. Define your plot" … "4. Check for problems" headings were
+navigable structure as well as (bad) instruction. Each of the three regions is
+now a labelled `region` landmark — Plants, Your plot, Plot settings and checks —
+with its own `<h2>`; the settings column's three panels are
+`<details>`/`<summary>` with the heading inside the summary, so each is a
+disclosure control and a heading at once. `App.test.tsx` asserts the three
+landmarks exist, so they can't quietly go missing.
+
+### axe: 0 violations, now in three states
+
+`npm run a11y -w app` gained a third scan. "Add your own crop" moved into a
+modal `<dialog>` (`app/src/ui/ModalDialog.tsx`), and a modal is exactly the kind
+of surface that regresses quietly — an unnamed dialog, a heading order that
+restarts, a control the trap leaves behind — so it is scanned in the state a
+user meets it in.
+
+```
+  ✓  1 e2e/a11y.spec.ts:36:1 › the plot-definition page has no axe violations in its initial state
+  ✓  2 e2e/a11y.spec.ts:44:1 › the plot-definition page has no axe violations once a plant is placed and selected
+  ✓  3 e2e/a11y.spec.ts:64:1 › the add-crop dialog has no axe violations while open
+  3 passed
+```
+
+The dialog's focus trap, Esc handling and focus-return are the **browser's**,
+not ours: it is a real `<dialog>` opened with `showModal()`, not a
+`<div role="dialog">` with a hand-written trap. axe doesn't check those, so the
+walkthrough does (last two steps below).
+
+### The keyboard walkthrough: shorter, and re-shaped to the layout
+
+`app/keyboard-walkthrough.mjs` follows the app's reading order, so it changed
+shape with the app: it starts at the palette and reaches the shape form _from_
+the canvas, and gained a step per skip link plus one for the dialog.
+
+```
+=== Step 0: the skip links (Workplan Stage 6.2; second link added in UI redesign Phase 1) ===
+  OK   the first skip link jumps focus straight to the plot canvas
+  OK   the second skip link jumps focus straight to the plot settings column
+
+=== Step 1: find a crop (keyboard only) ===
+  OK   reached the palette search field in 4 tabs and typed a crop name
+
+=== Step 2: place it (keyboard only, via "Add to plot") ===
+  OK   activated "Add to plot" via keyboard (Tab + Enter) — no drag involved
+  OK   the placed crop shows as "Selected" (auto-selected on add, per addPlacement)
+
+=== Step 3: nudge it with arrow keys (keyboard only) ===
+  OK   reached the plot canvas by Tab alone (15 presses from the search field — see the "friction" note below)
+  OK   nudged the selected plant into a new position with arrow keys, no pointer at all
+
+=== Step 4: describe the plot (keyboard only) ===
+  OK   reached the rectangle width field in 4 tabs from the canvas
+  OK   applied a 4m x 3m rectangle via keyboard (Tab + type + Enter)
+
+=== Step 5: check warnings (read-only, but confirm reachable) ===
+  OK   the "Problems & suggestions" panel is present and reachable (no interaction needed to read it)
+
+=== Step 6: the add-crop dialog (UI redesign Phase 1) ===
+  OK   opening the dialog moves focus inside it
+  OK   Esc closes the dialog and returns focus to the trigger that opened it
+
+All steps passed.
+```
+
+**The friction §5 recorded is measurably smaller: 15 tab presses to the canvas
+where it was 35**, for the same six-crop "Onion" search. Most of that is the
+"Add your own crop" form — ~25 tab stops — leaving the page for a dialog; the
+rest is the canvas's own toolbar buttons now sitting before it rather than
+after. The finding itself stands: everything is reachable, and the long way
+round is still long. The skip link remains the short way.
+
+### Small screens: the Stage 6.2 work is kept, as the one breakpoint
+
+Below 900px the workspace stops pinning to the viewport, the three regions stack
+into cards, and the palette's crop list gets its `min(65vh, 40rem)` cap back —
+§3's reasoning unchanged, because it is still right: on a phone this app reads
+as one page of sections, and three internally-scrolling regions on a 640px-tall
+viewport would be three cramped windows onto it. Above that width the cap is
+gone and the list simply fills the sidebar, which is better than a fraction of
+the viewport ever was.
+
+Re-verified at 390×844: the regions stack in reading order, the page scrolls
+normally, and nothing forces horizontal overflow —
+`app/e2e/workspace-layout.spec.ts` asserts all three, so this can't regress
+unnoticed.
+
+### Still not done, still recorded
+
+The two gaps §5 ends on are **unchanged by this phase**: the free-form
+plot-outline corner editor is still pointer-only, and there has still been no
+real screen-reader testing (NVDA/VoiceOver/JAWS). Neither got better or worse;
+both remain in `WORKPLAN.md` §5.2's backlog with an explicit disposition.
+
 ## Related
 
 - ADR [0026](./adr/0026-keyboard-placement-and-severity-glyphs.md) — the
   reasoning behind the keyboard-interaction model and the severity-glyph/
   contrast decisions.
+- ADR [0030](./adr/0030-workspace-layout-not-a-document.md) — the workspace
+  layout §6 re-verified this page against, including why the second skip link
+  rather than a DOM order that fights the visible columns.
 - [`docs/stage-6.2-brief.md`](./stage-6.2-brief.md) — the brief this stage
   worked from.
 - [`WORKPLAN.md`](../WORKPLAN.md) §5.2 — the post-v1 backlog, where the two

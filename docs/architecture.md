@@ -739,6 +739,74 @@ stacked "1./2./3./4." sections, the postage-stamp canvas and the always-expanded
 palette rows are all still there. They are Phases 1–4, and each component's doc
 comment now names which phase owns its next change.
 
+## UI redesign Phase 1 — the workspace layout
+
+The review's first three findings are one finding in three costumes: a 640px
+centred column on a 1920px screen, the signature canvas as a postage stamp
+two-thirds of the way down it, and the app's advertised gesture — drag a plant
+onto the plot — broken by the palette and the canvas being ~1,500px apart and
+never on screen together. Phase 1 replaces the document with a workspace.
+Reasoning in ADR
+[0030](./adr/0030-workspace-layout-not-a-document.md).
+
+**The frame and the columns are split at the router's seam.**
+`routes/AppShell.tsx` is now a two-row grid pinned to the viewport — a header
+band, and a content row of exactly the leftover height — and
+`plot/PlotDefinitionPage.tsx` fills that row with three columns: a 320px plants
+sidebar, the canvas taking everything left, and a 300px settings-and-checks
+column. The review drew it as one grid; the seam is here because those columns
+_are_ route content and `NotFound` shares the same shell. `minmax(0, 1fr)`
+appears in both files and is load-bearing in both: a bare `1fr` refuses to be
+shorter than its content, which is how 144 palette rows would put the page
+scrollbar back.
+
+**Landmarks replaced the numbered headings.** "1. Define your plot" … "4. Check
+for problems" enforced a sequence over what `DESIGN.md` calls a loop, so each
+region is a labelled `region` landmark with its own `<h2>`, and the settings
+column's three panels are `<details>`/`<summary>` with the heading inside the
+summary — a disclosure control and a heading at once, with no state to write.
+
+**One breakpoint, and below it the old layout.** Under 900px the shell stops
+pinning to the viewport, the grid becomes a flex column of cards, and the
+palette's crop list gets its `min(65vh, 40rem)` cap back — Stage 6.2's measured
+phone reasoning (`docs/accessibility.md` §3) is still right, and three
+internally-scrolling regions on a 640px-tall viewport would be worse than one
+long page. Above it, the cap is gone: the list just fills the sidebar.
+
+**"Add your own crop" is a modal now.** It used to take ~800px of page between
+the palette and the canvas — every pixel of which was also distance between
+them — for a capability used rarely. `ui/ModalDialog.tsx` (the app's first
+shared UI primitive) is a real `<dialog>` with `showModal()`, so the focus trap,
+Esc, focus-return and backdrop are the browser's rather than ours; jsdom has no
+`HTMLDialogElement`, so the component falls back to the `open` attribute in
+tests and never in a browser.
+
+**The layout has one accessibility cost, and it is paid.** Reading order runs
+plants → plot → settings, which puts the shape-and-conditions form behind the
+whole palette where it used to come first. `plot/SkipLinks.tsx` (Stage 6.2's
+`SkipToCanvasLink`, renamed) adds a second skip link straight to the settings
+column, rather than ordering the DOM against the visible columns and breaking
+focus order to fix a tab count. Net, the keyboard journey got shorter: 15 tab
+presses from the search field to the canvas where it was 35, mostly because the
+add-crop form's ~25 stops left the page (`docs/accessibility.md` §6).
+
+**Measured, not asserted.** `e2e/workspace-layout.spec.ts` holds the phase's
+acceptance criteria: the canvas region is 53% of the viewport at 1440×900 and
+64% at 1920×1080, the page doesn't scroll at either, a palette→canvas drag
+completes from the unfiltered default state, and the narrow breakpoint still
+stacks. Every drag-driven spec dropped its 4,000px-tall viewport trick along
+the way, and `e2e/drag.ts` swapped a hand-computed press point for
+`locator.hover()` — a palette row can be taller than the list box it lives in,
+so its box centre can be off-screen while the row is perfectly draggable.
+
+**What this phase deliberately did not do:** the canvas has the space but
+doesn't use it — the Konva stage is still fixed-scale, so the default 3×2m plot
+is a small rectangle centred in a large region. Scale-to-fit, zoom, a grid and
+footprint-true markers are Phase 2's entire brief. The palette rows are still
+fully expanded (Phase 3), the shape picker is still radios (Phase 4), and a
+dragged palette card is still clipped at the sidebar edge — the fix for that is
+a dnd-kit `DragOverlay`, which is Phase 5's "drag ghost".
+
 ## Where to look next
 
 | Topic                                                             | File                                                                                                   |
@@ -757,6 +825,11 @@ comment now names which phase owns its next change.
 | The self-hosted heading font and why it's declared by hand        | `app/src/styles/fonts.css`, [`adr/0029`](./adr/0029-design-tokens-css-modules-and-self-hosted-font.md) |
 | The CSS↔TypeScript colour-mirror guard                            | `app/src/styles/tokens.test.ts`                                                                        |
 | The UI redesign plan and which phase owns what                    | [`docs/ui-aesthetic-review.md`](./ui-aesthetic-review.md)                                              |
+| The workspace layout: shell frame, three-column grid, breakpoint  | `app/src/routes/AppShell.module.css`, `app/src/plot/PlotDefinitionPage.module.css`                     |
+| Why the app is a workspace and not a document                     | [`adr/0030`](./adr/0030-workspace-layout-not-a-document.md)                                            |
+| The modal-dialog primitive (and its jsdom fallback)               | `app/src/ui/ModalDialog.tsx`                                                                           |
+| The add-crop dialog off the plants sidebar                        | `app/src/user-crops/AddCropDialog.tsx`                                                                 |
+| The workspace layout acceptance criteria, as a test               | `app/e2e/workspace-layout.spec.ts`                                                                     |
 | Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`                                                                    |
 | The user-plant overlay store and merged `usePlantList`            | `app/src/state/`                                                                                       |
 | The plot-definition page, shape picker, outline editor            | `app/src/plot/`                                                                                        |
@@ -787,7 +860,7 @@ comment now names which phase owns its next change.
 | Accessibility writeup, contrast/ARIA findings, responsive fix     | [`docs/accessibility.md`](./accessibility.md)                                                          |
 | The axe check (locally-runnable, today's result recorded)         | `app/e2e/a11y.spec.ts`, root `README.md`                                                               |
 | The keyboard-only walkthrough script and its recorded findings    | `app/keyboard-walkthrough.mjs`, [`docs/accessibility.md`](./accessibility.md)                          |
-| The "Skip to plot canvas" link                                    | `app/src/plot/SkipToCanvasLink.tsx`                                                                    |
+| The two skip links (canvas, plot settings)                        | `app/src/plot/SkipLinks.tsx`                                                                           |
 | The CI checks workflow and what each job gates                    | `.github/workflows/checks.yml`, [`adr/0027`](./adr/0027-ci-checks-workflow-and-blocking-policy.md)     |
 | Why there is no deploy-on-merge, and the recipe if you want one   | [`adr/0028`](./adr/0028-deploy-on-merge-not-automated.md)                                              |
 | The closing security review (npm audit triage, XSS check)         | [`docs/security-review.md`](./security-review.md)                                                      |

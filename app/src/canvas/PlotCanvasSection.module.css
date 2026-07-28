@@ -1,37 +1,88 @@
 /*
- * Canvas-section styling (UI redesign Phase 0). The buttons that used to sit
- * in loose `<p>` tags below the canvas now form one toolbar row, and the
- * selected-placement readout is a card beside them rather than another
- * paragraph.
+ * Canvas-region styling (Phase 0's finish, Phase 1's shape).
  *
- * The canvas itself is still a fixed-scale Konva stage in a scrolling box —
- * making it fill its region, scale to fit and carry a grid is Phase 2's job
+ * Phase 0 pulled the buttons out of loose `<p>` tags into one toolbar row and
+ * made the selected-placement readout a card. Phase 1 made this the *centre*
+ * of the workspace: a column that fills its region, with the canvas taking
+ * every pixel the toolbar and the dock below it don't.
+ *
+ * The canvas inside is still a fixed-scale Konva stage — it now sits in a much
+ * bigger space than it did, but it doesn't yet *use* it. Scaling to fit, zoom,
+ * a grid and footprint-true markers are Phase 2's brief
  * (`docs/ui-aesthetic-review.md`).
  */
 
-/*
- * Workplan Stage 6.2: a plot large enough to make the canvas wider than a
- * phone's viewport must not force the whole *page* to scroll horizontally —
- * that would also drag the growing-conditions form, palette and warnings panel
- * out sideways with it. Scrolling contained to this box, instead, keeps the
- * canvas at full resolution (unlike shrinking its pixels-per-cm to fit, which
- * would make plant icons illegible on a large plot) at the cost of a
- * horizontal scrollbar on the canvas itself for those plots — an accepted
- * trade-off recorded in ADR 0026.
- */
-.viewport {
-  max-width: 100%;
-  overflow-x: auto;
-  padding: var(--space-3);
-  border-radius: var(--radius-card);
-  background: var(--soil-100);
+.region {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-4);
 }
 
 .toolbar {
   display: flex;
   flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.heading {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: var(--space-3);
+}
+
+.hint {
+  flex-shrink: 0;
+  margin: var(--space-2) 0 var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/*
+ * The canvas's own space.
+ *
+ * `flex: 1` + `min-height: 0` is what makes this the region's largest element
+ * rather than the ~168px-tall postage stamp it used to be
+ * (`docs/ui-aesthetic-review.md`'s second finding): at 1440×900 the centre
+ * column is ~820×836, and every pixel of it that isn't toolbar or dock is
+ * this.
+ *
+ * The stage is *centred* in it rather than stretched, because the stage's own
+ * pixel size is still derived from the plot's dimensions at a fixed scale
+ * (`geometry.ts`); making it grow to meet this box is Phase 2. `overflow:
+ * auto` stays for the reason Workplan Stage 6.2 added it: a plot large enough
+ * to out-measure the box must scroll *here*, not drag the whole workspace
+ * sideways (ADR 0026).
+ */
+.viewport {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--soil-100);
+}
+
+/*
+ * Selection readout and count feedback, docked under the canvas. Capped and
+ * independently scrollable so a long tally (one row per distinct crop placed)
+ * can't eat the canvas's height — the region's whole point is that the canvas
+ * keeps the space.
+ */
+.dock {
+  flex-shrink: 0;
+  max-height: 38%;
+  overflow-y: auto;
 }
 
 .selected {
@@ -77,4 +128,25 @@
 
 .severity[data-severity='severe'] {
   color: var(--severity-severe);
+}
+
+/*
+ * The stacked fallback below `--layout-narrow` (`styles/tokens.css`): there is
+ * no region to fill, so nothing is pinned and nothing is capped — the canvas
+ * takes its natural height and the dock follows it down the page.
+ */
+@media (max-width: 899px) {
+  .region {
+    padding: 0;
+  }
+
+  .viewport {
+    flex: none;
+    padding: var(--space-3);
+  }
+
+  .dock {
+    max-height: none;
+    overflow-y: visible;
+  }
 }

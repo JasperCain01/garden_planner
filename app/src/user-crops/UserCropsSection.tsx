@@ -1,10 +1,7 @@
 /**
- * "Add your own crop" page section (Workplan Stage 3.6) — `DESIGN.md`'s
- * "beyond the core loop" capability, not one of the four numbered core-loop
- * steps (`plot/PlotDefinitionPage.tsx`'s "1."–"4." headings), so this section
- * is deliberately unnumbered and sits between the palette (step 2) and the
- * canvas (step 3): once a crop is added here it shows up ranked in the
- * palette above, ready to drag into the canvas below — see
+ * "Add your own crop" (Workplan Stage 3.6) — `DESIGN.md`'s "beyond the core
+ * loop" capability: once a crop is added here it shows up ranked in the
+ * palette like any shipped crop, ready to drag onto the canvas — see
  * `docs/architecture.md`'s Stage 3.6 note for why no changes were needed to
  * either.
  *
@@ -23,11 +20,12 @@
  * trusting the store's shape is what keeps that true even if this list is
  * ever combined with shipped crops later.
  *
- * **Styling (UI redesign Phase 0).** The section is a card and the added-crops
- * list is a proper row list (`UserCropsSection.module.css`). Moving this whole
- * capability out of the page flow and into a modal off the palette is Phase
- * 1's job (`docs/ui-aesthetic-review.md`) — it takes ~800px of prime mid-page
- * space today for something used rarely.
+ * **This is dialog content now (UI redesign Phase 1).** It used to be a page
+ * section — a card with its own `<h2>`, sitting in the flow between the
+ * palette and the canvas and pushing them ~800px further apart for a
+ * capability used rarely. `AddCropDialog.tsx` opens it from the foot of the
+ * plants sidebar instead, and supplies the title, so this component renders
+ * only the content: the form, and the list of what's been added.
  */
 
 import { useState } from 'react';
@@ -52,13 +50,11 @@ export function UserCropsSection() {
   }
 
   return (
-    <section className="card">
-      <h2>Add your own crop</h2>
+    <div>
       <p>
         The shipped dataset can&rsquo;t cover every variety on every seed rack — add one by hand
         from the packet and it behaves like any other crop for this session: scored, ranked, placed,
-        and counted. It appears in the &ldquo;Discover suitable plants&rdquo; palette above as soon
-        as it&rsquo;s added.
+        and counted. It appears in the plants list as soon as it&rsquo;s added.
       </p>
 
       <AddCropForm
@@ -91,6 +87,6 @@ export function UserCropsSection() {
           </ul>
         </div>
       )}
-    </section>
+    </div>
   );
 }

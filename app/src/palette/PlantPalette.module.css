@@ -1,20 +1,48 @@
 /*
- * Plant-palette styling (UI redesign Phase 0).
+ * Plant-palette styling (Phase 0's finish, Phase 1's shape).
  *
- * Phase 0's remit here is finish, not information architecture: the row still
- * shows everything it showed before (icon, name, band, category, summary,
- * confidence, per-dimension reasoning). Collapsing that to a compact card with
- * the reasoning on demand is Phase 3's job (`docs/ui-aesthetic-review.md`) —
- * what changes now is that the row is a real card with a hover state, the band
- * is a chip instead of coloured text, and every colour and gap comes from a
- * token.
+ * Phase 0 restyled the row: a real card with a hover state, the band as a chip
+ * instead of coloured text, every colour and gap from a token. Phase 1 changed
+ * where the whole thing lives — it is the workspace's left sidebar now, so it
+ * fills the height it is given and scrolls its list internally rather than
+ * running down the page.
+ *
+ * The row's *contents* are still everything the engine produced (icon, name,
+ * band, category, summary, confidence, per-dimension reasoning). Compacting
+ * that to a ~64px card with the reasoning on demand is Phase 3's job
+ * (`docs/ui-aesthetic-review.md`).
  */
+
+/*
+ * The sidebar column: heading, intro and filters at their natural height, the
+ * crop list taking everything left over. `min-height: 0` is what allows that
+ * last part — without it a flex child refuses to shrink below its content, and
+ * a 144-row list would push the column past the sidebar instead of scrolling
+ * inside it.
+ */
+.palette {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.heading {
+  flex-shrink: 0;
+}
+
+.intro {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: var(--space-3);
   align-items: end;
+  flex-shrink: 0;
   margin-bottom: var(--space-3);
 }
 
@@ -40,6 +68,7 @@
 }
 
 .count {
+  flex-shrink: 0;
   margin: 0 0 var(--space-2);
   color: var(--text-muted);
   font-size: var(--text-sm);
@@ -57,20 +86,26 @@
  * makes the canvas reachable on a phone — a media-query breakpoint wouldn't
  * touch this, since the list was already a single column at every width.
  *
- * **The `40rem` half of that cap is new in UI redesign Phase 0.** `65vh` alone
- * is only bounded *relative to* the viewport: on a tall screen the palette
- * grows with it and pushes everything below it down just as far, which is the
- * same unbounded-page problem in slower motion (it is also what makes the
- * e2e specs' "very tall viewport" trick fight itself — at 4000px of viewport,
- * `65vh` alone is a 2600px palette). Taking the smaller of the two keeps the
- * phone behaviour Stage 6.2 chose (65vh wins under a ~985px-tall viewport) and
- * stops the list running away on a desktop.
+ * **The `40rem` half of that cap was new in UI redesign Phase 0.** `65vh`
+ * alone is only bounded *relative to* the viewport: on a tall screen the
+ * palette grows with it and pushes everything below it down just as far, which
+ * is the same unbounded-page problem in slower motion. Taking the smaller of
+ * the two keeps the phone behaviour Stage 6.2 chose (65vh wins under a
+ * ~985px-tall viewport) and stops the list running away on a desktop.
+ *
+ * **Phase 1 makes that cap the narrow-viewport rule only.** In the workspace
+ * layout the sidebar has a known height, so the list simply takes whatever is
+ * left of it (`flex: 1` + `min-height: 0`) and scrolls — no cap needed, and
+ * the list is as tall as the screen allows rather than an arbitrary fraction
+ * of it. The stacked fallback below `--layout-narrow` still needs the cap,
+ * for exactly the reason above, so it is restored there.
  */
 .list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  max-height: min(65vh, 40rem);
+  flex: 1;
+  min-height: 0;
   margin: 0;
   padding: var(--space-2);
   overflow-y: auto;
@@ -100,7 +135,22 @@
   box-shadow: var(--shadow-card);
 }
 
-/* The drag surface itself: transparent, because the card around it is `.row`. */
+/*
+ * The drag surface itself: transparent, because the card around it is `.row`.
+ *
+ * **A known limit of dragging out of a scrollport.** `.list` scrolls, which
+ * makes it a clipping box on *both* axes (CSS Overflow 3: a `visible` or
+ * `clip` value beside a scrolling one computes to `auto`/`hidden`), so the
+ * card below — which follows the pointer via an inline transform, in place —
+ * is clipped the moment it leaves the sidebar. That was equally true before
+ * Phase 1, when the drag ran vertically out of the same box; it is simply more
+ * visible now that the gesture is a short sideways one. The canvas still lights
+ * up as a drop target throughout (`canvas/PlotCanvas.module.css`), so the drag
+ * is never unguided. The real fix is a dnd-kit `DragOverlay` — a ghost
+ * rendered outside the clipping context — which is exactly what Phase 5's
+ * "drag ghost slightly enlarged with shadow" is, and Phase 1 was told to keep
+ * the dnd-kit wiring as it stands.
+ */
 .entry {
   display: flex;
   gap: var(--space-3);
@@ -214,4 +264,17 @@
 
 .addButton {
   margin-top: var(--space-2);
+}
+
+/*
+ * The stacked fallback below `--layout-narrow` (`styles/tokens.css`). There is
+ * no sidebar to fill here — the palette is one section of a scrolling page
+ * again — so the column stops stretching and the list goes back to the
+ * bounded-height scrollbox Workplan Stage 6.2 added for phones.
+ */
+@media (max-width: 899px) {
+  .list {
+    flex: none;
+    max-height: min(65vh, 40rem);
+  }
 }

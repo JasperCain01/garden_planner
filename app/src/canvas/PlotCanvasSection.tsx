@@ -1,5 +1,5 @@
 /**
- * "3. Arrange your plants" — the page section wrapping `PlotCanvas.tsx`
+ * The workspace's centre region — the page section wrapping `PlotCanvas.tsx`
  * (Workplan Stage 3.4). Composes the Konva scene with the plain-DOM pieces
  * around it: a pointer-accessible remove affordance for whatever's selected
  * (the canvas itself already supports Delete/Backspace and double-click —
@@ -31,9 +31,17 @@
  * buttons become one toolbar row, the selected-placement readout becomes a
  * small card, and the severity word takes its colour from the `--severity-*`
  * tokens (the CSS mirror of `warnings/severity.ts`, which stays the source of
- * truth because Konva needs literals) instead of an inline `style`. The canvas
- * is still a fixed-scale stage in a scrolling box — making it fill the
- * available space is Phase 2's job (`docs/ui-aesthetic-review.md`).
+ * truth because Konva needs literals) instead of an inline `style`.
+ *
+ * **Layout (UI redesign Phase 1).** This is the centre of the workspace now,
+ * not the third of five stacked sections: it fills the region it is given
+ * (toolbar on top, the canvas in a viewport that takes all the height left,
+ * selection readout and count feedback docked below), and the numbered
+ * heading is gone with the rest of the false 1→2→3→4 sequence. Two things this
+ * phase deliberately does **not** do, because they are Phase 2's whole brief:
+ * the stage is still drawn at the fixed `PX_PER_CM` scale rather than fitted
+ * to the space it now has, and the outline editor is still a second, separate
+ * picture of the same plot over in the checks panel.
  */
 
 import { useRef, useState } from 'react';
@@ -108,12 +116,29 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
   }
 
   return (
-    <section className="card">
-      <h2>3. Arrange your plants</h2>
-      <p>
-        Drag a plant from the palette above onto the plot below — or, without a pointer, use its
-        &ldquo;Add to plot&rdquo; button, then select it with the buttons below (or click it) and
-        nudge it into place with the arrow keys (hold Shift to move further). Double-click, press
+    <div className={styles.region}>
+      <div className={styles.toolbar}>
+        <h2 className={styles.heading}>Your plot</h2>
+        <div className={styles.actions}>
+          {placements.length > 0 && (
+            <>
+              <button type="button" onClick={() => selectRelative(-1)}>
+                ◀ Previous placement
+              </button>
+              <button type="button" onClick={() => selectRelative(1)}>
+                Next placement ▶
+              </button>
+            </>
+          )}
+          <button type="button" onClick={handleExport} disabled={isExporting}>
+            {isExporting ? 'Exporting…' : 'Export image'}
+          </button>
+        </div>
+      </div>
+      <p className={styles.hint}>
+        Drag a plant from the plants list onto the plot — or, without a pointer, use its &ldquo;Add
+        to plot&rdquo; button, then select it with the buttons above (or click it) and nudge it into
+        place with the arrow keys (hold Shift to move further). Double-click, press
         Delete/Backspace, or use the Remove button to remove a selected plant.
       </p>
       <div className={styles.viewport}>
@@ -123,50 +148,37 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
           stageRef={stageRef}
         />
       </div>
-      <div className={styles.toolbar}>
-        <button type="button" onClick={handleExport} disabled={isExporting}>
-          {isExporting ? 'Exporting…' : 'Export image'}
-        </button>
-        {placements.length > 0 && (
-          <>
-            <button type="button" onClick={() => selectRelative(-1)}>
-              ◀ Previous placement
-            </button>
-            <button type="button" onClick={() => selectRelative(1)}>
-              Next placement ▶
-            </button>
-          </>
+      <div className={styles.dock}>
+        {selected !== null && (
+          <div className={styles.selected}>
+            <p className={styles.selectedName}>
+              Selected: {selected.plant.commonName}{' '}
+              <button type="button" onClick={() => removePlacement(selected.id)}>
+                Remove
+              </button>
+            </p>
+            {selectedWarnings.length > 0 && (
+              <ul className={styles.selectedWarnings}>
+                {selectedWarnings.map((warning) => (
+                  <li
+                    key={`${warning.kind}:${warning.subjects.map((subject) => subject.placementId).join(',')}`}
+                  >
+                    <strong className={styles.severity} data-severity={warning.severity}>
+                      {warning.severity.toUpperCase()}
+                    </strong>{' '}
+                    {warning.reason}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
+        <PlacementFeedbackPanel
+          placements={placements}
+          region={region}
+          activePlant={selected?.plant ?? null}
+        />
       </div>
-      {selected !== null && (
-        <div className={styles.selected}>
-          <p className={styles.selectedName}>
-            Selected: {selected.plant.commonName}{' '}
-            <button type="button" onClick={() => removePlacement(selected.id)}>
-              Remove
-            </button>
-          </p>
-          {selectedWarnings.length > 0 && (
-            <ul className={styles.selectedWarnings}>
-              {selectedWarnings.map((warning) => (
-                <li
-                  key={`${warning.kind}:${warning.subjects.map((subject) => subject.placementId).join(',')}`}
-                >
-                  <strong className={styles.severity} data-severity={warning.severity}>
-                    {warning.severity.toUpperCase()}
-                  </strong>{' '}
-                  {warning.reason}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-      <PlacementFeedbackPanel
-        placements={placements}
-        region={region}
-        activePlant={selected?.plant ?? null}
-      />
-    </section>
+    </div>
   );
 }

@@ -35,9 +35,22 @@ describe('App shell', () => {
   // this test's previous ~1.5s. Longer timeout, not a regression to chase.
   it('renders the plot-definition page at the index route', () => {
     renderApp();
-    expect(screen.getByRole('heading', { name: /define your plot/i })).toBeTruthy();
+    // The workspace's three regions (UI redesign Phase 1) — the numbered
+    // "1. Define your plot" heading this used to assert on retired with the
+    // stacked document it belonged to.
+    expect(screen.getByRole('heading', { name: /plot shape/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /use this shape/i })).toBeTruthy();
     expect(screen.getByLabelText(/light level/i)).toBeTruthy();
+  }, 15_000);
+
+  // The three labelled `region` landmarks are how the workspace replaced the
+  // numbered headings as the structure a screen-reader user navigates by
+  // (`docs/accessibility.md`), so they're worth asserting rather than assuming.
+  it('exposes the workspace as three labelled regions', () => {
+    renderApp();
+    for (const name of [/^plants$/i, /^your plot$/i, /plot settings and checks/i]) {
+      expect(screen.getByRole('region', { name })).toBeTruthy();
+    }
   }, 15_000);
 
   it('routes an unmatched path to the not-found page', () => {

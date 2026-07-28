@@ -93,9 +93,9 @@ the last-recorded result, and treat a material change as a note in `README.md`/
 
 | Check                | Command                                                                                                 | Last recorded result                                                                                                                                                                                                                                                                                                                                 |
 | -------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full E2E regression  | `PW_EXECUTABLE_PATH=/path/to/chromium npm run e2e`                                                      | 7/7 passing (Stage 6.3, and again in CI at Stage 6.4). **Blocking in CI.** `plot-export.spec.ts`'s known flake is now handled by `retries: 1` under `CI` rather than by re-running by hand.                                                                                                                                                          |
-| Accessibility (axe)  | `npm run a11y -w app` (needs the preview server running)                                                | 0 violations, both scanned states (unchanged since Stage 6.2; re-confirmed by CI at Stage 6.4). **Blocking in CI.**                                                                                                                                                                                                                                  |
-| Keyboard walkthrough | `PW_EXECUTABLE_PATH=/path/to/chromium npm run keyboard-walkthrough -w app`                              | All steps pass, 35 tab presses to the canvas — identical in CI at Stage 6.4. Same friction/gap findings as Stage 6.2 (see §5). **Informational in CI.**                                                                                                                                                                                              |
+| Full E2E regression  | `PW_EXECUTABLE_PATH=/path/to/chromium npm run e2e`                                                      | 13/13 passing (UI redesign Phase 1 — was 7/7 through Stage 6.4; `workspace-layout.spec.ts` added six, holding that phase's layout acceptance criteria), and 10/10 consecutive clean full-suite runs. **Blocking in CI.** `plot-export.spec.ts`'s long-standing flake was diagnosed and fixed that phase — see §5.                                    |
+| Accessibility (axe)  | `npm run a11y -w app` (needs the preview server running)                                                | 0 violations, all three scanned states (unchanged since Stage 6.2; the third state — the add-crop modal — arrived with UI redesign Phase 1). **Blocking in CI.**                                                                                                                                                                                     |
+| Keyboard walkthrough | `PW_EXECUTABLE_PATH=/path/to/chromium npm run keyboard-walkthrough -w app`                              | All steps pass, 15 tab presses to the canvas (down from 35 — UI redesign Phase 1 moved the add-crop form's ~25 stops behind a dialog). Two skip links now, and two extra steps; see `docs/accessibility.md` §6. **Informational in CI.**                                                                                                             |
 | Lighthouse PWA audit | `npx lighthouse@11 http://localhost:4173/ --only-categories=pwa --chrome-flags="--headless=new" --view` | **0.88 / 1.00** — unchanged since Stage 5.1, and measured at exactly 0.88 again by CI at Stage 6.4. Same single failing audit (custom splash screen needs a PNG ≥512px icon; this project ships SVG icons only, an accepted gap — see `README.md`). **Informational in CI**, and this figure is the baseline its run-summary reporter warns against. |
 
 ## 5. Known gaps — don't re-discover these, don't silently fix them
@@ -112,13 +112,24 @@ alongside the rest of what v1 deliberately leaves out.
   outline has no keyboard equivalent. The corner handles are valid
   `role="button"` elements (for axe's `aria-prohibited-attr` rule) but
   deliberately have no `tabIndex` yet — see ADR 0026.
-- **Reaching the canvas after placing a crop takes ~35 tab presses** in a
+- **Reaching the canvas after placing a crop takes ~15 tab presses** in a
   filtered search match with several results — real friction, not a dead
-  end. The "Skip to plot canvas" link helps before placing something, not
+  end (it was ~35 before UI redesign Phase 1 moved the add-crop form into a
+  dialog). The "Skip to plot canvas" link helps before placing something, not
   immediately after.
 - **No real screen-reader testing has been done** (NVDA/VoiceOver/JAWS). The
   scripted keyboard walkthrough proves reachability and operability, not that
   a screen reader announces state changes usefully.
+- **Closed, not a gap any more: `plot-export.spec.ts`'s intermittent failure.**
+  Every session that met it re-ran the suite and moved on. UI redesign Phase 1
+  instrumented a failing run instead, and the cause was the one the specs' own
+  comments had guessed at: `fill()` on the palette search box fires one `input`
+  event, and a React render already in flight with the old state can commit
+  afterwards and write the previous term straight back onto the input — so the
+  crop being searched for never renders, and no amount of waiting helps.
+  `e2e/drag.ts`'s `filterPaletteTo` re-types instead of waiting harder, and ten
+  consecutive full-suite runs came back clean. `retries: 1` under CI stays as
+  insurance against an unknown; it is no longer covering for this.
 - **Hardiness/season data covers 8 of 144 shipped crops.** Not an app bug —
   a dataset-coverage gap that needs a new, freely-licensed source with
   cultivar-level data, not more curation. Stage 1.2's PFAF/Permapeople adapters

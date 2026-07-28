@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { dragCropOntoCanvas } from './drag.ts';
+import { dragCropOntoCanvas, filterPaletteTo } from './drag.ts';
 
 // The user-defined-crop journey WORKPLAN.md §1.3 names for Stage 3.6: add a
 // custom crop through the "Add your own crop" form → it appears in the
@@ -15,18 +15,26 @@ import { dragCropOntoCanvas } from './drag.ts';
 // needs genuine pointer events; Konva renders to a `<canvas>` with nothing
 // for a jsdom-style locator to query) — see those specs' own comments and
 // `docs/adr/0017-plot-canvas-konva-and-dnd-kit.md`.
-// A very tall viewport keeps the palette entry and the canvas on-screen at
-// once: `page.mouse` works in viewport coordinates and does not scroll (see
-// `drag.ts`). 4000 is deliberate headroom over the ~3700 a filtered palette
-// plus the canvas actually needs today — at 3500 the canvas sat just below
-// the fold and drags intermittently did nothing. `drag.ts` asserts both ends
-// are in view, so if this ever stops being enough the failure says so.
-test.use({ viewport: { width: 1024, height: 4000 } });
+// An ordinary laptop viewport. `page.mouse` works in viewport coordinates and
+// does not scroll (see `drag.ts`), so both ends of the drag have to be on
+// screen at once — which, since UI redesign Phase 1, is simply what the
+// workspace layout does: the palette is the left sidebar and the canvas is the
+// centre region, always side by side above 900px wide. These specs used to
+// declare a 4000px-tall viewport to force the stacked page's palette and
+// canvas into view together; that trick is gone with the stacked page.
+test.use({ viewport: { width: 1440, height: 900 } });
 
 test('adding a custom crop makes it appear in the palette and placeable on the canvas', async ({
   page,
 }) => {
   await page.goto('/');
+
+  // The form lives behind a modal dialog off the foot of the plants sidebar as
+  // of UI redesign Phase 1 (it used to be ~800px of page between the palette
+  // and the canvas), so the journey now starts by opening it. Everything after
+  // this point is unchanged, which is the point: only where the form is
+  // reached from moved, not the form.
+  await page.getByRole('button', { name: /add your own crop/i }).click();
 
   // Fill in the add-crop form with a full-sun vegetable no shipped crop is
   // named after, so the later palette search matches only this one entry.
@@ -45,12 +53,13 @@ test('adding a custom crop makes it appear in the palette and placeable on the c
     page.getByRole('heading', { name: /your added crops/i }).locator('xpath=following::li[1]'),
   ).toContainText('Custom Test Crop');
 
-  // ... and — the actual deliverable — it appears in the ranked palette above,
+  // ... and — the actual deliverable — it appears in the ranked palette,
   // scored against the plot's (default, full-sun) conditions like any shipped
   // crop, findable by the same search box every other palette entry uses.
-  await page.getByLabel(/^search$/i).fill('Custom Test Crop');
-  const paletteEntry = page.getByLabel(/^drag custom test crop onto the plot to place it$/i);
-  await expect(paletteEntry).toBeVisible();
+  // Close the dialog first: it's modal, so the sidebar behind it is inert
+  // until it goes.
+  await page.getByRole('button', { name: /close add your own crop/i }).click();
+  await filterPaletteTo(page, 'Custom Test Crop');
 
   const canvas = page.getByLabel(/plot canvas/i);
   await expect(canvas).toBeVisible();

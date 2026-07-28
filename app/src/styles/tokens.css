@@ -182,4 +182,25 @@
    */
   --motion-fast: 120ms;
   --motion-medium: 200ms;
+
+  /* ----------------------------------------------------------- Layout
+   * The workspace's three column widths (UI redesign Phase 1, ADR 0030),
+   * from `docs/ui-aesthetic-review.md`'s sketch. The centre column takes
+   * whatever is left, which is the point: at 1440×900 that is ~820×836 —
+   * 53% of the viewport, against the ~2% the old 640px column gave the
+   * canvas.
+   *
+   * `--layout-narrow` is the app's **one** breakpoint: below it the
+   * workspace collapses back to the stacked flow Workplan Stage 6.2's
+   * responsive pass tuned for phones. A media query cannot read a custom
+   * property, so every module that needs it writes `899px` out and points
+   * back here — this declaration is the definition, not a second copy.
+   */
+  --workspace-plants: 320px;
+  --workspace-checks: 300px;
+  --layout-narrow: 900px;
+
+  /* The reading width for pages that are prose rather than workspace (the
+   * not-found route) — what the whole app used to be capped at. */
+  --reading-column: 40rem;
 }

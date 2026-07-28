@@ -32,43 +32,90 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * depend on the suitability ranking's order.
  *
  * **2. Both ends must be inside the viewport.** `page.mouse` works in
- * **viewport** coordinates and does not scroll. The palette is long, so these
- * specs use a very tall viewport to keep the palette entry and the canvas
- * on-screen at once — but "tall enough" is a moving target: it was set when
- * the dataset was smaller, and a filtered palette that renders one more row
- * than it used to pushes the canvas below the fold. The drag then silently
- * does nothing and the spec fails somewhere later with a confusing message
- * ("nothing placed yet" is still visible). {@link assertInViewport} turns that
- * into an immediate, self-explaining failure instead.
+ * **viewport** coordinates and does not scroll.
  *
- * **3. The palette scrolls inside itself, so "on-screen" isn't automatic.**
- * The crop list is a fixed-height box with its own scrollbar
- * (`palette/PlantPalette.module.css`), so a matching entry can be laid out
- * below that box's own fold — rendered, reported visible, and yet nowhere the
- * mouse can reach it. A search that matches several crops ("Tomato" matches
- * five) hits this routinely. The fix is one `scrollIntoViewIfNeeded` before
- * the boxes are read, below; it scrolls the *list*, which — because the list's
- * height is fixed — leaves the canvas exactly where it was.
+ * Until UI redesign Phase 1 this was the hard part: the palette and the canvas
+ * were stacked ~1,500px apart in one column, so every spec that dragged had to
+ * declare a 4,000px-tall viewport and hope it stayed tall enough — a moving
+ * target, since a filtered palette that renders one more row than it used to
+ * pushes the canvas below the fold, the drag silently does nothing, and the
+ * spec fails several lines later with a confusing message ("nothing placed
+ * yet" is still visible). The workspace layout retires the trick outright: the
+ * palette sidebar and the canvas are side by side and both on screen at any
+ * ordinary desktop size, so the specs now use ordinary desktop viewports.
+ * {@link assertInViewport} stays for the drop target, because "the mouse can
+ * reach it" is still a precondition worth failing loudly on rather than
+ * mysteriously.
+ *
+ * **3. The palette scrolls inside itself, so "on-screen" isn't automatic, and
+ * a single entry can be taller than its own scrollport.** The crop list is a
+ * bounded box with its own scrollbar (`palette/PlantPalette.module.css` — it
+ * fills the sidebar's height and scrolls the crops past the filters), so a
+ * matching entry can be laid out below that box's own fold: rendered, reported
+ * visible, and yet nowhere the mouse can reach it. Worse, a palette row still
+ * renders the engine's full per-dimension reasoning, which for some crops is
+ * ~560px tall — more than the whole list box — so "scroll it into view" cannot
+ * make *all* of it reachable, only some of it. Hand-computing a press point
+ * from `boundingBox()` gets this wrong (it aims at the centre of a box whose
+ * centre is off-screen); `locator.hover()` gets it right, because scrolling
+ * the element into view and picking a point on it that actually receives
+ * events is exactly Playwright's actionability check. So the source end of the
+ * drag is a `hover()` and only the *target* end is measured by hand — the
+ * canvas has no such problem, and the specs need to aim at particular points
+ * on it.
  */
 
 /**
- * Fail with a useful message if `box` isn't fully inside the viewport.
+ * Type `cropName` into the palette's search box and wait until that crop's
+ * entry is actually on screen, **re-typing if the value doesn't stick**.
+ *
+ * This closes the flake `playwright.config.ts` and `docs/qa-checklist.md` §4
+ * have carried as "`plot-export.spec.ts` fails once in a while and passes on
+ * retry". Instrumenting a failing run showed exactly what the specs' own
+ * comments guessed at: the assertion fails with the search box still holding
+ * the *previous* term (`searchValue="Potato"` while the spec had filled
+ * "Tomato"), so no Tomato entry ever renders.
+ *
+ * The cause is the classic controlled-input race. `fill()` sets the value and
+ * fires one `input` event; React's `onChange` updates state and re-renders —
+ * and re-ranking 144 crops is slow enough that a render already in flight with
+ * the old state can commit afterwards and write the old value straight back
+ * onto the DOM node. No amount of waiting fixes that, because nothing further
+ * is coming: the keystroke is simply gone.
+ *
+ * So this retries the fill rather than waiting harder on one. `toPass` re-runs
+ * the whole block, which is what makes the difference between "wait longer for
+ * something that will never happen" and "type it again".
+ */
+export async function filterPaletteTo(page: Page, cropName: string): Promise<void> {
+  const searchBox = page.getByLabel(/^search$/i);
+  const entry = page.getByLabel(new RegExp(`^drag ${cropName} onto the plot to place it$`, 'i'));
+
+  await expect(async () => {
+    await searchBox.fill(cropName);
+    await expect(searchBox).toHaveValue(cropName, { timeout: 1_000 });
+    await expect(entry).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 15_000 });
+}
+
+/**
+ * Fail with a useful message if the drop point isn't inside the viewport.
  *
  * Without this the symptom of an off-screen drop target is a mouse event that
  * lands nowhere and an assertion failure several lines further on, which says
  * nothing about the actual cause.
  */
-async function assertInViewport(page: Page, box: BoundingBox, what: string): Promise<void> {
+function assertInViewport(page: Page, point: { x: number; y: number }, what: string): void {
   const viewport = page.viewportSize();
   if (viewport === null) throw new Error('no viewport size — these specs set one explicitly');
-  const bottom = box.y + box.height;
-  const right = box.x + box.width;
-  if (box.y < 0 || box.x < 0 || bottom > viewport.height || right > viewport.width) {
+  if (point.x < 0 || point.y < 0 || point.x > viewport.width || point.y > viewport.height) {
     throw new Error(
       `${what} is outside the ${viewport.width}×${viewport.height} viewport ` +
-        `(x ${box.x.toFixed(0)}–${right.toFixed(0)}, y ${box.y.toFixed(0)}–${bottom.toFixed(0)}). ` +
+        `(${point.x.toFixed(0)}, ${point.y.toFixed(0)}). ` +
         'page.mouse uses viewport coordinates and does not scroll, so the drag would ' +
-        'silently do nothing. Raise the viewport height in this spec.',
+        'silently do nothing. Give this spec a larger viewport — or check the workspace ' +
+        'layout still puts the palette and the canvas side by side at this size ' +
+        '(below 900px wide it stacks them, and then they are not both in view).',
     );
   }
 }
@@ -83,9 +130,13 @@ interface BoundingBox {
 /**
  * The canvas's bounding box, read **fresh**.
  *
- * Its on-page position moves whenever the palette's filtered result count
- * changes, so a box captured once up front goes stale the moment a search
- * narrows the list. Always call this immediately before the drag that uses it.
+ * In the stacked layout this was load-bearing: the canvas sat below the
+ * palette, so its on-page position moved whenever a search changed how many
+ * rows rendered above it, and a box captured up front went stale the moment a
+ * filter applied. The workspace layout makes the canvas's position independent
+ * of the palette — but it is still not *fixed* (placing a crop grows the dock
+ * beneath the canvas, which re-centres the stage inside its viewport), so the
+ * rule stands: read it immediately before the drag that uses it.
  */
 export async function canvasBoxOf(canvas: Locator): Promise<BoundingBox> {
   const box = await canvas.boundingBox();
@@ -106,12 +157,12 @@ const CANVAS_CENTRE: DropPoint = (box) => ({
  * Drag the palette entry for exactly `cropName` onto the canvas.
  *
  * **The canvas box is read here, not by the caller**, and only *after* the
- * palette entry is visible. That ordering is the point: filtering the palette
- * changes how many rows render above the canvas, which moves the canvas on the
- * page. A caller that reads the box immediately after `searchBox.fill(...)`
- * captures the position from *before* the filter applied, and then drops in the
- * wrong place — a stale-target twin of the stale-source bug in the module doc
- * above. Waiting for the entry first means the re-render has already happened.
+ * palette entry is visible. That ordering was originally about the canvas
+ * moving when a filter changed the row count above it; the workspace layout
+ * removed that particular coupling, but the ordering is still what keeps the
+ * source and the target measured in the same, settled frame — waiting for the
+ * entry first means the re-ranking re-render has already happened before
+ * anything is measured.
  *
  * @param cropName - the crop's `commonName`, matched exactly against the
  * palette entry's `aria-label` (`drag <name> onto the plot to place it`).
@@ -126,18 +177,18 @@ export async function dragCropOntoCanvas(
 ): Promise<void> {
   const source = page.getByLabel(new RegExp(`^drag ${cropName} onto the plot to place it$`, 'i'));
   await expect(source).toBeVisible();
-  // Bring the entry into the palette's own scrollport before measuring
-  // anything — see trap 3 in the module doc.
-  await source.scrollIntoViewIfNeeded();
-  const sourceBox = await source.boundingBox();
-  if (sourceBox === null) throw new Error(`no bounding box for the "${cropName}" palette entry`);
+
+  // Put the pointer on the entry. `hover()` rather than a hand-computed
+  // `boundingBox()` centre: it scrolls the palette's own list until the entry
+  // is reachable *and* picks a point on it that receives events, which is the
+  // difference between working and not for a row taller than the list box
+  // (trap 3 in the module doc). It leaves the canvas exactly where it was —
+  // the list is a fixed region of the sidebar.
+  await source.hover();
 
   const target = dropPoint(await canvasBoxOf(canvas));
+  assertInViewport(page, target, 'the drop target');
 
-  await assertInViewport(page, sourceBox, `the "${cropName}" palette entry`);
-  await assertInViewport(page, { ...target, width: 0, height: 0 }, 'the drop target');
-
-  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
   await page.mouse.down();
   // Several intermediate moves: dnd-kit's PointerSensor needs actual pointer
   // movement to register a drag as started.

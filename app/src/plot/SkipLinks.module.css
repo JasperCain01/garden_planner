@@ -1,7 +1,11 @@
 /*
- * "Skip to plot canvas" — visually hidden until focused (UI redesign Phase 0
- * turned this from a `useState` toggle into what it always wanted to be: two
- * CSS rules; see the component's own doc comment for the history).
+ * The skip links — visually hidden until focused (UI redesign Phase 0 turned
+ * this from a `useState` toggle into what it always wanted to be: two CSS
+ * rules; see the component's own doc comment for the history, and for why
+ * Phase 1 made it two links).
+ *
+ * Both links pin to the same corner when focused, which is fine and
+ * deliberate: only one can hold focus, so only one is ever visible.
  */
 
 /* The standard visually-hidden recipe, matching `global.css`'s

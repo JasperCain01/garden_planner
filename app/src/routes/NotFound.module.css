@@ -1,0 +1,14 @@
+/*
+ * The not-found route's own centred reading column (UI redesign Phase 1).
+ *
+ * Until this phase the *shell* supplied this — every route rendered into one
+ * 40rem centred column. The shell is now a full-viewport workspace frame, and
+ * a page of two sentences has no business filling it, so the column moves here
+ * where it is actually wanted.
+ */
+
+.page {
+  max-width: var(--reading-column);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+}

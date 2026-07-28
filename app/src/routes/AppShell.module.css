@@ -1,42 +1,43 @@
 /*
- * App-shell layout (UI redesign Phase 0). Deliberately still the *same shape*
- * as the inline styles it replaces — a single centred reading column — because
- * turning that column into a full-viewport workspace is Phase 1's whole job
- * (`docs/ui-aesthetic-review.md` §"Phase 1 — Workspace layout"). What changes
- * here is only the finish: a real header band, page-height surface, and the
- * spacing rhythm coming from tokens instead of round `rem` guesses.
+ * App-shell layout (UI redesign Phase 1 — the workspace frame).
+ *
+ * Phase 0 left this a centred 40rem column, deliberately: replacing it was
+ * this phase's whole job (`docs/ui-aesthetic-review.md` §"Phase 1 — Workspace
+ * layout", ADR 0030). What it becomes is a frame — a header band and one
+ * content row of exactly the leftover height — inside which
+ * `plot/PlotDefinitionPage.module.css` draws the three columns.
  */
 
+/*
+ * Two rows: the header at its natural height, everything else in what's left.
+ *
+ * `minmax(0, 1fr)` rather than a bare `1fr` is the load-bearing part. `1fr`
+ * means `minmax(auto, 1fr)`, and that `auto` minimum lets the row refuse to be
+ * shorter than its content — so a tall child (144 palette rows) would grow the
+ * grid past the viewport and put the scrollbar back on the page, which is the
+ * one thing this layout exists to stop. A `0` minimum keeps the row
+ * viewport-sized and hands the overflow to the regions inside it, which have
+ * their own scrollports.
+ *
+ * `dvh` after `vh`: on mobile browsers `100vh` is the viewport measured
+ * *without* the retracting address bar, so a `100vh` app is permanently a
+ * little taller than the screen. `dvh` is the honest number; the `vh` line
+ * above it is the fallback for anything that doesn't know the unit.
+ */
 .shell {
-  /* The page background is on `body`; this guarantees it covers the viewport
-   * even when a route renders very little (the not-found page). */
-  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
 }
 
 .header {
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-card);
-}
-
-/* Header contents and page contents share one column width and one gutter, so
- * the wordmark lines up with the content beneath it.
- *
- * The gutter is what keeps content off both screen edges on a viewport
- * narrower than the column (Workplan Stage 6.2's responsive pass) — with
- * `box-sizing: border-box` from `global.css` doing the same job the inline
- * `boxSizing` did: stopping that padding from pushing the container past 100%
- * width and forcing a horizontal scrollbar.
- */
-.column {
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 0 var(--space-4);
-}
-
-.header .column {
   display: flex;
   align-items: center;
-  min-height: 64px;
+  min-height: 56px;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-card);
 }
 
 .wordmark {
@@ -54,7 +55,32 @@
   color: var(--green-700);
 }
 
+/* `min-height: 0` for the same reason the row above takes a `0` minimum: a
+ * grid item's own default `min-height: auto` would otherwise let a tall child
+ * push it past its track. Routes that want to fill the row (the workspace)
+ * set `height: 100%` on themselves; short routes (not-found) just sit at the
+ * top of it. */
 .main {
-  padding-top: var(--space-6);
-  padding-bottom: var(--space-8);
+  min-height: 0;
+}
+
+/*
+ * The narrow breakpoint (`--layout-narrow` in `styles/tokens.css` — a media
+ * query can't read a custom property, so the number is written out here and
+ * that token is the definition it points at).
+ *
+ * Below it the frame stops pinning anything to the viewport: the shell returns
+ * to ordinary document flow, the page grows as tall as it needs, and the
+ * browser's own scrollbar takes over. That is what the stacked single-column
+ * fallback in `PlotDefinitionPage.module.css` wants — three internally
+ * scrolling regions on a 640px-tall phone would be three cramped windows onto
+ * an app that reads perfectly well as one long page.
+ */
+@media (max-width: 899px) {
+  .shell {
+    display: block;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
 }

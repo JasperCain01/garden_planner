@@ -23,6 +23,14 @@
  * with a hairline rule and lays each label above its control instead of beside
  * it. Flattening the groups outright, and turning the short selects into
  * segmented controls, is Phase 4's job (`docs/ui-aesthetic-review.md`).
+ *
+ * **The outermost fieldset is gone (UI redesign Phase 1), and only that one.**
+ * Phase 1 puts this form inside a "Growing conditions" disclosure panel in the
+ * workspace's right-hand column, and that panel *is* the labelled group the
+ * outer `<fieldset legend="Growing conditions">` used to be — keeping both
+ * would announce the same name twice and draw the same label twice. The two
+ * inner fieldsets (Soil, Location) group things the panel doesn't, so they
+ * stay exactly as they are.
  */
 
 import type {
@@ -93,9 +101,7 @@ export function PlotConditionsForm({ value, onChange }: PlotConditionsFormProps)
   }
 
   return (
-    <fieldset>
-      <legend>Growing conditions</legend>
-
+    <div>
       <div className={styles.fields}>
         <div className={styles.field}>
           <label htmlFor="plot-light">Light level</label>
@@ -260,6 +266,6 @@ export function PlotConditionsForm({ value, onChange }: PlotConditionsFormProps)
           {resolution.message}
         </p>
       )}
-    </fieldset>
+    </div>
   );
 }

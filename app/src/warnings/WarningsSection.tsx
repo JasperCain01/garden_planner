@@ -1,8 +1,16 @@
 /**
- * "4. Check for problems" page section — wires `WarningsPanel.tsx` (the
- * plain-DOM presentation) to the runtime plant list and the placements
+ * The "Problems & suggestions" panel's contents — wires `WarningsPanel.tsx`
+ * (the plain-DOM presentation) to the runtime plant list and the placements
  * store's selection action. Mirrors `canvas/PlotCanvasSection.tsx`'s own
  * split between store-wiring and presentation.
+ *
+ * **Where it sits (UI redesign Phase 1).** This used to be section 4 of a
+ * stacked document — the highest-value live feedback the engine produces, in
+ * the least visible place on the page, four screens from the form that changes
+ * it (`docs/ui-aesthetic-review.md` §2.6). It is now a disclosure panel in the
+ * workspace's right-hand column, directly under the conditions form and beside
+ * the canvas, so the tweak-and-check loop happens without scrolling. The panel
+ * supplies the heading; this renders only the contents.
  *
  * `canvasWarnings` is threaded down from `PlotDefinitionPage.tsx` rather than
  * computed here a second time: `canvas/PlotCanvasSection.tsx` also needs it
@@ -26,11 +34,10 @@ export function WarningsSection({ canvasWarnings }: WarningsSectionProps) {
   const selectPlacement = usePlacementsStore((state) => state.selectPlacement);
 
   return (
-    <section className="card">
-      <h2>4. Check for problems</h2>
-      <p>
-        Warnings and companion suggestions for what&rsquo;s currently placed, recomputed live as you
-        place, move or remove plants, or change the plot&rsquo;s growing conditions.
+    <div>
+      <p className="muted">
+        Recomputed live as you place, move or remove plants, or change the plot&rsquo;s growing
+        conditions.
       </p>
       {canvasWarnings === null ? (
         <p role="alert">
@@ -45,6 +52,6 @@ export function WarningsSection({ canvasWarnings }: WarningsSectionProps) {
           onFocusPlacement={selectPlacement}
         />
       )}
-    </section>
+    </div>
   );
 }

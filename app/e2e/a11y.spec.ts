@@ -35,7 +35,7 @@ const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
 test('the plot-definition page has no axe violations in its initial state', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /define your plot/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /plot shape/i })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   expect(results.violations).toEqual([]);
@@ -56,6 +56,22 @@ test('the plot-definition page has no axe violations once a plant is placed and 
     .first()
     .click();
   await expect(page.getByText(/^Selected:/)).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test('the add-crop dialog has no axe violations while open', async ({ page }) => {
+  // New surface in UI redesign Phase 1: "Add your own crop" moved out of the
+  // page flow into a modal `<dialog>` (`ui/ModalDialog.tsx`). A modal is
+  // exactly the kind of thing that regresses quietly — an unnamed dialog, a
+  // heading order that restarts, a control the trap leaves behind — so the
+  // form gets its own scan in the state a user actually meets it in. (The
+  // focus trap and Esc themselves are the browser's, not ours; axe doesn't
+  // check them and neither does this.)
+  await page.goto('/');
+  await page.getByRole('button', { name: /add your own crop/i }).click();
+  await expect(page.getByRole('form', { name: 'add a crop' })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   expect(results.violations).toEqual([]);

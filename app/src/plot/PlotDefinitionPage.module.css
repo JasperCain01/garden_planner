@@ -1,21 +1,157 @@
 /*
- * Page-level stacking for the four core-loop sections plus "Add your own crop"
- * (UI redesign Phase 0). Each section renders itself as a `.card`
- * (`styles/global.css`); this only sets the gap between them.
+ * The workspace grid (UI redesign Phase 1 — the big one; ADR 0030).
  *
- * It is still a vertical document — a single column of stacked sections that
- * enforces a false 1→2→3→4 sequence over what is really a loop. Turning it
- * into a workspace (palette, canvas and controls side by side, all visible at
- * once) is Phase 1, the biggest win in `docs/ui-aesthetic-review.md`.
+ * Phase 0 left this a flex column of stacked cards and said so: "It is still a
+ * vertical document — a single column of stacked sections that enforces a
+ * false 1→2→3→4 sequence over what is really a loop." This is that loop, laid
+ * out: plants on the left, the plot in the middle, the controls that change it
+ * on the right, all on screen at once.
+ *
+ * `routes/AppShell.module.css` supplies the frame this fills — a content row
+ * of exactly the leftover viewport height.
  */
 
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
+/*
+ * Three columns, from `styles/tokens.css`: two fixed sidebars and a centre
+ * that takes everything else. `minmax(0, 1fr)` (not a bare `1fr`) for the
+ * centre so a wide Konva stage scrolls inside its own region instead of
+ * widening the column and pushing the right-hand panel off-screen.
+ *
+ * No gap and no page padding, deliberately: every pixel spent between the
+ * columns is a pixel taken from the canvas, and each column pads its own
+ * contents anyway. At 1440×900 the centre column measures ~820×836 — 53% of
+ * the viewport, which is the acceptance bar this phase was set.
+ */
+.workspace {
+  display: grid;
+  grid-template-columns: var(--workspace-plants) minmax(0, 1fr) var(--workspace-checks);
+  min-height: 0;
+  height: 100%;
 }
 
-.intro {
-  margin: 0 0 var(--space-4);
+/* Both sidebars: white surfaces flanking the cream centre, each a flex column
+ * that owns its own scrolling. `min-height: 0` is what lets them scroll rather
+ * than stretch the grid row (the same reason the shell's content row takes a
+ * `0` minimum). */
+.plants,
+.checks {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-4);
+  background: var(--surface-card);
+}
+
+/* The plants column doesn't scroll as a whole — `PlantPalette` scrolls its own
+ * crop list, which keeps the filters and the add-crop button in place while
+ * 144 crops move past them. */
+.plants {
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+}
+
+/* The checks column *does* scroll as a whole: its three panels are ordinary
+ * content of varying length, with nothing in them worth pinning. */
+.checks {
+  gap: var(--space-2);
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+}
+
+.canvas {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* -------------------------------------------------------- Disclosure panels */
+
+.panel {
+  flex-shrink: 0;
+}
+
+.panel + .panel {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+/*
+ * `list-style: none` *and* the WebKit pseudo-element are both needed to drop
+ * the native disclosure triangle — Safari still uses
+ * `::-webkit-details-marker`, everything else uses the list marker. The
+ * replacement chevron is drawn on `::before` so it can rotate with the state.
+ */
+.panelSummary {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-radius: var(--radius);
+  list-style: none;
+  cursor: pointer;
+}
+
+.panelSummary::-webkit-details-marker {
+  display: none;
+}
+
+.panelSummary::before {
+  content: '▾';
+  display: inline-block;
+  color: var(--green-700);
+  font-size: var(--text-sm);
+  transition: transform var(--motion-fast) ease;
+}
+
+.panel:not([open]) .panelSummary::before {
+  transform: rotate(-90deg);
+}
+
+.panelSummary:hover .panelTitle {
+  color: var(--green-700);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: var(--text-h2);
+}
+
+.panelBody {
+  padding-bottom: var(--space-3);
+}
+
+.panelIntro {
+  margin: 0 0 var(--space-3);
   color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/*
+ * The stacked fallback below `--layout-narrow` (`styles/tokens.css`).
+ *
+ * Workplan Stage 6.2's responsive reasoning still stands and is why this
+ * exists: on a phone the app reads as one page of sections, not as three
+ * cramped scrollports on a 640px-tall viewport. The regions become ordinary
+ * cards again — which is exactly what they were before this phase.
+ */
+@media (max-width: 899px) {
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    height: auto;
+    padding: var(--space-4);
+  }
+
+  .plants,
+  .checks,
+  .canvas {
+    overflow: visible;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-card);
+  }
 }

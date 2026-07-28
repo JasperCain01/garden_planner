@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { canvasBoxOf, dragCropOntoCanvas } from './drag.ts';
+import { canvasBoxOf, dragCropOntoCanvas, filterPaletteTo } from './drag.ts';
 
 // The warnings-overlay journey WORKPLAN.md names for Stage 3.5: place an
 // antagonist pair close together → a warning appears; resolve it (move one
@@ -13,13 +13,14 @@ import { canvasBoxOf, dragCropOntoCanvas } from './drag.ts';
 // reason (dnd-kit's `PointerSensor` needs genuine pointer events, and Konva
 // renders to a `<canvas>` jsdom-style locators can't drive) — see that spec's
 // own comment and `docs/adr/0017-plot-canvas-konva-and-dnd-kit.md`.
-// A very tall viewport keeps the palette entry and the canvas on-screen at
-// once: `page.mouse` works in viewport coordinates and does not scroll (see
-// `drag.ts`). 4000 is deliberate headroom over the ~3700 a filtered palette
-// plus the canvas actually needs today — at 3500 the canvas sat just below
-// the fold and drags intermittently did nothing. `drag.ts` asserts both ends
-// are in view, so if this ever stops being enough the failure says so.
-test.use({ viewport: { width: 1024, height: 4000 } });
+// An ordinary laptop viewport. `page.mouse` works in viewport coordinates and
+// does not scroll (see `drag.ts`), so both ends of the drag have to be on
+// screen at once — which, since UI redesign Phase 1, is simply what the
+// workspace layout does: the palette is the left sidebar and the canvas is the
+// centre region, always side by side above 900px wide. These specs used to
+// declare a 4000px-tall viewport to force the stacked page's palette and
+// canvas into view together; that trick is gone with the stacked page.
+test.use({ viewport: { width: 1440, height: 900 } });
 
 test('placing an antagonist pair close together warns, and moving one away clears it', async ({
   page,
@@ -32,14 +33,14 @@ test('placing an antagonist pair close together warns, and moving one away clear
   // Drag potato onto the left of the canvas, tomato onto the right — close
   // enough together (well within the crops' own spacing-derived threshold)
   // that the antagonist-adjacency rule should fire.
-  await page.getByLabel(/^search$/i).fill('Potato');
+  await filterPaletteTo(page, 'Potato');
   await dragCropOntoCanvas(page, 'Potato', canvas, (box) => ({
     x: box.x + box.width * 0.4,
     y: box.y + box.height * 0.5,
   }));
   await expect(page.getByText(/1 placed of/)).toBeVisible();
 
-  await page.getByLabel(/^search$/i).fill('Tomato');
+  await filterPaletteTo(page, 'Tomato');
   await dragCropOntoCanvas(page, 'Tomato', canvas, (box) => ({
     x: box.x + box.width * 0.6,
     y: box.y + box.height * 0.5,

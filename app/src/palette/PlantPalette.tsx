@@ -8,11 +8,21 @@
  * shared Zustand store (ADR 0015's convention).
  *
  * **Layout decision (the brief's one open call):** the palette renders
- * *on the plot-definition page*, below the growing-conditions form, rather
- * than behind a separate route. See `docs/architecture.md`'s Stage 3.3 note
- * for the reasoning (short version: `DESIGN.md`'s core loop reads as one
- * continuous flow, and Stage 3.4's canvas will want the palette visible
- * alongside placement rather than a nav click away).
+ * *on the plot-definition page*, rather than behind a separate route. See
+ * `docs/architecture.md`'s Stage 3.3 note for the reasoning (short version:
+ * `DESIGN.md`'s core loop reads as one continuous flow, and Stage 3.4's canvas
+ * will want the palette visible alongside placement rather than a nav click
+ * away). UI redesign Phase 1 finally delivers on the second half of that:
+ * the palette is the workspace's left sidebar, permanently on screen beside
+ * the canvas, so "drag a plant onto the plot" is a short gesture instead of a
+ * ~1,500px journey down the page.
+ *
+ * **What this component owns after Phase 1.** It fills the height it is given
+ * and scrolls its crop list internally — the filters stay put at the top while
+ * the list moves. It no longer draws a card or a numbered heading: the sidebar
+ * is the surface, and the workspace replaced the false 1→2→3→4 sequence. The
+ * *contents* of a row are untouched; compacting them (icon, name, band chip,
+ * reasoning on demand) is Phase 3's job (`docs/ui-aesthetic-review.md`).
  *
  * Ranking itself is entirely `rankPlants`' job (`@garden-planner/engine`) —
  * this component adds only **display-only** narrowing on top (search,
@@ -107,20 +117,20 @@ export function PlantPalette() {
   const visible = useMemo(() => filterRanked(ranked, search, category), [ranked, search, category]);
 
   return (
-    <section className="card">
-      <h2>2. Discover suitable plants</h2>
+    <div className={styles.palette}>
+      <h2 className={styles.heading}>Plants</h2>
 
       {conditions === null ? (
         <p role="alert">
-          Fix the growing-conditions form above to see ranked suggestions — the palette needs valid
+          Fix the growing-conditions form to see ranked suggestions — the palette needs valid
           conditions to score against.
         </p>
       ) : (
         <>
-          <p>
+          <p className={styles.intro}>
             Ranked against your plot&rsquo;s current conditions. Most of today&rsquo;s dataset has
-            no hardiness, soil or season data, so read the confidence and per-plant reasoning below,
-            not just the band.
+            no hardiness, soil or season data, so read the confidence and per-plant reasoning, not
+            just the band.
           </p>
 
           <div className={styles.filters}>
@@ -176,7 +186,7 @@ export function PlantPalette() {
           )}
         </>
       )}
-    </section>
+    </div>
   );
 }
 

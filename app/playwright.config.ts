@@ -17,13 +17,20 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   testIgnore: ['**/deployed-smoke.spec.ts', '**/a11y.spec.ts'],
-  // `plot-export.spec.ts` has been observed to fail once and pass on retry
-  // under the default two-worker parallelism, across several sessions (see
-  // `docs/qa-checklist.md` §4). One retry in CI is the honest fix for a known
-  // flake: the spec still has to pass, and a genuinely broken export fails
-  // both attempts — unlike a workflow-level `continue-on-error`, which would
-  // let a real failure through silently. Locally the default of 0 stands, so a
-  // flake stays visible to whoever is working on the code.
+  // One retry in CI, none locally, so a flake stays visible to whoever is
+  // working on the code. The spec still has to pass — unlike a workflow-level
+  // `continue-on-error`, which would let a real failure through silently.
+  //
+  // **This is now insurance against an unknown, not a licence for a known
+  // flake.** It was added for `plot-export.spec.ts`, which had been observed
+  // across several sessions to fail once and pass on retry under two-worker
+  // parallelism. UI redesign Phase 1 instrumented a failing run and found the
+  // actual cause — a controlled-input race that drops the palette search
+  // box's value — and fixed it in `e2e/drag.ts`'s `filterPaletteTo`, which
+  // re-types rather than waiting harder. Ten consecutive clean full-suite runs
+  // followed. Ten runs on one machine is evidence, not proof, which is why the
+  // retry stays; if it starts earning its keep again, that is a bug to
+  // instrument, not a number to raise.
   retries: process.env.CI ? 1 : 0,
   // A stray `test.only` reduces the suite to one spec while still reporting
   // success. On a developer's machine that's a convenience; in CI it is a gate
