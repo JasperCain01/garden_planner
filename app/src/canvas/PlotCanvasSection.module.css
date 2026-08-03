@@ -1,15 +1,14 @@
 /*
- * Canvas-region styling (Phase 0's finish, Phase 1's shape).
+ * Canvas-region styling (Phase 0's finish, Phase 1's shape, Phase 2's use of
+ * it).
  *
  * Phase 0 pulled the buttons out of loose `<p>` tags into one toolbar row and
  * made the selected-placement readout a card. Phase 1 made this the *centre*
  * of the workspace: a column that fills its region, with the canvas taking
- * every pixel the toolbar and the dock below it don't.
- *
- * The canvas inside is still a fixed-scale Konva stage — it now sits in a much
- * bigger space than it did, but it doesn't yet *use* it. Scaling to fit, zoom,
- * a grid and footprint-true markers are Phase 2's brief
- * (`docs/ui-aesthetic-review.md`).
+ * every pixel the toolbar and the dock below it don't. Phase 2 is what finally
+ * spends those pixels — the stage is fitted to `.viewport`'s measured content
+ * box (`canvas/useCanvasScale.ts`), so the plot is as large as the room it has
+ * rather than a fixed 0.6 px/cm postage stamp centred in it.
  */
 
 .region {
@@ -37,6 +36,36 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+  align-items: center;
+}
+
+/* The zoom cluster reads as one control: three buttons and a readout with no
+ * gaps between them, so "− 100% + Fit" is visibly a single group rather than
+ * four unrelated toolbar items. */
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.zoomReadout {
+  min-width: 4ch;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/*
+ * A compact square button for the glyph-only controls (zoom ±, ◀/▶). The
+ * review asks for Previous/Next to be "styled as compact icon buttons"; each
+ * still carries a full `aria-label`, so what is compact is the drawing, never
+ * the name.
+ */
+.iconButton {
+  min-width: 2.25rem;
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
 }
 
 .hint {
@@ -47,24 +76,32 @@
 }
 
 /*
- * The canvas's own space.
+ * The canvas's own space — and, since Phase 2, the thing that decides how big
+ * the plot is drawn.
  *
  * `flex: 1` + `min-height: 0` is what makes this the region's largest element
  * rather than the ~168px-tall postage stamp it used to be
  * (`docs/ui-aesthetic-review.md`'s second finding): at 1440×900 the centre
  * column is ~820×836, and every pixel of it that isn't toolbar or dock is
- * this.
+ * this. `canvas/useCanvasScale.ts` observes this element and fits the plot to
+ * its **content** box — which is why the padding below is real padding and not
+ * a margin on the stage: it is the band the dimension labels are drawn in.
  *
- * The stage is *centred* in it rather than stretched, because the stage's own
- * pixel size is still derived from the plot's dimensions at a fixed scale
- * (`geometry.ts`); making it grow to meet this box is Phase 2. `overflow:
- * auto` stays for the reason Workplan Stage 6.2 added it: a plot large enough
- * to out-measure the box must scroll *here*, not drag the whole workspace
- * sideways (ADR 0026).
+ * `overflow: auto` stays for the reason Workplan Stage 6.2 added it, and now
+ * earns a second one: a plot zoomed past "fit" must scroll *here*, not drag
+ * the whole workspace sideways (ADR 0026) — and that scroll is also the pan,
+ * which is why `PlotCanvas` is handed a ref to this element.
+ *
+ * `safe center` rather than plain `center`: a centred grid item that is larger
+ * than its container overflows *both* ways and the top-left of it becomes
+ * unreachable by scrolling. `safe` falls back to start-alignment exactly then,
+ * which is the difference between "zoom in and pan around" and "zoom in and
+ * lose the top-left corner of your plot".
  */
 .viewport {
   display: grid;
-  place-items: center;
+  align-items: safe center;
+  justify-items: safe center;
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -83,6 +120,29 @@
   flex-shrink: 0;
   max-height: 38%;
   overflow-y: auto;
+}
+
+/* An outline edit that didn't validate. Same wording and same `role="alert"`
+ * the deleted `PlotOutlineEditor` used — it just appears under the canvas now
+ * rather than under a separate editor, because the shape it is describing is
+ * on the canvas. */
+.outlineError {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+/* The Clear-all confirmation's two buttons, with the destructive one last —
+ * the position a user's hand does not land on by reflex. */
+.confirmActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
 }
 
 .selected {

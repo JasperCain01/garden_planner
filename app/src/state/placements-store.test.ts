@@ -114,4 +114,18 @@ describe('usePlacementsStore', () => {
     usePlacementsStore.getState().selectPlacement(id);
     expect(usePlacementsStore.getState().selectedId).toBe(id);
   });
+
+  // UI redesign Phase 2's "Clear all" toolbar action. The selection has to go
+  // with the placements: a `selectedId` naming a placement that no longer
+  // exists would leave the canvas's Remove button and arrow-key nudge pointing
+  // at nothing.
+  it('clears every placement and the selection with it', () => {
+    usePlacementsStore.getState().addPlacement(ONION, { x: 0, y: 0 });
+    usePlacementsStore.getState().addPlacement(ONION, { x: 50, y: 50 });
+
+    usePlacementsStore.getState().clearPlacements();
+
+    expect(usePlacementsStore.getState().placements).toEqual([]);
+    expect(usePlacementsStore.getState().selectedId).toBeNull();
+  });
 });

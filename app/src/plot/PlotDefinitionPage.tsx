@@ -59,6 +59,13 @@
  * a capability used rarely. It is a dialog off the foot of the plants sidebar
  * now (`user-crops/AddCropDialog.tsx`); the form inside it is unchanged.
  *
+ * **One picture of the plot (UI redesign Phase 2, ADR 0031).** The settings
+ * column used to carry a second plot drawing under the shape picker — the SVG
+ * outline editor, at its own scale, which a user had to reconcile with the
+ * Konva canvas beside it ("Two disconnected pictures of the same plot",
+ * `docs/ui-aesthetic-review.md`). Editing the outline is a mode *on the
+ * canvas* now, so this panel keeps only the shape picker and points at it.
+ *
  * **The three disclosure panels.** The review asks for collapsible accordions
  * in the right-hand column, and `<details>`/`<summary>` is what that is in
  * HTML — keyboard-operable, announced as a disclosure, open and closed without
@@ -77,7 +84,6 @@ import { useCanvasWarnings } from '../warnings/useCanvasWarnings.ts';
 import { WarningsSection } from '../warnings/WarningsSection.tsx';
 import { AddCropDialog } from '../user-crops/AddCropDialog.tsx';
 import { PlotConditionsForm } from './PlotConditionsForm.tsx';
-import { PlotOutlineEditor } from './PlotOutlineEditor.tsx';
 import { ShapePicker } from './ShapePicker.tsx';
 import { PLOT_SETTINGS_ID, SkipLinks } from './SkipLinks.tsx';
 import styles from './PlotDefinitionPage.module.css';
@@ -132,11 +138,10 @@ export function PlotDefinitionPage() {
         >
           <Panel title="Plot shape & size">
             <p className={styles.panelIntro}>
-              Start from a preset shape, then drag, add or remove corners until the outline matches
-              your real plot.
+              Start from a preset shape, then use &ldquo;Edit shape&rdquo; on the plot itself to
+              drag, add or remove corners until the outline matches your real plot.
             </p>
             <ShapePicker onApply={setRegion} />
-            <PlotOutlineEditor region={region} onChange={setRegion} />
           </Panel>
 
           <Panel title="Growing conditions">

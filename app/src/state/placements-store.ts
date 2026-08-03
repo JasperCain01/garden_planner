@@ -40,6 +40,17 @@ interface PlacementsState {
   readonly movePlacement: (id: string, position: { x: number; y: number }) => void;
   /** Remove a placement by id. Clears the selection if it was the selected one. A no-op if absent. */
   readonly removePlacement: (id: string) => void;
+  /**
+   * Remove every placement (UI redesign Phase 2's "Clear all" toolbar action —
+   * `docs/ui-aesthetic-review.md` §2.7 lists its absence under what makes the
+   * app hard to play with: "No undo/redo… no 'clear all'").
+   *
+   * Destructive and, for now, unrecoverable — undo is Phase 5's job — which is
+   * why the *button* asks for confirmation before calling this. The store
+   * itself stays a plain action: confirming is a UI decision, and a store that
+   * refused to do what it was told would be a worse place to put it.
+   */
+  readonly clearPlacements: () => void;
   /** Select a placement, or pass `null` to deselect (e.g. clicking empty canvas). */
   readonly selectPlacement: (id: string | null) => void;
 }
@@ -71,6 +82,8 @@ export const usePlacementsStore = create<PlacementsState>((set) => ({
       selectedId: state.selectedId === id ? null : state.selectedId,
     }));
   },
+
+  clearPlacements: () => set({ placements: [], selectedId: null }),
 
   selectPlacement: (id) => set({ selectedId: id }),
 }));

@@ -61,6 +61,38 @@ test('the plot-definition page has no axe violations once a plant is placed and 
   expect(results.violations).toEqual([]);
 });
 
+test('the canvas has no axe violations in edit-shape mode', async ({ page }) => {
+  // New surface in UI redesign Phase 2: "Edit shape" swaps the canvas toolbar's
+  // Previous/Next *placement* buttons for Previous/Next *corner*, adds two
+  // more, and re-labels the canvas itself (the arrow keys now move a corner,
+  // so the label that describes them has to change with the mode). A mode that
+  // rewrites a live region's accessible name and half a toolbar is exactly the
+  // kind of thing that regresses quietly.
+  await page.goto('/');
+  await page.getByRole('button', { name: /^edit shape$/i }).click();
+  await expect(page.getByLabel(/editing the plot shape/i)).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test('the clear-all confirmation has no axe violations while open', async ({ page }) => {
+  // Also new in Phase 2, and the app's second use of `ui/ModalDialog.tsx`.
+  // Scanned in the state a user actually meets it in, for the same reason the
+  // add-crop dialog is below: a dialog that lost its accessible name, or whose
+  // heading restarted the document outline, would pass every other check here.
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: /add .+ to the plot, without dragging/i })
+    .first()
+    .click();
+  await page.getByRole('button', { name: /^clear all$/i }).click();
+  await expect(page.getByRole('button', { name: /clear all plants/i })).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+});
+
 test('the add-crop dialog has no axe violations while open', async ({ page }) => {
   // New surface in UI redesign Phase 1: "Add your own crop" moved out of the
   // page flow into a modal `<dialog>` (`ui/ModalDialog.tsx`). A modal is

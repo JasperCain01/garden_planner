@@ -807,6 +807,84 @@ fully expanded (Phase 3), the shape picker is still radios (Phase 4), and a
 dragged palette card is still clipped at the sidebar edge — the fix for that is
 a dnd-kit `DragOverlay`, which is Phase 5's "drag ghost".
 
+## UI redesign Phase 2 — the canvas as hero
+
+Phase 1 gave the canvas the middle of the workspace and stopped there. Phase 2
+is the canvas using it: the stage is **732×539** at 1440×900 (57% of its region,
+against 5.5% for the 228×168px rectangle it was) and **1033×761** at 1920×1080.
+Reasoning in ADR
+[0031](./adr/0031-canvas-as-hero-live-scale-and-one-plot-picture.md).
+
+**The scale is live, and required.** `canvas/useCanvasScale.ts` observes the
+canvas viewport with a `ResizeObserver` and fits the plot's padded bounding box
+to it; `state/canvas-view-store.ts` holds the measurement and a zoom factor
+_over_ that fit, so resizing the window re-fits and keeps the user's zoom
+intent. `canvas/geometry.ts` lost its `PX_PER_CM` constant and made `pxPerCm` a
+**required** parameter throughout — deliberately, because the two callers most
+likely to be forgotten (`drop.ts` converting a drop point, `export.ts`
+rasterising the stage) fail silently on a wrong scale, and a required parameter
+turns that into a compile error. The scale lives in a store rather than in
+component state for one reason: `useCanvasDropHandler` is called by
+`PlotDefinitionPage`, which owns the `DndContext` and sits above the canvas
+region, so it cannot see a size measured two components below it.
+
+**An export still comes out the same size.** `export.ts#exportPixelRatio`
+scales Konva's rasterisation back to a fixed 0.6 px/cm — the constant this phase
+removed — so the exported PNG's dimensions don't follow the window.
+
+**Markers are the crop's real footprint.** `canvas/footprint.ts` reuses the
+square `warnings/placement-derivation.ts` already models a placement's personal
+space as (`max(inRowCm, betweenRowCm)` via `resolveLatticeSpacing`), so what a
+user sees crowding is what the engine agrees is crowding. A marker is a
+translucent canopy at that footprint, a solid core capped at a legible size
+(what the old 16px circle was, and still what you click), and the icon on it.
+Measured: an extra radish draws 791 stage pixels, an extra butternut squash
+42,919.
+
+**"Add to plot" no longer stacks.** `geometry.ts#firstFreePosition` walks square
+rings outward from the plot's centre, nearest-first, and takes the first spot
+the crop's own footprint fits in. When the plot is genuinely full the centre
+comes back — the honest answer, with the count feedback already saying so.
+
+**One picture of the plot.** `plot/PlotOutlineEditor.tsx` — the second, SVG,
+differently-scaled drawing under the shape picker — is deleted. Editing the
+outline is an "Edit shape" mode on the canvas itself
+(`canvas/useOutlineEditing.ts`, `canvas/outline-edit.ts`), with the validation
+rule and `plot/outline-ops.ts` carried across intact. That reverses ADR 0016's
+choice of SVG over Konva, so that ADR carries a dated addendum saying what
+changed about its premise rather than being silently contradicted.
+
+**The corner handles are keyboard-operable now**, closing the gap
+`docs/accessibility.md` §5 had recorded since Stage 6.2. A corner has a
+selection, the toolbar's ◀/▶ move it, and the canvas's arrow keys act on it —
+ADR 0026's pattern for placements, applied to the same constraint (Konva shapes
+cannot be focused). Zoom, "Edit shape" and "Clear all" are all real buttons for
+the same reason; the pan gesture and ctrl-free zoom are additions on top, never
+the only way.
+
+**The scene is grounded.** A soil surround painted into the stage (so an export
+shows the same scene the app does), a 50cm/1m grid clipped to the outline and
+anchored to absolute coordinates so it stays put while a dragged corner moves
+the plot across it, dimension labels in the padding band, the drag-over tint on
+the plot's _interior_ rather than the container's border, a selection glow, a
+150ms drop pop (skipped under `prefers-reduced-motion`, read in JS because CSS
+can't reach inside a canvas), and a hover tooltip naming the crop and its
+spacing. Every colour is a `styles/tokens.css` token spelled as a literal in
+`canvas/scene.ts`, and `styles/tokens.test.ts` fails if the two disagree.
+
+**Measured, not asserted.** `e2e/canvas-scale.spec.ts` holds the phase's
+acceptance criteria, reading Konva's own `getImageData` back to count what was
+drawn — a measurement, not a screenshot comparison, so there is no golden file.
+Making the scale live also exposed a pre-existing drop-accuracy bug: dnd-kit's
+`delta` includes a scroll adjustment, and the palette's list auto-scrolls
+during the drag, which put a drop aimed at the plot's centre 12cm high.
+`useCanvasDropHandler` tracks the real pointer instead.
+
+**What this phase deliberately did not do:** an exit fade when a placement is
+deleted (the store forgets it synchronously; animating that needs history
+state, which Phase 5 builds properly). The palette rows are still fully
+expanded (Phase 3) and the shape picker is still radios (Phase 4).
+
 ## Where to look next
 
 | Topic                                                             | File                                                                                                   |
@@ -828,6 +906,11 @@ a dnd-kit `DragOverlay`, which is Phase 5's "drag ghost".
 | The workspace layout: shell frame, three-column grid, breakpoint  | `app/src/routes/AppShell.module.css`, `app/src/plot/PlotDefinitionPage.module.css`                     |
 | Why the app is a workspace and not a document                     | [`adr/0030`](./adr/0030-workspace-layout-not-a-document.md)                                            |
 | The modal-dialog primitive (and its jsdom fallback)               | `app/src/ui/ModalDialog.tsx`                                                                           |
+| The canvas's live scale: fit, zoom, and where it is stored        | `app/src/canvas/useCanvasScale.ts`, `app/src/state/canvas-view-store.ts`                               |
+| Pixel⟷centimetre maths, and the first-free-position search        | `app/src/canvas/geometry.ts`                                                                           |
+| How big a crop's marker is, and why that figure                   | `app/src/canvas/footprint.ts`                                                                          |
+| Editing the plot outline on the canvas (pointer and keyboard)     | `app/src/canvas/useOutlineEditing.ts`, `app/src/canvas/outline-edit.ts`                                |
+| Why the canvas is the hero, and what it cost ADR 0016             | [`adr/0031`](./adr/0031-canvas-as-hero-live-scale-and-one-plot-picture.md)                             |
 | The add-crop dialog off the plants sidebar                        | `app/src/user-crops/AddCropDialog.tsx`                                                                 |
 | The workspace layout acceptance criteria, as a test               | `app/e2e/workspace-layout.spec.ts`                                                                     |
 | Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`                                                                    |

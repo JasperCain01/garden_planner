@@ -46,7 +46,7 @@ describe('PlantPalette', () => {
     usePlacementsStore.setState({ placements: [], selectedId: null });
   });
 
-  it('places a plant at the plot’s centre and selects it when its "Add to plot" button is pressed, with no drag at all (Workplan Stage 6.2)', () => {
+  it('places a plant on the plot and selects it when its "Add to plot" button is pressed, with no drag at all (Workplan Stage 6.2)', () => {
     addBothFixtures();
     render(<PlantPalette />);
 
@@ -57,10 +57,41 @@ describe('PlantPalette', () => {
     const { placements, selectedId } = usePlacementsStore.getState();
     expect(placements).toHaveLength(1);
     expect(placements[0].plant.commonName).toBe('Sun Lover');
-    // rectangleRegion(300, 200) has vertices (0,0) (300,0) (300,200) (0,200) — centre (150, 100).
+    // rectangleRegion(300, 200) has vertices (0,0) (300,0) (300,200) (0,200) —
+    // centre (150, 100). The first crop onto an empty plot still lands there:
+    // `firstFreePosition` searches outward *from* the centre, so with nothing
+    // in the way the centre is the answer (`canvas/geometry.test.ts`).
     expect(placements[0].x).toBe(150);
     expect(placements[0].y).toBe(100);
     expect(selectedId).toBe(placements[0].id);
+  });
+
+  /**
+   * The review's third finding, as a test: "adding three crops produces **one
+   * visible marker** — three markers stacked in the same spot (verified live)
+   * … you add plants and the plot appears to eat them."
+   *
+   * Asserted on the store rather than on pixels because that is where the bug
+   * was — every press resolved to `regionCentre`, the same point every time.
+   * The search's own arithmetic is pinned in `canvas/geometry.test.ts`; what
+   * this covers is that the palette button actually calls it, with the
+   * placements already down and with the crop's own footprint as the spacing.
+   */
+  it('scatters repeated "Add to plot" presses instead of stacking them all at the centre (UI redesign Phase 2)', () => {
+    addBothFixtures();
+    render(<PlantPalette />);
+
+    const addSunLover = screen.getByRole('button', {
+      name: /add sun lover to the plot, without dragging/i,
+    });
+    fireEvent.click(addSunLover);
+    fireEvent.click(addSunLover);
+    fireEvent.click(addSunLover);
+
+    const { placements } = usePlacementsStore.getState();
+    expect(placements).toHaveLength(3);
+    const distinct = new Set(placements.map(({ x, y }) => `${x},${y}`));
+    expect(distinct.size).toBe(3);
   });
 
   it('keeps the "Add to plot" button a sibling of the draggable card, not nested inside it (axe’s nested-interactive rule)', () => {

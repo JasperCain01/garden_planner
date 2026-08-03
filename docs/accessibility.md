@@ -257,7 +257,9 @@ All steps passed.
   their own accessibility anti-pattern if done carelessly), so it's recorded
   here rather than rushed into this stage.
 - **The free-form plot-outline corner editor is still pointer-only**
-  (`PlotOutlineEditor.tsx`'s draggable corners). The walkthrough's "describe
+  (`PlotOutlineEditor.tsx`'s draggable corners). **Closed in UI redesign
+  Phase 2 — see §7.** The rest of this bullet is left as written, because it
+  is the record of what was true at Stage 6.2. The walkthrough's "describe
   the plot" step deliberately used the preset shape picker (radio buttons +
   number inputs, fully keyboard-operable) rather than the free-form drag —
   that's a real, working keyboard path for describing a plot, but adjusting
@@ -394,6 +396,140 @@ The two gaps §5 ends on are **unchanged by this phase**: the free-form
 plot-outline corner editor is still pointer-only, and there has still been no
 real screen-reader testing (NVDA/VoiceOver/JAWS). Neither got better or worse;
 both remain in `WORKPLAN.md` §5.2's backlog with an explicit disposition.
+(The first of the two is closed as of UI redesign Phase 2 — §7.)
+
+## 7. Re-verified after the UI redesign's canvas phase (2026-08-03)
+
+UI redesign Phase 2 (ADR
+[0031](./adr/0031-canvas-as-hero-live-scale-and-one-plot-picture.md)) is the
+first phase to add a whole new _interaction mode_ since Stage 6.2, so it is the
+first to need this page updated for a reason other than "the layout moved".
+
+### The pointer-only outline editor: closed, not moved
+
+§5 has recorded since Stage 6.2 that "adjusting an outline's exact shape by
+dragging a corner is not yet possible without a pointer", and the keyboard
+walkthrough ended by saying so. Phase 2 merges that editor into the plot canvas
+— and merging it is exactly the wrong moment to carry a known gap across, so it
+is fixed instead.
+
+The fix is the pattern ADR 0026 already established for placements, because the
+constraint is the same one: Konva draws painted pixels, not focusable DOM, so
+the thing being acted on needs a _selection_ that lives outside the scene.
+
+| Doing this to a plot corner | With a pointer               | With a keyboard                        |
+| --------------------------- | ---------------------------- | -------------------------------------- |
+| choose one                  | click a handle               | ◀/▶ "Previous / Next corner" (toolbar) |
+| move it                     | drag the handle              | arrow keys (Shift for 50cm steps)      |
+| add one                     | click a blue midpoint handle | "Add corner" (toolbar)                 |
+| remove one                  | double-click a handle        | Delete/Backspace, or "Remove corner"   |
+
+Entering "Edit shape" selects corner 0, so the arrow keys work immediately
+rather than after a hunt — a mode whose keys silently do nothing until you find
+something to click is the pointer-first assumption this exists to remove.
+
+The canvas's `aria-label` **changes with the mode**, because the keys do: a
+user who turned on "Edit shape" and heard the arrange-mode instructions read
+back would be told the wrong thing about the only controls they have.
+
+### Every new control is a button, and the gestures are extras
+
+The canvas toolbar gained zoom (−, a live readout, +, Fit), "Edit shape" and
+"Clear all". All are real `<button>`s with full `aria-label`s — the icon-only
+ones are compact in their _drawing_, never in their name — and the zoom readout
+is `aria-live="polite"`, because otherwise "Zoom in" is a control whose entire
+effect is invisible to a screen-reader user. Ctrl-free pointer gestures were
+added on top (drag empty ground to pan a zoomed-in plot) but never as the only
+way to do anything, per ADR 0026.
+
+"Clear all" is destructive and unrecoverable until Phase 5 builds undo, so it
+confirms first — through `ui/ModalDialog.tsx`, the same real `<dialog>` the
+add-crop form uses, so the focus trap, Esc and focus-return are the browser's.
+
+### Motion, inside a canvas
+
+`styles/global.css` has honoured `prefers-reduced-motion` since Phase 0, but a
+stylesheet cannot reach inside a `<canvas>`. Phase 2's one canvas animation —
+a 150ms scale "pop" when a marker lands — reads the same media query in
+JavaScript (`ui/usePrefersReducedMotion.ts`) and skips entirely when it
+matches. Subscribed rather than sampled once, because the preference is an OS
+setting a user can change while the app is open.
+
+### Contrast: one new text pairing
+
+The scene draws the plot's dimensions ("3.0 m") in `--soil-700` on the
+`--soil-100` surround: **6.01:1**, computed the same way §2 computed everything
+else. Nothing else Phase 2 added to the canvas is text — the grid, the canopy
+discs and the outline handles are all non-text, and each is paired with
+something else that carries the meaning (the labels, the icon and name, the
+mode's own instructions).
+
+### axe: 0 violations, now in five states
+
+Two new surfaces got their own scans, following Phase 1's precedent with the
+add-crop dialog: **edit-shape mode** (which rewrites the canvas's accessible
+name and half the toolbar) and the **clear-all confirmation**. With the three
+existing states that is five scans, all clean.
+
+### The keyboard walkthrough: two more steps, and five more tab presses
+
+Reaching the canvas from the palette search is now **20** tab presses, where
+Phase 1 measured 15 and Stage 6.2 measured 35. The five are the canvas
+toolbar's new buttons, which sit between the palette and the canvas in reading
+order — the cost of them being real buttons rather than gestures, and the right
+trade.
+
+New steps 3b and 3c walk the zoom controls (reached in 7 Shift+Tabs back from
+the canvas) and reshape the plot with no pointer at all. Today's recorded run:
+
+```
+=== Step 0: the skip links ===
+  OK   the first skip link jumps focus straight to the plot canvas
+  OK   the second skip link jumps focus straight to the plot settings column
+
+=== Step 1: find a crop (keyboard only) ===
+  OK   reached the palette search field in 4 tabs and typed a crop name
+
+=== Step 2: place it (keyboard only, via "Add to plot") ===
+  OK   activated "Add to plot" via keyboard (Tab + Enter) — no drag involved
+  OK   the placed crop shows as "Selected" (auto-selected on add, per addPlacement)
+
+=== Step 3: nudge it with arrow keys (keyboard only) ===
+  OK   reached the plot canvas by Tab alone (20 presses from the search field)
+  OK   nudged the selected plant into a new position with arrow keys, no pointer at all
+
+=== Step 3b: the canvas toolbar — zoom (UI redesign Phase 2) ===
+  OK   reached "Zoom in" in 7 Shift+Tabs from the canvas and zoomed the plot (646.551px → 808.189px)
+  OK   returned to a fitted plot with the "Fit" button
+
+=== Step 3c: reshape the plot on the canvas (keyboard only, UI redesign Phase 2) ===
+  OK   moved a plot corner with the arrow keys, reshaping the outline (stage 1.36 → 1.89 wide-to-tall)
+  OK   left edit-shape mode from the keyboard
+
+=== Step 4: describe the plot (keyboard only) ===
+  OK   reached the rectangle width field in 4 tabs from the canvas
+  OK   applied a 4m x 3m rectangle via keyboard (Tab + type + Enter)
+
+=== Step 5: check warnings (read-only, but confirm reachable) ===
+  OK   the "Problems & suggestions" panel is present and reachable
+
+=== Step 6: the add-crop dialog (UI redesign Phase 1) ===
+  OK   opening the dialog moves focus inside it
+  OK   Esc closes the dialog and returns focus to the trigger that opened it
+
+All steps passed.
+```
+
+### Still not done, still recorded
+
+**Real screen-reader testing (NVDA/VoiceOver/JAWS) has still not happened**,
+and Phase 2 makes that gap slightly more pointed rather than less: the canvas
+now carries considerably more meaning — a footprint, a grid, dimensions, a mode
+— and none of it is in the accessibility tree, because it is painted pixels.
+The mode's instructions and the placement/corner readouts are the DOM's account
+of that scene, and whether they are a _sufficient_ account is exactly the
+question only a real screen-reader session answers. It remains in
+`WORKPLAN.md` §5.2's backlog.
 
 ## Related
 
@@ -403,6 +539,9 @@ both remain in `WORKPLAN.md` §5.2's backlog with an explicit disposition.
 - ADR [0030](./adr/0030-workspace-layout-not-a-document.md) — the workspace
   layout §6 re-verified this page against, including why the second skip link
   rather than a DOM order that fights the visible columns.
+- ADR [0031](./adr/0031-canvas-as-hero-live-scale-and-one-plot-picture.md) —
+  the canvas phase §7 re-verified this page against, including why the outline
+  editor's keyboard path is the same pattern ADR 0026 chose for placements.
 - [`docs/stage-6.2-brief.md`](./stage-6.2-brief.md) — the brief this stage
   worked from.
 - [`WORKPLAN.md`](../WORKPLAN.md) §5.2 — the post-v1 backlog, where the two

@@ -18,6 +18,15 @@ import { chromium } from '@playwright/test';
  * link (there are two as of that phase) and one for the add-crop dialog it
  * introduced.
  *
+ * **UI redesign Phase 2 added two steps, and closed a gap.** The canvas
+ * toolbar gained zoom controls and an "Edit shape" toggle, both of which have
+ * to be operable without a pointer (ADR 0026) — step 3b walks them. And
+ * editing the plot outline, which was **pointer-only** from Stage 6.2 until
+ * this phase (the note this script used to end on, and
+ * `docs/accessibility.md` §5), is now a keyboard path: select a corner with
+ * the toolbar's ◀/▶, move it with the arrow keys, Delete to remove. Step 3c
+ * walks that, and the "known gap" note at the end shrank accordingly.
+ *
  * **Run it** against a local production preview (same server the axe check
  * and E2E suite use):
  *
@@ -201,6 +210,111 @@ if (tabsToCanvas !== null) {
   fail('reached the plot canvas by Tab alone', 'gave up after 40 tabs');
 }
 
+log('\n=== Step 3b: the canvas toolbar — zoom (UI redesign Phase 2) ===');
+// The zoom controls are real <button>s, not a scroll gesture, precisely so
+// there is a keyboard path at all. They sit *before* the canvas in the DOM, so
+// this walks backwards to them with Shift+Tab rather than forwards from the
+// palette a second time.
+async function shiftTabUntil(pattern, budget) {
+  for (let i = 1; i <= budget; i++) {
+    await page.keyboard.press('Shift+Tab');
+    const name = await focusedAccessibleName();
+    if (pattern.test(name ?? '')) return i;
+  }
+  return null;
+}
+
+const zoomBefore = await page.evaluate(
+  () => document.getElementById('plot-canvas')?.style.width ?? null,
+);
+const tabsBackToZoom = await shiftTabUntil(/^zoom in$/i, 12);
+if (tabsBackToZoom !== null) {
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(150);
+  const zoomAfter = await page.evaluate(
+    () => document.getElementById('plot-canvas')?.style.width ?? null,
+  );
+  if (zoomBefore !== null && zoomAfter !== null && parseFloat(zoomAfter) > parseFloat(zoomBefore)) {
+    ok(
+      `reached "Zoom in" in ${tabsBackToZoom} Shift+Tabs from the canvas and zoomed the plot (${zoomBefore} → ${zoomAfter})`,
+    );
+  } else {
+    fail('zoomed the plot from the keyboard', `stage width went ${zoomBefore} → ${zoomAfter}`);
+  }
+  // Back to a fitted plot, so the rest of the walk sees the default view.
+  const tabsToFit = await tabUntil(/fit the plot to the screen/i, 4);
+  if (tabsToFit !== null) {
+    await page.keyboard.press('Enter');
+    ok('returned to a fitted plot with the "Fit" button');
+  } else {
+    fail('reached the "Fit" button by Tab alone', 'gave up after 4 tabs');
+  }
+} else {
+  fail('reached the "Zoom in" button by Shift+Tab from the canvas', 'gave up after 12 tabs');
+}
+
+log('\n=== Step 3c: reshape the plot on the canvas (keyboard only, UI redesign Phase 2) ===');
+// The gap this script used to end on. The outline editor's corner handles were
+// pointer-only from Stage 6.2; merging the editor into the canvas was the
+// moment to give them the same keyboard treatment placements already had —
+// a selection, ◀/▶ to move it, arrow keys to act.
+const tabsToEditShape = await tabUntil(/^edit shape$/i, 8);
+if (tabsToEditShape === null) {
+  fail('reached the "Edit shape" toggle by Tab alone', 'gave up after 8 tabs');
+} else {
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(150);
+
+  // The stage's *shape*, not its size, is what reports the edit: the canvas
+  // re-fits the plot to the viewport after every change, so the stage stays
+  // the same size and changes proportions instead. The default 3×2m plot pads
+  // to 380×280 cm, a ratio of ~1.36.
+  const stageRatio = () =>
+    page.evaluate(() => {
+      const stage = document.getElementById('plot-canvas');
+      if (stage === null) return null;
+      return parseFloat(stage.style.width) / parseFloat(stage.style.height);
+    });
+  const ratioBefore = await stageRatio();
+  const tabsBackToCanvas = await tabUntil(/editing the plot shape/i, 12);
+  if (tabsBackToCanvas === null) {
+    fail('reached the canvas in edit-shape mode by Tab alone', 'gave up after 12 tabs');
+  } else {
+    // Corner 0 is selected on entering the mode, so the arrow keys act
+    // immediately — no hunting for a handle first. Three 50cm steps left
+    // widens the plot from 3.0m to 4.5m.
+    for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowLeft');
+    await page.waitForTimeout(150);
+    const ratioAfter = await stageRatio();
+    if (ratioBefore !== null && ratioAfter !== null && ratioAfter > ratioBefore + 0.2) {
+      ok(
+        `moved a plot corner with the arrow keys, reshaping the outline (stage ${ratioBefore.toFixed(2)} → ${ratioAfter.toFixed(2)} wide-to-tall)`,
+      );
+    } else {
+      fail(
+        'reshaped the outline from the keyboard',
+        `stage aspect ratio went ${ratioBefore} → ${ratioAfter}`,
+      );
+    }
+  }
+  const tabsToDone = await shiftTabUntil(/done editing shape/i, 8);
+  if (tabsToDone !== null) {
+    await page.keyboard.press('Enter');
+    ok('left edit-shape mode from the keyboard');
+  } else {
+    fail('reached "Done editing shape" by Shift+Tab', 'gave up after 8 tabs');
+  }
+}
+
+// Back to the canvas, so step 4 measures its "from the canvas" tab count from
+// the same place it always has. Deliberately *not* a page reload: the rest of
+// the journey is meant to run against the state this walk has built up, and a
+// reload would drop the placed crop step 4's tab count passes through.
+const tabsBackToCanvasAfterEdit = await tabUntil(/plot canvas/i, 12);
+if (tabsBackToCanvasAfterEdit === null) {
+  fail('returned focus to the canvas after editing the shape', 'gave up after 12 tabs');
+}
+
 log('\n=== Step 4: describe the plot (keyboard only) ===');
 // The settings column is the last region in reading order, so from the canvas
 // it is a handful of stops away: the selected placement's Remove button, the
@@ -277,14 +391,18 @@ if (tabsToAddCrop === null) {
   }
 }
 
-log('\n=== Known gap (not fixed this phase, recorded honestly) ===');
-log('  The free-form plot-outline corner editor (dragging a corner to reshape');
-log('  the outline) is pointer-only — Tab does reach its corner handles');
-log('  (role="button" as of Stage 6.2), but there is no keyboard handler');
-log('  behind them yet, so Enter/Space on a focused corner does nothing.');
-log('  The Stage 6.2 brief scoped the keyboard-drag alternative to exactly');
-log('  two places (palette→canvas handoff, on-canvas move/remove) — this');
-log('  is a real, separate gap for a future stage, not silently dropped.');
+log('\n=== Gap closed in UI redesign Phase 2 ===');
+log('  Reshaping the plot outline used to be pointer-only: Stage 6.2 gave the');
+log('  SVG editor’s corner handles role="button" so their names were valid');
+log('  ARIA, but there was no keyboard handler behind them, and this script');
+log('  ended by saying so. Merging that editor into the plot canvas was the');
+log('  moment to fix it rather than move it, so corners now work the way');
+log('  placements already did (ADR 0026’s pattern): a selection, ◀/▶ to move');
+log('  it, arrow keys to act. Step 3c above walks it with no pointer at all.');
+log('\n=== Known gap (still recorded honestly) ===');
+log('  There has still been no real screen-reader testing (NVDA/VoiceOver/');
+log('  JAWS). A scripted keyboard walk and a clean axe run are necessary and');
+log('  not sufficient; see docs/accessibility.md.');
 
 await browser.close();
 

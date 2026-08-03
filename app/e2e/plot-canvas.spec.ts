@@ -51,11 +51,13 @@ test('dragging a plant from the palette onto the plot places it, with live count
   // — which surfaces as a 30-second click timeout with no hint of the cause.
   const canvasBox = await canvasBoxOf(canvas);
   await page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
-  // Exact match: the outline editor's corner handles are also `role="button"`
-  // elements whose own label happens to contain the substring "remove"
-  // ("drag to move, double-click to remove" — Workplan Stage 6.2 gave them
-  // that role so `aria-label` is valid ARIA on them at all), so a loose
-  // `/remove/i` regex now matches five buttons, not one.
+  // Exact match, still. The outline editor's `role="button"` corner handles —
+  // whose labels contained the substring "remove" and used to make a loose
+  // `/remove/i` regex match five buttons — are gone with the editor itself
+  // (UI redesign Phase 2 merged it into this canvas, where the handles are
+  // Konva shapes with no DOM at all). But "Remove corner" now appears on the
+  // toolbar in edit-shape mode, so the exact match is still what distinguishes
+  // "remove the selected plant" from its neighbours.
   await page.getByRole('button', { name: 'Remove', exact: true }).click();
   await expect(page.getByText(/nothing placed yet/i)).toBeVisible();
 });

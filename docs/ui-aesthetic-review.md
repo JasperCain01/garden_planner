@@ -292,36 +292,112 @@ This single phase fixes findings 1, 3, and half of 2.
 
 ### Phase 2 — Canvas as hero
 
+> **Status: implemented** (2026-08-03). Live scale in
+> `app/src/canvas/useCanvasScale.ts` + `app/src/state/canvas-view-store.ts`,
+> marker sizing in `app/src/canvas/footprint.ts`, the first-free-position
+> search in `app/src/canvas/geometry.ts`, the merged outline editor in
+> `app/src/canvas/useOutlineEditing.ts` (and `plot/PlotOutlineEditor.tsx`
+> deleted). Decisions and the roads not taken: ADR
+> [0031](./adr/0031-canvas-as-hero-live-scale-and-one-plot-picture.md), plus a
+> dated addendum on ADR [0016](./adr/0016-outline-editor-svg-not-konva.md),
+> whose premise this phase changed; what changed and why, in
+> `docs/architecture.md`; the keyboard and contrast consequences, measured, in
+> `docs/accessibility.md` §7. Everything below is what was asked for; the notes
+> in brackets are where the implementation differs.
+
 - **Scale-to-fit + zoom:** compute `pxPerCm` from the canvas container size (fit the
   padded region bounds, clamp to sane min/max), with −/＋/fit-to-screen controls and
   ctrl+scroll zoom; pan by dragging empty space when zoomed in. Kill the fixed
   `PX_PER_CM` (keep the helpers, parameterise the scale — `geometry.ts` already accepts
-  `pxPerCm` as a parameter throughout).
+  `pxPerCm` as a parameter throughout). _(Done, and `pxPerCm` became **required**
+  rather than defaulted: `drop.ts` and `export.ts` both fail silently on a wrong
+  scale, so the parameter is what turns that into a compile error. The scale lives
+  in a store because `useCanvasDropHandler` is called from above the canvas region
+  and can't see a size measured below it. ADR 0031 §1. Pan is the viewport's own
+  scroll, driven by dragging empty ground — one notion of "where the plot is",
+  not two.)_
 - **Merge outline editing into the main canvas.** One plot picture, ever. An "Edit
   shape" toggle enters outline mode: corner/midpoint handles appear (port the SVG
   editor's interaction to Konva, or overlay the existing SVG at the canvas's scale);
   edge lengths render as labels while editing ("3.0 m"); exit returns to arrange mode.
-  Section 1's separate mini-editor is deleted.
+  Section 1's separate mini-editor is deleted. _(Done, ported to Konva — an
+  overlaid SVG is a second coordinate system and an element swallowing the stage's
+  events, i.e. two pictures stacked. ADR 0016 chose SVG deliberately, so it carries
+  a dated addendum saying what changed about its premise. The **plot's overall
+  dimensions** are labelled, always, rather than per-edge lengths only while
+  editing; per-edge labels on a 20-corner outline are a thicket, and "how big is my
+  plot" is the question the review actually asks ("dimensions are labelled on
+  neither"). The corner handles also stopped being pointer-only — see below.)_
 - **Ground the scene:** subtle grid at 50cm (fainter) / 1m (stronger) inside the plot;
   overall plot dimensions labelled outside the outline; canvas background `--soil-100`
   outside the plot, `--green-100`→soil gradient or flat tint inside; 1px inner shadow
-  on the plot to lift it off the page.
+  on the plot to lift it off the page. _(Done, with two notes. The grid is anchored
+  to absolute coordinates, not to the outline's corner, so it stays put while a
+  dragged corner moves the plot across it. And the "1px inner shadow" is a soft
+  drop shadow instead: Konva has no inset shadow, and lifting the bed off the soil
+  reads better than a hairline inside it.)_
 - **Footprint-true markers:** marker radius = plant spacing footprint in cm × scale
   (min 12px for clickability), rendered as a soft category-coloured disc ("canopy") with
   the icon centred and a name label under it at zoom ≥ some threshold. A squash now
   visibly needs more room than a radish — spatial planning becomes visual. (Spacing data
-  is already on the `Plant`; the feedback panel maths proves it.)
+  is already on the `Plant`; the feedback panel maths proves it.) _(Done. The
+  footprint is the square `warnings/placement-derivation.ts` already models a
+  placement's personal space as, rather than a second definition — so what looks
+  like crowding is what the engine agrees is crowding. The icon is capped at 18px
+  so one pumpkin's canopy doesn't become the only thing on the plot.)_
 - **Fix centre-stacking:** "Add to plot" places at the first free position via a simple
   spiral/offset search from centre (pure function in `geometry.ts`, unit-testable).
+  _(Done. When the plot is genuinely full the centre comes back — the honest
+  answer, with the count feedback already saying so.)_
 - **Interaction feedback:** drop → 150ms scale-pop; selection → glow ring, not stroke
   tweak; hover → cursor + slight lift + tooltip (name, band, spacing); drag-over canvas
-  → tint the plot interior, not the container border; deleting → fade-out.
+  → tint the plot interior, not the container border; deleting → fade-out. _(All done
+  except the **delete fade-out**, which isn't: the store forgets a placement
+  synchronously, so animating its exit means the canvas holding a copy of something
+  the store no longer has — history state, which Phase 5's undo/redo builds
+  properly. The pop is skipped under `prefers-reduced-motion`, read in JavaScript
+  because a stylesheet cannot reach inside a `<canvas>`. The tooltip shows name and
+  spacing but **not band**: suitability is computed against the plot's conditions
+  in the palette and a `PlacedPlant` doesn't carry it.)_
 - Canvas toolbar (top of canvas region, one row): zoom controls, Edit shape toggle,
   Clear all (confirm), Export image. Previous/Next placement buttons stay (keyboard
-  path) but styled as compact icon buttons.
+  path) but styled as compact icon buttons. _(Done. In edit-shape mode the
+  Previous/Next **placement** buttons become Previous/Next **corner**, because that
+  is what the canvas's arrow keys are then acting on — two modes, one pair of
+  buttons, rather than four of which two are always inert. "Clear all" confirms
+  through `ui/ModalDialog.tsx` rather than `window.confirm`.)_
 - **Acceptance:** default 3×2m plot fills the canvas region on first load; markers
   scale with footprint; three "Add to plot" clicks yield three visibly separate
-  markers; export still works.
+  markers; export still works. _(Met, and measured rather than eyeballed —
+  `e2e/canvas-scale.spec.ts` reads Konva's own `getImageData` back and counts what
+  was drawn, which is a measurement, not a screenshot comparison with a golden file
+  to regenerate._
+  - _The stage is **732×539** at 1440×900 — **57%** of the canvas region, against
+    **5.5%** for the 228×168px rectangle it was — and **1033×761** at 1920×1080,
+    **59%** against 2.9%. The scale went from a fixed 0.6 px/cm to a fitted 1.93 and
+    2.72._
+  - _An extra radish marker draws **791** stage pixels; an extra butternut squash
+    draws **42,919** — 54×, from footprints of 15cm and 150cm._
+  - _Three "Add to plot" presses draw ~3× the pixels one does; under the old
+    behaviour every extra press drew **zero**, landing exactly on the first._
+  - _Export still works, and now comes out the **same size whatever the zoom** —
+    `exportPixelRatio` rasterises back to the 0.6 px/cm this phase removed, so an
+    exported PNG has the dimensions it had before the canvas learned to scale._
+  - _Standing bar: `npm test` **216 passing** (36 files), `npm run e2e` **18
+    passing**, `npm run a11y` **0 violations across five states** (edit-shape mode
+    and the clear-all confirmation got their own scans), keyboard walkthrough **all
+    steps passing** — including two new ones, and the plot outline is now
+    reshapeable with no pointer at all, closing the gap `docs/accessibility.md` §5
+    had recorded since Stage 6.2._
+  - _Two things the phase turned up rather than introduced. Making the scale live
+    exposed a **drop-accuracy bug**: dnd-kit's `delta` includes a scroll adjustment
+    and the palette's list auto-scrolls mid-drag, which put a drop aimed at the
+    plot's centre 12cm high — invisible at 0.6 px/cm because the clamp flattened
+    it. And `warnings-overlay.spec.ts` dropped two antagonists at 0.4 and 0.6 of
+    the canvas width, which used to be 76cm and would have become over 250cm: past
+    the rule's threshold, so the spec would have gone on passing while testing
+    nothing. `e2e/drag.ts` gained `atPlotCm` so a drop point that means a distance
+    says so in centimetres.)_
 
 ### Phase 3 — Palette redesign
 

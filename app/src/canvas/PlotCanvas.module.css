@@ -1,27 +1,40 @@
 /*
- * The Konva stage's container (UI redesign Phase 0). Only the drop target's
- * own chrome lives here — everything *inside* the stage is painted by Konva
- * and so takes its colours from TypeScript (`CATEGORY_COLORS` in the component,
- * `warnings/severity.ts` for badges), which `styles/tokens.css` mirrors.
+ * The Konva stage's container.
  *
- * The stage's pixel width and height stay inline on the element: they're
- * computed from the plot's own dimensions (`geometry.ts#canvasSizePx`) and
- * change with the outline.
+ * There is very little left here on purpose (UI redesign Phase 2). Phase 0
+ * gave this element a border, a white fill and a drop-target highlight,
+ * because the stage was a small rectangle that needed chrome to look like
+ * anything. The stage now *is* the scene — soil surround, plot fill, grid,
+ * dimension labels — all painted by Konva from `canvas/scene.ts`'s literals
+ * (a `<canvas>` cannot read a custom property), and the drag-over feedback
+ * moved onto the plot's own interior where the review asked for it: "tint the
+ * plot interior, not the container border".
+ *
+ * So what remains is the two things CSS still has to say: the corner radius,
+ * and the cursor. (The stage's pixel width and height stay inline on the
+ * element — they're computed from the plot's dimensions at the live scale,
+ * `geometry.ts#canvasSizePx`, and change with both.)
  */
 
 .stage {
-  border: 1px solid var(--border-input);
+  /* Clips the stage's painted corners to match the viewport's card radius.
+   * Konva has no notion of a rounded stage, so this is the element's job. */
   border-radius: var(--radius);
-  background: var(--surface-card);
-  transition:
-    border-color var(--motion-fast) ease,
-    box-shadow var(--motion-fast) ease;
+  overflow: hidden;
 }
 
-/* A plant is hovering over the canvas mid-drag: make the landing zone
- * unmistakable. (Tinting the plot interior rather than the container is
- * Phase 2's richer version of this.) */
-.stage[data-drop-target='true'] {
-  border-color: var(--green-700);
-  box-shadow: 0 0 0 3px var(--green-100);
+/*
+ * Dragging empty ground pans a zoomed-in plot (`PlotCanvas.tsx`), and a
+ * `grab` cursor is how that gesture announces itself. Set on this element
+ * rather than by Konva so it is inherited by the stage's own container —
+ * which lets a marker or handle hover override it inline and then restore it
+ * by clearing that inline style, instead of having to know what to restore it
+ * to.
+ */
+.stage[data-pannable='true'] {
+  cursor: grab;
+}
+
+.stage[data-pannable='true']:active {
+  cursor: grabbing;
 }

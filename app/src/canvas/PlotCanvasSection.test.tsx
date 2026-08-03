@@ -1,9 +1,11 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { rectangleRegion, validatePlant, type Plant } from '@garden-planner/engine';
+import { useCanvasViewStore } from '../state/canvas-view-store.ts';
 import { usePlotStore } from '../state/plot-store.ts';
 import { usePlacementsStore } from '../state/placements-store.ts';
 import { exportPlotImage } from './export.ts';
+import { FALLBACK_PX_PER_CM } from './geometry.ts';
 import { PlotCanvasSection } from './PlotCanvasSection.tsx';
 
 // The Konva scene itself is untested here (ADR 0017) — this only verifies the
@@ -33,6 +35,16 @@ describe('PlotCanvasSection export button', () => {
       conditionsInput: { light: 'full-sun' },
     });
     usePlacementsStore.setState({ placements: [], selectedId: null });
+    // The canvas-view store is a singleton too (UI redesign Phase 2), and it
+    // carries the zoom and the edit-shape mode across tests if not reset.
+    useCanvasViewStore.setState({
+      viewportPx: { width: 0, height: 0 },
+      zoomFactor: 1,
+      editingOutline: false,
+      selectedCornerIndex: null,
+      outlineError: null,
+      draftVertices: null,
+    });
   });
 
   it('renders an export button', () => {
@@ -53,9 +65,14 @@ describe('PlotCanvasSection export button', () => {
     });
 
     expect(exportPlotImage).toHaveBeenCalledTimes(1);
-    const [, placements, conditions] = vi.mocked(exportPlotImage).mock.calls[0];
+    const [, placements, conditions, pxPerCm] = vi.mocked(exportPlotImage).mock.calls[0];
     expect(placements).toEqual([{ id: 'placement-1', plant: ONION, x: 10, y: 10 }]);
     expect(conditions?.light).toBe('full-sun');
+    // The live scale goes with it (UI redesign Phase 2): without it the export
+    // would rasterise at whatever the window happened to make the stage, so
+    // the same plot would come out a different size every time. jsdom has no
+    // layout, so this is the unmeasured fallback.
+    expect(pxPerCm).toBe(FALLBACK_PX_PER_CM);
   });
 
   it('selects placements in order with the Previous/Next placement buttons, wrapping around (Workplan Stage 6.2)', () => {
@@ -98,6 +115,101 @@ describe('PlotCanvasSection export button', () => {
   it('does not render the Previous/Next placement buttons when nothing is placed', () => {
     render(<PlotCanvasSection canvasWarnings={null} />);
     expect(screen.queryByRole('button', { name: /next placement/i })).toBeNull();
+  });
+
+  /**
+   * UI redesign Phase 2's toolbar. Every one of these is a real `<button>`
+   * rather than a pointer gesture, which is what makes zoom, edit-shape and
+   * clear-all keyboard-operable at all (ADR 0026 makes that contractual) —
+   * so asserting they exist and act is asserting the keyboard path exists.
+   */
+  describe('canvas toolbar (UI redesign Phase 2)', () => {
+    it('zooms in and out, and reports the current zoom back', () => {
+      render(<PlotCanvasSection canvasWarnings={null} />);
+
+      expect(screen.getByText('100%')).toBeTruthy();
+
+      fireEvent.click(screen.getByRole('button', { name: /zoom in/i }));
+      expect(useCanvasViewStore.getState().zoomFactor).toBeGreaterThan(1);
+      expect(screen.getByText('125%')).toBeTruthy();
+
+      fireEvent.click(screen.getByRole('button', { name: /zoom out/i }));
+      expect(screen.getByText('100%')).toBeTruthy();
+    });
+
+    it('returns to a fitted plot with the Fit button', () => {
+      render(<PlotCanvasSection canvasWarnings={null} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /zoom in/i }));
+      fireEvent.click(screen.getByRole('button', { name: /fit the plot to the screen/i }));
+
+      expect(useCanvasViewStore.getState().zoomFactor).toBe(1);
+      expect(screen.getByText('100%')).toBeTruthy();
+    });
+
+    it('toggles outline editing, and selects a corner so the arrow keys have something to act on', () => {
+      render(<PlotCanvasSection canvasWarnings={null} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /^edit shape$/i }));
+
+      expect(useCanvasViewStore.getState().editingOutline).toBe(true);
+      expect(useCanvasViewStore.getState().selectedCornerIndex).toBe(0);
+      // The corner controls replace the placement ones, because that is what
+      // the canvas's arrow keys are now aimed at.
+      expect(screen.getByRole('button', { name: /next corner/i })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /next placement/i })).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', { name: /done editing shape/i }));
+      expect(useCanvasViewStore.getState().editingOutline).toBe(false);
+    });
+
+    it('adds and removes outline corners, keeping the region valid', () => {
+      render(<PlotCanvasSection canvasWarnings={null} />);
+      fireEvent.click(screen.getByRole('button', { name: /^edit shape$/i }));
+
+      fireEvent.click(screen.getByRole('button', { name: /^add corner$/i }));
+      expect(usePlotStore.getState().region.vertices).toHaveLength(5);
+
+      fireEvent.click(screen.getByRole('button', { name: /^remove corner$/i }));
+      expect(usePlotStore.getState().region.vertices).toHaveLength(4);
+    });
+
+    it('refuses an outline edit that does not validate, and says why without committing it', () => {
+      render(<PlotCanvasSection canvasWarnings={null} />);
+      fireEvent.click(screen.getByRole('button', { name: /^edit shape$/i }));
+
+      // Down to three corners is fine; the fourth removal leaves two, which
+      // `safeValidatePlotRegion` rejects.
+      fireEvent.click(screen.getByRole('button', { name: /^remove corner$/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^remove corner$/i }));
+
+      expect(usePlotStore.getState().region.vertices).toHaveLength(3);
+      expect(screen.getByRole('alert').textContent).toBeTruthy();
+    });
+
+    it('asks before clearing the plot, and only clears when confirmed', () => {
+      usePlacementsStore.setState({
+        placements: [{ id: 'placement-1', plant: ONION, x: 10, y: 10 }],
+        selectedId: null,
+      });
+      render(<PlotCanvasSection canvasWarnings={null} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /clear all/i }));
+      // Nothing is gone yet: the confirmation is the point.
+      expect(usePlacementsStore.getState().placements).toHaveLength(1);
+
+      fireEvent.click(screen.getByRole('button', { name: /keep them/i }));
+      expect(usePlacementsStore.getState().placements).toHaveLength(1);
+
+      fireEvent.click(screen.getByRole('button', { name: /clear all/i }));
+      fireEvent.click(screen.getByRole('button', { name: /clear all plants/i }));
+      expect(usePlacementsStore.getState().placements).toEqual([]);
+    });
+
+    it('offers no Clear all at all when there is nothing to clear', () => {
+      render(<PlotCanvasSection canvasWarnings={null} />);
+      expect(screen.queryByRole('button', { name: /clear all/i })).toBeNull();
+    });
   });
 
   it('reports conditions as null to the pipeline when they fail to resolve', async () => {

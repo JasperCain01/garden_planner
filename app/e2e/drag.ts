@@ -1,5 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { CANVAS_PADDING_CM } from '../src/canvas/geometry.ts';
+
 /**
  * The one way these specs drag a crop from the palette onto the plot canvas.
  *
@@ -63,6 +65,12 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * drag is a `hover()` and only the *target* end is measured by hand — the
  * canvas has no such problem, and the specs need to aim at particular points
  * on it.
+ *
+ * **4. A fraction of the canvas box is not a distance.** See
+ * {@link atPlotCm} — since UI redesign Phase 2 the stage fills the region, so
+ * the same fraction of it means a very different number of centimetres than it
+ * used to, and any spec whose *point* is a distance (two crops close enough to
+ * warn about) has to say so in the plot's own units.
  */
 
 /**
@@ -152,6 +160,46 @@ const CANVAS_CENTRE: DropPoint = (box) => ({
   x: box.x + box.width / 2,
   y: box.y + box.height / 2,
 });
+
+/**
+ * A drop point expressed in **plot centimetres** rather than as a fraction of
+ * the canvas box.
+ *
+ * This exists because of what UI redesign Phase 2 did to the canvas, and it is
+ * worth spelling out. Until that phase the stage was drawn at a fixed
+ * 0.6 px/cm, so the default 3×2m plot was a ~228×168px rectangle and "40% of
+ * the way across the canvas" happened to be a small number of centimetres. The
+ * stage now fills the region — the same plot is ~790px wide at 1440×900 — so
+ * the *same fraction* is more than three times the distance in the units the
+ * engine reasons in. A spec that drops two antagonists at 0.4 and 0.6 of the
+ * width was asserting "these are 76 cm apart" and would silently start
+ * asserting "these are 250 cm apart", where the antagonist rule correctly says
+ * nothing at all.
+ *
+ * The fix is to say what was meant. The conversion is `geometry.ts#cmToPx`,
+ * turned into a fraction of the padded box so it holds at any scale:
+ *
+ *     fraction = (cm - min + padding) / (extent + 2 * padding)
+ *
+ * `CANVAS_PADDING_CM` is imported from the app rather than restated here, so a
+ * change to the canvas's padding moves these specs with it instead of leaving
+ * them quietly aiming somewhere else.
+ *
+ * @param plotSizeCm - the plot's own dimensions. A spec has to know these to
+ * mean anything by a centimetre position; the default plot is 300 × 200
+ * (`state/plot-store.ts`).
+ */
+export function atPlotCm(
+  point: { x: number; y: number },
+  plotSizeCm: { width: number; height: number },
+): DropPoint {
+  const fraction = (value: number, extent: number) =>
+    (value + CANVAS_PADDING_CM) / (extent + CANVAS_PADDING_CM * 2);
+  return (box) => ({
+    x: box.x + box.width * fraction(point.x, plotSizeCm.width),
+    y: box.y + box.height * fraction(point.y, plotSizeCm.height),
+  });
+}
 
 /**
  * Drag the palette entry for exactly `cropName` onto the canvas.

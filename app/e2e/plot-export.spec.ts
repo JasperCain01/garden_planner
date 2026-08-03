@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-import { dragCropOntoCanvas, filterPaletteTo } from './drag.ts';
+import { atPlotCm, dragCropOntoCanvas, filterPaletteTo } from './drag.ts';
 
 // The export journey WORKPLAN.md §1.3 names for Stage 3.7: build a small
 // plot, place a few crops, click Export, and confirm a real PNG downloads.
@@ -28,22 +28,26 @@ test('exporting the plot downloads a PNG with the placed crops and a legend', as
   const canvas = page.getByLabel(/plot canvas/i);
   await expect(canvas).toBeVisible();
 
-  // Place three distinct crops at different points on the plot. The canvas's
+  // Place three distinct crops at three corners of the plot. The canvas's
   // bounding box is read fresh right before each drag (`drag.ts` does it) —
   // less critical since the workspace layout decoupled the canvas's position
   // from the palette's length, but still right: placing a crop grows the dock
   // beneath the canvas and re-centres the stage.
-  const placements: ReadonlyArray<[crop: string, dx: number, dy: number]> = [
-    ['Onion', -40, -40],
-    ['Kale', 40, -40],
-    ['Lettuce', 0, 40],
+  //
+  // Positions are in plot centimetres (`atPlotCm`) rather than pixel offsets
+  // from the canvas's centre. Since UI redesign Phase 2 the stage fills the
+  // region and each marker is drawn at its crop's real footprint — kale wants
+  // 75 cm — so a pixel offset that used to spread three crops out now piles
+  // three overlapping canopies on the middle of the bed. The exported PNG is
+  // supposed to look like a plan of a garden.
+  const placements: ReadonlyArray<[crop: string, x: number, y: number]> = [
+    ['Onion', 60, 50],
+    ['Kale', 240, 50],
+    ['Lettuce', 150, 160],
   ];
-  for (const [crop, dx, dy] of placements) {
+  for (const [crop, x, y] of placements) {
     await filterPaletteTo(page, crop);
-    await dragCropOntoCanvas(page, crop, canvas, (box) => ({
-      x: box.x + box.width / 2 + dx,
-      y: box.y + box.height / 2 + dy,
-    }));
+    await dragCropOntoCanvas(page, crop, canvas, atPlotCm({ x, y }, { width: 300, height: 200 }));
     // Confirm this crop landed before filtering for the next one, so each
     // iteration starts from a settled page. The controlled-input race this
     // used to be the only guard against — a `fill` dropped by a React

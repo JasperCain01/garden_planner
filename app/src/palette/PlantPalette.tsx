@@ -48,10 +48,12 @@
  * that "just works". But it's impractical as the *primary* keyboard path: it
  * moves the card in raw screen pixels, and the canvas can be a long way down
  * the page. So every entry also renders a plain "Add to plot" `<button>` —
- * places the plant at the region's centre (`canvas/geometry.ts#regionCentre`)
- * and selects it, ready for the canvas's arrow-key nudge to fine-position.
- * See ADR 0026 for why this, and not a custom keyboard-drag interaction, is
- * the answer to "what does a keyboard-initiated drop position mean".
+ * places the plant at the first free spot near the middle of the plot
+ * (`canvas/geometry.ts#firstFreePosition`) and selects it, ready for the
+ * canvas's arrow-key nudge to fine-position. See ADR 0026 for why this, and
+ * not a custom keyboard-drag interaction, is the answer to "what does a
+ * keyboard-initiated drop position mean", and ADR 0031 for why "the first
+ * free spot" replaced "the centre" in UI redesign Phase 2.
  *
  * The button is a **sibling** of the draggable region, not nested inside it —
  * dnd-kit's `attributes` already put `role="button"` on the draggable
@@ -75,7 +77,7 @@ import {
 } from '@garden-planner/engine';
 import { resolveIcon } from '../icons/index.ts';
 import type { PaletteDragData } from '../canvas/drop.ts';
-import { regionCentre } from '../canvas/geometry.ts';
+import { firstFreePosition, plantSeparationCm } from '../canvas/geometry.ts';
 import { usePlacementsStore } from '../state/placements-store.ts';
 import { usePlantList } from '../state/use-plant-list.ts';
 import { usePlotStore } from '../state/plot-store.ts';
@@ -200,10 +202,9 @@ export function PlantPalette() {
  *    rect as the drop point (see that module's doc for why). Applied to the
  *    inner `<div>`, not the `<li>` — see below.
  * 2. **"Add to plot" button (Workplan Stage 6.2, ADR 0026)** — places `plant`
- *    directly at the plot's centre and selects it, no drag at all. This is
- *    the primary non-pointer path (see the module doc's "Keyboard
- *    alternative" section for why dnd-kit's keyboard-sensor drag alone isn't
- *    enough here).
+ *    directly on the plot and selects it, no drag at all. This is the primary
+ *    non-pointer path (see the module doc's "Keyboard alternative" section for
+ *    why dnd-kit's keyboard-sensor drag alone isn't enough here).
  *
  * **Why the `<li>` itself isn't the draggable node.** dnd-kit's `attributes`
  * put `role="button"` and `tabIndex={0}` on whatever `setNodeRef` attaches
@@ -234,8 +235,26 @@ function PaletteEntry({ entry }: { readonly entry: RankedPlant }) {
 
   const icon = resolveIcon(plant);
 
+  /**
+   * Place this crop somewhere it can actually be seen (UI redesign Phase 2).
+   *
+   * Until this phase every press landed the crop at the plot's centre, so
+   * three presses produced three markers in one spot and the review's live
+   * session recorded the first-run impression exactly: "you add plants and the
+   * plot appears to eat them". `firstFreePosition` searches outward from that
+   * same centre for a spot the crop's own footprint fits in — the pure part is
+   * in `canvas/geometry.ts`, unit-tested, precisely so this stays two lines.
+   *
+   * Both stores are read at click-time (`getState()`) rather than subscribed
+   * to, for the reason this component's doc gives about the region: the
+   * placements list changes on every drop, and re-rendering up to 144 palette
+   * rows each time to keep an argument current that is only read when a button
+   * is pressed would be a real cost for no benefit.
+   */
   function handleAddToPlot(): void {
-    usePlacementsStore.getState().addPlacement(plant, regionCentre(usePlotStore.getState().region));
+    const { region } = usePlotStore.getState();
+    const { placements, addPlacement } = usePlacementsStore.getState();
+    addPlacement(plant, firstFreePosition(region, placements, plantSeparationCm(plant)));
   }
 
   return (

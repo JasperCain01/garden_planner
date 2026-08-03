@@ -185,20 +185,23 @@ redesign Phase 1) — checking the `wcag2a`/`wcag2aa`/`wcag21a`/`wcag21aa` rule
 tags with
 [`@axe-core/playwright`](https://www.npmjs.com/package/@axe-core/playwright).
 
-**Today's recorded result: 0 violations, in all three states** (re-confirmed
-unchanged at Stage 6.3 and again after the UI redesign's layout phase, and
-enforced on every push and pull request by the `a11y` job in
+**Today's recorded result: 0 violations, in all five states** (re-confirmed
+unchanged at Stage 6.3 and after the UI redesign's layout phase; the canvas
+phase added the last two states, and the whole run is enforced on every push and
+pull request by the `a11y` job in
 [`.github/workflows/checks.yml`](./.github/workflows/checks.yml) — a new
 violation fails the build).
 
 ```
-Running 3 tests using 1 worker
+Running 5 tests using 1 worker
 
   ✓  1 e2e/a11y.spec.ts:36:1 › the plot-definition page has no axe violations in its initial state
   ✓  2 e2e/a11y.spec.ts:44:1 › the plot-definition page has no axe violations once a plant is placed and selected
-  ✓  3 e2e/a11y.spec.ts:64:1 › the add-crop dialog has no axe violations while open
+  ✓  3 e2e/a11y.spec.ts:64:1 › the canvas has no axe violations in edit-shape mode
+  ✓  4 e2e/a11y.spec.ts:79:1 › the clear-all confirmation has no axe violations while open
+  ✓  5 e2e/a11y.spec.ts:96:1 › the add-crop dialog has no axe violations while open
 
-  3 passed
+  5 passed
 ```
 
 What this can't check: the plot canvas renders to a single opaque
