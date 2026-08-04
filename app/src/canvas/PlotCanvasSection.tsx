@@ -47,6 +47,14 @@
  *   standing requirement).
  * - The outline editor moved *into* the canvas, so `plot/PlotOutlineEditor.tsx`
  *   — the second, differently-scaled picture of the same plot — is gone.
+ *
+ * **"Show me" lands here (UI redesign Phase 4, ADR 0033 §6).** The warnings
+ * dock's button has to *scroll the plot to* a marker, and ADR 0031 §7 made
+ * panning this viewport element's own native scroll — so the request travels as
+ * plain data through `state/canvas-view-store.ts` and the scrolling happens in
+ * `useRevealPlacement`, called here because this is the component that holds
+ * the viewport ref. The alternative, a DOM node in a store, would be the second
+ * notion of "where the plot is" that ADR 0031 exists to prevent.
  */
 
 import { useRef, useState } from 'react';
@@ -56,11 +64,13 @@ import { ModalDialog } from '../ui/ModalDialog.tsx';
 import { usePlotStore } from '../state/plot-store.ts';
 import { usePlacementsStore } from '../state/placements-store.ts';
 import type { CanvasWarnings } from '../warnings/evaluate-canvas.ts';
+import { SeverityIcon } from '../warnings/SeverityIcon.tsx';
 import { exportPlotImage } from './export.ts';
 import { PlacementFeedbackPanel } from './PlacementFeedbackPanel.tsx';
 import { PlotCanvas } from './PlotCanvas.tsx';
 import { useCanvasScale, useMeasuredViewport } from './useCanvasScale.ts';
 import { useDisplayRegion, useOutlineEditing } from './useOutlineEditing.ts';
+import { useRevealPlacement } from './useRevealPlacement.ts';
 import styles from './PlotCanvasSection.module.css';
 
 export interface PlotCanvasSectionProps {
@@ -95,6 +105,7 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
   const outlineEditing = useOutlineEditing();
   useMeasuredViewport(viewportRef);
   const scale = useCanvasScale(region);
+  useRevealPlacement(viewportRef, region, scale.pxPerCm);
 
   const selected = placements.find((placement) => placement.id === selectedId) ?? null;
   const selectedWarnings =
@@ -303,10 +314,11 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
                   <li
                     key={`${warning.kind}:${warning.subjects.map((subject) => subject.placementId).join(',')}`}
                   >
-                    <strong className={styles.severity} data-severity={warning.severity}>
-                      {warning.severity.toUpperCase()}
-                    </strong>{' '}
-                    {warning.reason}
+                    {/* The same mark the dock uses, and the same one Konva
+                        draws on the marker itself — UI redesign Phase 4
+                        replaced the uppercase severity word everywhere at once,
+                        so one severity never reads two ways on one screen. */}
+                    <SeverityIcon severity={warning.severity} /> {warning.reason}
                   </li>
                 ))}
               </ul>

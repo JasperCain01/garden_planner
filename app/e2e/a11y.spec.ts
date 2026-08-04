@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
+import { filterPaletteTo } from './drag.ts';
+
 /**
  * The locally-runnable axe accessibility check (Workplan Stage 6.2). Run via
  * `npm run a11y -w app` (its own config, `playwright.a11y.config.ts` — see
@@ -108,6 +110,44 @@ test('the palette has no axe violations with a card’s reasoning expanded', asy
   const card = page.getByRole('button', { name: /^drag .+ onto the plot/i }).first();
   await card.click();
   await expect(card).toHaveAttribute('aria-expanded', 'true');
+
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test('the warnings dock has no axe violations with a warning in it', async ({ page }) => {
+  // New surface in UI redesign Phase 4, and the one worth scanning: the
+  // severity *word* became a `role="img"` with an `aria-label`, the count
+  // badges carry their own `aria-label` ("1 severe") over a number and an icon
+  // that are both `aria-hidden`, and both sit inside a `<details>` that is now
+  // a scroll container. An icon whose label slips is invisible to a screen
+  // reader and identical on screen.
+  await page.goto('/');
+
+  // The shipped dataset's one well-supported antagonist pair. Placed with the
+  // keyboard-operable "Add to plot" button rather than a pointer drag —
+  // `geometry.ts#firstFreePosition` scatters the second crop one footprint
+  // (60cm) from the first, inside the rule's 75cm threshold.
+  for (const crop of ['Potato', 'Tomato']) {
+    await filterPaletteTo(page, crop);
+    await page.getByRole('button', { name: new RegExp(`add ${crop} to the plot`, 'i') }).click();
+  }
+  await expect(page.locator('#plot-settings li[data-severity]').first()).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test('the growing-conditions form has no axe violations with the soil disclosure open', async ({
+  page,
+}) => {
+  // Also Phase 4: two more segmented controls appear here, each a `<fieldset>`
+  // whose visible `<legend>` is the field's label and whose radios are visually
+  // hidden but focusable. The initial-state scan above covers the third (light
+  // level) and the closed disclosure; this covers what opening it reveals.
+  await page.goto('/');
+  await page.getByText(/describe your soil/i).click();
+  await expect(page.getByLabel(/soil texture/i)).toBeVisible();
 
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   expect(results.violations).toEqual([]);

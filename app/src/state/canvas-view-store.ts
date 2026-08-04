@@ -28,6 +28,21 @@
  * window, or applying a new plot shape, re-fits the plot and *keeps* the
  * user's zoom intent instead of leaving them at a scale that no longer relates
  * to anything. `canvas/useCanvasScale.ts` combines the two.
+ *
+ * **A "show me this placement" request lives here too, and is a request and
+ * not a position** (UI redesign Phase 4, ADR 0033 §6). The warnings dock's
+ * "Show me" has to *scroll the plot to* a marker, and ADR 0031 §7 made panning
+ * the canvas viewport element's **native scroll** deliberately, so that there
+ * is one notion of "where the plot is". That means the pan is a DOM operation
+ * on an element this store does not own and must not learn about: a store
+ * holding a `ref` would be the second notion of where the plot is, in the file
+ * whose whole job is to be the first.
+ *
+ * So the store carries the *intent* — a placement id and a nonce — and
+ * `canvas/PlotCanvasSection.tsx`, which owns the viewport element, watches it
+ * and does the scrolling. The nonce is what makes "show me the same warning
+ * twice" work: without it the second press sets state to the value it already
+ * had, React sees no change, and nothing happens.
  */
 
 import { create } from 'zustand';
@@ -63,6 +78,12 @@ interface CanvasViewState {
    * here, where the canvas can read it.
    */
   readonly draftVertices: readonly Vertex[] | null;
+  /**
+   * The last "show me this placement" request, or `null` if none has been
+   * made. Consumed by whoever owns the canvas viewport element — see the module
+   * doc for why the scrolling is not done here.
+   */
+  readonly revealRequest: { readonly placementId: string; readonly nonce: number } | null;
 
   /** Record a fresh measurement. A no-op when the size hasn't actually changed, so a `ResizeObserver` firing on every scroll can't spin the render loop. */
   readonly setViewportPx: (viewport: ViewportPx) => void;
@@ -75,6 +96,8 @@ interface CanvasViewState {
   readonly selectCorner: (index: number | null) => void;
   /** Record an attempted edit: the shape to draw, and the reason it wasn't committed (`null` when it was). */
   readonly setOutlineDraft: (vertices: readonly Vertex[] | null, error: string | null) => void;
+  /** Ask the canvas to bring a placement into view. Selecting it is a separate action on `placements-store` — see `warnings/WarningsSection.tsx`, which does both. */
+  readonly requestReveal: (placementId: string) => void;
 }
 
 export const useCanvasViewStore = create<CanvasViewState>((set) => ({
@@ -84,6 +107,7 @@ export const useCanvasViewStore = create<CanvasViewState>((set) => ({
   selectedCornerIndex: null,
   outlineError: null,
   draftVertices: null,
+  revealRequest: null,
 
   setViewportPx: (viewport) =>
     set((state) =>
@@ -111,4 +135,9 @@ export const useCanvasViewStore = create<CanvasViewState>((set) => ({
   selectCorner: (index) => set({ selectedCornerIndex: index }),
 
   setOutlineDraft: (vertices, error) => set({ draftVertices: vertices, outlineError: error }),
+
+  requestReveal: (placementId) =>
+    set((state) => ({
+      revealRequest: { placementId, nonce: (state.revealRequest?.nonce ?? 0) + 1 },
+    })),
 }));

@@ -69,13 +69,21 @@ test('placing an antagonist pair close together warns, and moving one away clear
   await filterPaletteTo(page, 'Tomato');
   await dragCropOntoCanvas(page, 'Tomato', canvas, atPlotCm(tomatoAt, PLOT_CM));
 
-  // The "4. Check for problems" section reports the antagonist pairing. (The
-  // just-dropped tomato is also auto-selected — `placements-store.ts`'s
-  // `addPlacement` — so `PlotCanvasSection`'s own inline "selected placement's
-  // warnings" block shows the same reason a second time; `.first()` picks
-  // either, since both are the deliverable we're checking for.)
+  // The warnings dock reports the antagonist pairing. (The just-dropped tomato
+  // is also auto-selected — `placements-store.ts`'s `addPlacement` — so
+  // `PlotCanvasSection`'s own inline "selected placement's warnings" block
+  // shows the same reason a second time; `.first()` picks either, since both
+  // are the deliverable we're checking for.)
   await expect(page.getByText(/grow poorly together/i).first()).toBeVisible();
-  await expect(page.getByText('SEVERE').first()).toBeVisible();
+
+  // Severity, which UI redesign Phase 4 turned from the uppercase word "SEVERE"
+  // into an icon (`warnings/SeverityIcon.tsx`) whose accessible name is the
+  // word. Asserted **in the dock specifically**, and on the count badge rather
+  // than on any occurrence of the mark: `.first()` on a page-wide locator would
+  // have been satisfied by the canvas's own selected-placement readout, so this
+  // spec would have gone on passing while the dock showed nothing — the same
+  // trap the `atPlotCm` note above records for the drop points.
+  await expect(page.locator('#plot-settings').getByLabel('1 severe')).toBeVisible();
 
   // Resolve it: drag the tomato marker to the far corner of the plot, well
   // past the antagonist threshold. The canvas box is re-read here rather than
@@ -97,5 +105,10 @@ test('placing an antagonist pair close together warns, and moving one away clear
   await page.mouse.up();
 
   await expect(page.getByText(/grow poorly together/i)).not.toBeVisible();
-  await expect(page.getByText(/no problems detected/i)).toBeVisible();
+  // The empty state, reworded by Phase 4 from "No problems detected with what's
+  // currently placed." — and still proving the same thing: the warning did not
+  // merely stop being rendered, the dock positively says there is nothing
+  // wrong. The severity badge is gone with it, which is the other half.
+  await expect(page.getByText(/no problems — looking good/i)).toBeVisible();
+  await expect(page.locator('#plot-settings').getByLabel('1 severe')).toHaveCount(0);
 });

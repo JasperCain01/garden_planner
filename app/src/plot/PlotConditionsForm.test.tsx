@@ -10,12 +10,27 @@ function ControlledForm({ initial }: { initial: PlotConditionsInput }) {
   return <PlotConditionsForm value={value} onChange={setValue} />;
 }
 
+/**
+ * Open the "Describe your soil (optional)" disclosure (UI redesign Phase 4).
+ *
+ * Needed because `getByLabelText` does **not** check visibility: without this
+ * every soil assertion below would pass in jsdom while the control was
+ * unreachable in a real browser. `e2e/plot-settings.spec.ts` is the other half
+ * of that — it asserts in Chromium that the control really is hidden until this
+ * summary is pressed, which is the thing jsdom structurally cannot tell us.
+ */
+function openSoil(): void {
+  fireEvent.click(screen.getByText(/describe your soil/i));
+}
+
 describe('PlotConditionsForm', () => {
   it('reports a light-level change', () => {
     const handleChange = vi.fn();
     render(<PlotConditionsForm value={{ light: 'full-sun' }} onChange={handleChange} />);
 
-    fireEvent.change(screen.getByLabelText(/light level/i), { target: { value: 'partial-shade' } });
+    // A segmented control since Phase 4: the options are all on screen, so the
+    // interaction is a click on one rather than a change on a `<select>`.
+    fireEvent.click(screen.getByLabelText(/^partial shade$/i));
 
     expect(handleChange).toHaveBeenCalledWith({ light: 'partial-shade' });
   });
@@ -27,6 +42,7 @@ describe('PlotConditionsForm', () => {
 
   it('builds a soil block only once a facet is set, and drops it again once every facet is cleared', () => {
     render(<ControlledForm initial={{ light: 'full-sun' }} />);
+    openSoil();
 
     fireEvent.change(screen.getByLabelText(/soil texture/i), { target: { value: 'clay' } });
     expect(screen.getByLabelText(/soil texture/i)).toHaveProperty('value', 'clay');
@@ -35,15 +51,35 @@ describe('PlotConditionsForm', () => {
     expect(screen.getByLabelText(/soil texture/i)).toHaveProperty('value', '');
   });
 
-  it('switches to a region location and lists CLIMATE_REGIONS by name', () => {
+  it('picks a climate region through one select, with the UK default as an option rather than a mode', () => {
     const handleChange = vi.fn();
     render(<PlotConditionsForm value={{ light: 'full-sun' }} onChange={handleChange} />);
 
-    fireEvent.click(screen.getByLabelText(/pick a region/i));
+    fireEvent.change(screen.getByLabelText(/^region$/i), {
+      target: { value: 'south-west-england' },
+    });
 
     expect(handleChange).toHaveBeenCalledWith(
-      expect.objectContaining({ location: { kind: 'region', regionId: expect.any(String) } }),
+      expect.objectContaining({
+        location: { kind: 'region', regionId: 'south-west-england' },
+      }),
     );
+  });
+
+  it('maps the default option back to an absent location, not to an empty one', () => {
+    const handleChange = vi.fn();
+    render(
+      <PlotConditionsForm
+        value={{ light: 'full-sun', location: { kind: 'region', regionId: 'south-west-england' } }}
+        onChange={handleChange}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/^region$/i), { target: { value: 'uk-default' } });
+
+    // `resolvePlotConditions` reads an absent location as the UK average — the
+    // sentinel must never reach the engine as a region id.
+    expect(handleChange).toHaveBeenCalledWith({ light: 'full-sun', location: undefined });
   });
 
   it('shows an inline error rather than throwing for a value the schema rejects', () => {
@@ -58,10 +94,10 @@ describe('PlotConditionsForm', () => {
   it('produces a PlotConditionsInput that resolves cleanly end to end', () => {
     render(<ControlledForm initial={{ light: 'full-sun' }} />);
 
-    fireEvent.change(screen.getByLabelText(/light level/i), { target: { value: 'partial-shade' } });
+    fireEvent.click(screen.getByLabelText(/^partial shade$/i));
+    openSoil();
     fireEvent.change(screen.getByLabelText(/soil texture/i), { target: { value: 'clay' } });
-    fireEvent.change(screen.getByLabelText(/soil ph/i), { target: { value: 'acid' } });
-    fireEvent.click(screen.getByLabelText(/pick a region/i));
+    fireEvent.click(screen.getByLabelText(/^acid$/i));
     fireEvent.change(screen.getByLabelText(/^region$/i), {
       target: { value: 'south-west-england' },
     });
@@ -82,5 +118,15 @@ describe('PlotConditionsForm', () => {
       plantingMonth: 4,
     });
     expect(resolved.climate.id).toBe('south-west-england');
+  });
+
+  it('keeps the soil facets inside a disclosure that starts closed', () => {
+    render(<ControlledForm initial={{ light: 'full-sun' }} />);
+
+    // jsdom can't answer "is it visible", but it can answer "is the disclosure
+    // open" — which is the fact this phase's layout depends on, and the reason
+    // every soil test above has to open it first.
+    const disclosure = screen.getByText(/describe your soil/i).closest('details');
+    expect(disclosure?.open).toBe(false);
   });
 });
