@@ -184,3 +184,65 @@
     overflow-y: visible;
   }
 }
+
+/*
+ * Print (UI redesign Phase 6, ADR 0035 — `styles/global.css`'s print block has
+ * the whole story).
+ *
+ * This region is the plan itself: the plot picture, and under it the crop key.
+ * What goes is everything around them that only means something to a pointer
+ * or a keyboard — the whole actions cluster (hiding it rather than leaning on
+ * `global.css`'s blanket `button` rule, because the zoom *readout* is a
+ * `<span>` and would otherwise print a lone "100%" under the heading), the
+ * paragraph explaining how to drag a plant onto the plot, and the
+ * selected-placement readout, which is a *screen* state and would otherwise
+ * print "Selected: Carrot" onto a plan where nothing is selected.
+ *
+ * `PlacementFeedbackPanel`'s tally stays, and it is doing real work here: it is
+ * the printed sheet's crop key, in the same "one line per crop, not per placed
+ * instance" shape `canvas/export.ts` chose for the PNG legend. The markers on
+ * the plot label themselves with the crop's name at any scale past 0.9 px/cm
+ * (`footprint.ts`), and the default 3×2m plot fits at ~1.9, so the picture and
+ * the key name the same crops the same way.
+ */
+@media print {
+  .region {
+    display: block;
+    padding: 0;
+  }
+
+  .toolbar {
+    /* Only "Your plot" is left in it, and a flex row with one item that is a
+     * heading is just a heading. */
+    display: block;
+  }
+
+  .actions,
+  .hint,
+  .selected {
+    display: none;
+  }
+
+  /* The soil surround is the *screen's* frame for the stage; on paper the plot
+   * already paints its own ground (`PlotCanvas.tsx` fills the stage with
+   * `soil-100` so an export shows the same scene the app does), so this box
+   * would be a second, larger tinted rectangle around the first. */
+  .viewport {
+    display: block;
+    overflow: visible;
+    padding: 0;
+    background: none;
+  }
+
+  /* The stage keeps its screen size (`useCanvasScale.ts#isPrintLayout`), so on
+   * a sheet wider than it, it needs telling where to sit — `safe center` was
+   * doing that on screen and is a grid property this block just gave up. */
+  .viewport > * {
+    margin-inline: auto;
+  }
+
+  .dock {
+    max-height: none;
+    overflow-y: visible;
+  }
+}

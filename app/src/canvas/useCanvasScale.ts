@@ -20,6 +20,9 @@
  * unmeasured and `geometry.ts#fitPxPerCm` answers with `FALLBACK_PX_PER_CM` —
  * the pre-Phase-2 constant, which is exactly the "renders as it always did"
  * behaviour those tests were written against.
+ *
+ * **And it stops observing while the page is being printed** (UI redesign
+ * Phase 6, ADR 0035 §5) — see {@link isPrintLayout}.
  */
 
 import { useEffect, useMemo, type RefObject } from 'react';
@@ -46,6 +49,9 @@ export function useMeasuredViewport(ref: RefObject<HTMLElement | null>): void {
       return undefined;
     }
     const observer = new ResizeObserver((entries) => {
+      if (isPrintLayout()) {
+        return;
+      }
       const rect = entries[0]?.contentRect;
       if (rect !== undefined) {
         setViewportPx({ width: rect.width, height: rect.height });
@@ -54,6 +60,37 @@ export function useMeasuredViewport(ref: RefObject<HTMLElement | null>): void {
     observer.observe(element);
     return () => observer.disconnect();
   }, [ref, setViewportPx]);
+}
+
+/**
+ * Is the page currently laid out for paper rather than for the screen?
+ *
+ * **This exists because the print stylesheet and this observer form a loop**
+ * (UI redesign Phase 6, ADR 0035 §5). On paper the viewport element stops being
+ * a fixed-height pane and becomes an ordinary block that is as tall as its
+ * contents — and its contents are the plot, whose size this observer decides.
+ * So a measurement taken under print media feeds the fit a height derived from
+ * the very thing being fitted: measured in Chromium, the stage went 582 → 487 →
+ * 387px on successive frames, on its way to nothing.
+ *
+ * Rasterising a PDF never triggers it (that snapshot is synchronous, and the
+ * observer's callback never gets a turn), which is exactly what makes it the
+ * dangerous kind of bug — the path that *does* trigger it is a real user
+ * holding **print preview** open, where the page stays live and print styles
+ * stay applied for as long as the dialog is up.
+ *
+ * Freezing the measurement is not a workaround for that but the right answer to
+ * it: the picture on the sheet should be the picture that was on the screen.
+ * `styles/global.css` scales it down to the page width if it has to, in CSS,
+ * where no observer can see it happen.
+ *
+ * Guarded for jsdom exactly as `ui/usePrefersReducedMotion.ts` is, and read at
+ * the moment of measurement rather than subscribed to: nothing renders from
+ * this, so there is no state to keep in step — the only question is whether
+ * *this* measurement counts.
+ */
+function isPrintLayout(): boolean {
+  return typeof window.matchMedia === 'function' && window.matchMedia('print').matches;
 }
 
 /** The live scale, plus everything the zoom controls need to render and act. */

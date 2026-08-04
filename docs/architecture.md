@@ -1135,6 +1135,88 @@ have measured through a plot that still had crops on it (`e2e/storage.ts`), and
 `keyboard-walkthrough.mjs` reloads three times for "a clean run" and would have
 gone on counting tab stops without failing.
 
+## UI redesign Phase 6 — nice-to-have (defer freely)
+
+The last phase, and the only one the review marks optional. Its four bullets are
+ideas rather than findings, and **three of them rest on premises the code and
+the data contradict** — so the phase's deliverable is each bullet investigated,
+built if it survives contact, and recorded with its reasoning if it does not.
+One was built and three were declined. All of it is in ADR
+[0035](./adr/0035-print-the-plan-and-three-declined-nice-to-haves.md), which is
+mostly the three, because a bullet declined without a reason is
+indistinguishable from a bullet forgotten.
+
+**It had no acceptance criterion either**, and it gets one the way Phase 5 did —
+stated first, enforced in a spec (`e2e/print.spec.ts`): _at 1440×900, printing
+the open plan produces a **document** — every placed crop, every warning and
+every companion suggestion reaching the paper in full, nothing clipped by a box
+that only scrolls on a screen, the plot picture inside the page width, and
+neither the 144-crop palette nor a single control printing._ The number it exists
+to change: **sheets of A4, 9 → 2.**
+
+**No sun-direction indicator: the app has no direction to point in.** There is
+no notion of compass direction anywhere in `app/src` or `packages/engine/src`,
+and light level is not a direction — it is one `full-sun | partial-shade |
+full-shade` for the whole plot, deliberately the same enum a plant's requirement
+uses. Inventing an orientation input would be a **design** field, so a stored
+format change and a `DESIGNS_STORAGE_VERSION` bump, plus a control in the column
+ADR 0033 §1 fought for the height of, plus engine work this phase may not do —
+for a nice-to-have. Drawing the light level on the stage instead was declined as
+redundant: it is already permanently on screen 300px away. The one place it was
+genuinely missing is the printed plan, and it is there now.
+
+**No seasonal tint: 8 of 144 crops (5.6%) carry a `seasons` block, and 0 of the
+5 in the starter bed do.** `plantingMonth` is optional and absent from
+`DEFAULT_CONDITIONS_INPUT`, so the feature's input is unset until the user picks
+one; and the honest version needs three states, not two, because 136 crops have
+no sow window to be in or out of. The app already visualises the planting month
+where there is room for words — the palette re-ranks on it and `scoreSeason`
+returns a sentence. **This bullet's output is a data finding**: `WORKPLAN.md`
+Stage 1.2 is still ⚠️ partial, and the sow windows are its missing half.
+
+**No companion lines: the engine emits no pair to draw one between.**
+`warnings/companions.ts` skips a candidate already among the placements —
+"there's nothing to suggest about a crop the user has already put in the
+ground" — so one end of a `CompanionSuggestion` is a marker and the other is
+guaranteed not to be. Verified on the starter bed: carrot and onion (the
+dataset's one `well-supported` pair) are both planted, and the dock suggests
+Lettuce and Watermelon Radish. Positive feedback for a pair already planted is a
+real gap but a different feature, and one the engine excludes on purpose; and
+hover is pointer-only, which ADR 0026 makes contractual.
+
+**A print stylesheet for the app, not a better PNG.** There was no `@media
+print` anywhere in `app/src`, so printing the workspace printed the workspace:
+**9 sheets of A4** at 1440×900 with the example bed placed, five of them the
+palette, 159 controls on them, and the warnings dock still capped at 45% of a
+column that does not exist on paper — 114px of it, one of its two items, below
+the fold of a box nobody can scroll. The exported PNG was left alone because it
+is not broken: ADR 0020's limits are all recorded "a snapshot, not a save file"
+choices. Three rules shape the sheet, written out at the top of
+`styles/global.css`'s print block with the per-component halves pointing back at
+it: **no print-only DOM** (so no tab stop moves and nothing exists that axe
+cannot see), **a pane that scrolls on screen must not be a box that clips on
+paper**, and **a control is an affordance and paper has none** — one exception,
+the header's designs button, which is the only place the open design's name is
+written.
+
+**The print layout and the canvas's `ResizeObserver` are a loop.** On paper the
+canvas viewport becomes as tall as its contents, and its contents are the plot
+whose size that observer decides: measured, the stage went **582 → 487 → 387px**
+on successive frames. A PDF rasterisation never sees it (that snapshot is
+synchronous) — a user holding **print preview** open does.
+`useMeasuredViewport` therefore stands down while `matchMedia('print').matches`,
+the second place in `app/src` that reads a media query in JavaScript; the
+stylesheet scales the picture to the page instead, in the only place this
+codebase overrides an inline style with `!important`.
+
+**Measured, not asserted.** `e2e/print.spec.ts`: 9 sheets → **2**, 159 printed
+controls → **1**, 144 palette rows → **0**, 114px of clipped dock → **0** (1 of
+2 items reaching the paper → 2 of 2), and a regression guard for the observer
+loop that fails at 349×257px without it. Every rule this phase added is inside
+`@media print`, so nothing on screen moved: `npm test` **304** unchanged,
+`npm run e2e` 35 → **39**, axe **0 violations across eight states**, keyboard
+walkthrough unchanged.
+
 ## Where to look next
 
 | Topic                                                                 | File                                                                                                   |
@@ -1184,6 +1266,8 @@ gone on counting tab stops without failing.
 | The header's undo/redo buttons and the designs switcher               | `app/src/designs/`                                                                                     |
 | The starter bed, and why it is a toolbar button and not a modal       | `app/src/designs/example-bed.ts`                                                                       |
 | Why designs persist, and why one history spans two stores             | [`adr/0034`](./adr/0034-designs-persistence-and-one-history-over-two-stores.md)                        |
+| What the plan looks like on paper, and the three rules that shape it  | `app/src/styles/global.css` (`@media print`), `app/e2e/print.spec.ts`                                  |
+| Why there is no sun indicator, seasonal tint or companion line        | [`adr/0035`](./adr/0035-print-the-plan-and-three-declined-nice-to-haves.md)                            |
 | The persistence acceptance criteria (the round trip), as a test       | `app/e2e/persistence.spec.ts`                                                                          |
 | Keeping a spec's second page load from restoring its own earlier work | `app/e2e/storage.ts`                                                                                   |
 | The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)         | `app/src/canvas/`                                                                                      |

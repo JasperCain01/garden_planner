@@ -292,6 +292,134 @@ legend + * {
   white-space: nowrap;
 }
 
+/* ----------------------------------------------------------------- Print
+ *
+ * The plan on paper (UI redesign Phase 6, ADR 0035).
+ *
+ * **The review asks for "a print stylesheet for the exported plan", and there
+ * were two different features hiding in that phrase.** The exported plan is a
+ * PNG — `canvas/export.ts` rasterises the Konva stage and composites a
+ * plain-text legend beside it (ADR 0020) — so there is no page to style. And
+ * the *app* had no print handling at all: before this block, `@media print`
+ * appeared nowhere in `app/src`, so printing the workspace printed the
+ * workspace. Measured at 1440×900 with the example bed on the plot, that was
+ * **9 sheets of A4**: 144 palette rows, 159 controls, and the warnings dock
+ * still capped at 45% of a column that no longer exists on paper, with 114px
+ * of it — one of its two items — below the fold of a box nobody can scroll.
+ *
+ * What this block does is the other reading: make the app printable, so the
+ * plan can leave the screen as a document rather than as a screenshot. ADR
+ * 0035 §4 records why that reading rather than improving the PNG.
+ *
+ * **Three rules shape all of it**, and the per-component halves in
+ * `routes/AppShell.module.css`, `plot/PlotDefinitionPage.module.css`,
+ * `canvas/PlotCanvasSection.module.css`, `warnings/WarningsPanel.module.css`,
+ * `designs/DesignChrome.module.css` and `ui/SegmentedControl.module.css`
+ * follow them too:
+ *
+ * 1. **No print-only DOM.** Everything on the sheet is content the screen
+ *    already shows. That is what makes this change provably free of a11y
+ *    cost: nothing is added to the accessibility tree, no tab stop moves
+ *    (`docs/accessibility.md` §10's header count is untouched), and there is
+ *    no invisible-on-screen text that axe cannot see and a screen reader can.
+ * 2. **A pane that scrolls on screen must not be a box that clips on paper.**
+ *    Every viewport-height frame, cap and scrollport in the workspace is
+ *    released here; paper is infinitely tall and pages itself.
+ * 3. **A control is an affordance, and paper has none.** Buttons go; the
+ *    values inside form controls stay, because those are the user's answers.
+ *
+ * The one thing print styles are *not* allowed to do is change the screen, so
+ * every rule in every one of those files lives inside `@media print` and the
+ * suites that measure the on-screen layout (`e2e/workspace-layout.spec.ts`,
+ * `e2e/canvas-scale.spec.ts`, `e2e/plot-settings.spec.ts`) are untouched by
+ * this phase. `e2e/print.spec.ts` is what measures this block.
+ */
+@media print {
+  @page {
+    /* A margin, and deliberately not a `size`. Forcing `A4` would mis-scale
+     * every US-Letter printer, and the plan has no fixed geometry that needs a
+     * particular sheet — it reflows. 12mm is inside the unprintable edge of
+     * every common desktop printer. */
+    margin: 12mm;
+  }
+
+  body {
+    /* The page cream is the workspace's "ground outside the plot"; on paper it
+     * is either ink spent on nothing or (more often) silently dropped, leaving
+     * the layout depending on a colour that isn't there. White is the honest
+     * base. */
+    background: var(--surface-card);
+  }
+
+  /* Rule 3. The one exception is the header's designs button, which is the
+   * only place the open design's *name* appears — `designs/DesignChrome.module.css`
+   * re-enables it as plain text, with its reasoning. */
+  button {
+    display: none;
+  }
+
+  /* A `<select>`'s chevron means "you can change this", which is a promise
+   * paper cannot keep; the value it is next to stays. */
+  select {
+    padding-right: var(--space-3);
+    background-image: none;
+  }
+
+  /*
+   * The plot picture, and the only place in this codebase that overrides
+   * inline styles with `!important`.
+   *
+   * The stage is three nested boxes and Konva writes the inline width/height on
+   * two of them (its own `.konvajs-content` wrapper and the `<canvas>`), sized
+   * from the *screen* viewport that `useCanvasScale.ts` measured — and
+   * deliberately still sized from it here, because that hook stops measuring
+   * under print media on purpose (see its `isPrintLayout`, and ADR 0035 §5: the
+   * two of them are otherwise a feedback loop that shrinks the plot to
+   * nothing). So on a wide window the stage arrives at the printer wider than
+   * the sheet, and the right of the plot is simply cut off unless it is scaled
+   * here, in CSS. A stylesheet cannot out-specify an inline style any other
+   * way, which is the textbook case for `!important` and the same one
+   * `prefers-reduced-motion` below uses.
+   *
+   * `position: static` on the canvas is what makes the shrink work rather than
+   * just look right: Konva absolutely-positions it, so its ancestors' `height:
+   * auto` would collapse to nothing and the crop key would print on top of the
+   * plot. In flow, `max-width` + `height: auto` scales it by its own intrinsic
+   * ratio and the boxes around it follow. `display: block` for the last four
+   * pixels of that: an inline replaced element sits on a text baseline and
+   * leaves room for a descender under it, which is a hairline of the soil
+   * surround escaping below the stage.
+   */
+  #plot-canvas,
+  #plot-canvas > div {
+    max-width: 100%;
+    height: auto !important;
+  }
+
+  #plot-canvas canvas {
+    display: block;
+    position: static !important;
+    max-width: 100%;
+    height: auto !important;
+  }
+
+  /* The plot is one picture and must not be dealt across two sheets; a heading
+   * stranded at the foot of a page is the same defect one size down. */
+  #plot-canvas {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  li {
+    break-inside: avoid;
+  }
+}
+
 /* ---------------------------------------------------------------- Motion */
 
 /* Honour an explicit request for less motion: hover lifts, transitions and

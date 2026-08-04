@@ -73,3 +73,39 @@
     max-width: 4.5rem;
   }
 }
+
+/*
+ * Print (UI redesign Phase 6, ADR 0035 — `styles/global.css`'s print block has
+ * the whole story).
+ *
+ * `global.css` hides every `<button>` on paper, and this is the one exception
+ * it names: the designs button is the only place in the app the **open
+ * design's name** is written, so hiding it would print a plan with no idea
+ * which plan it is. It stops being a button and becomes the title block's
+ * second line — no border, no fill, no hover lift, and the truncation lifted,
+ * because a sheet of paper has the width the header band did not.
+ *
+ * Undo and redo go, and they are the clean case for it: a control whose entire
+ * meaning is "the state you were in a moment ago" says nothing at all about a
+ * plan printed from the state you are in now.
+ */
+@media print {
+  .history {
+    display: none;
+  }
+
+  .designsButton {
+    display: inline-flex;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-sm);
+    font-weight: 400;
+  }
+
+  .designName {
+    overflow: visible;
+    max-width: none;
+    font-weight: 700;
+  }
+}

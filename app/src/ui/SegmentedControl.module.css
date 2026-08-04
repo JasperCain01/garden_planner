@@ -143,3 +143,25 @@
 .segment:hover .input:checked + .body {
   background: var(--green-900);
 }
+
+/*
+ * Print (UI redesign Phase 6, ADR 0035).
+ *
+ * The comment above already anticipated this medium — "the fill inverts rather
+ * than merely tinting, which survives a greyscale print" — but only if the fill
+ * is printed at all, and a browser drops background colours by default. That
+ * makes the selected segment identical to the three it is chosen over, which on
+ * the printed plan is the difference between "this plot is in full sun" and a
+ * row of words. `print-color-adjust` is the property that says a background is
+ * carrying meaning rather than decoration, and this is the one place in the app
+ * where that is literally true.
+ *
+ * Scoped to the checked segment, not the group: the unselected ones are exactly
+ * the decoration this exists to distinguish it from.
+ */
+@media print {
+  .input:checked + .body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
