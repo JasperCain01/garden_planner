@@ -952,6 +952,91 @@ and the conditions form still nests fieldsets (Phase 4), and a dragged card is
 still clipped at the sidebar's edge — that fix is a dnd-kit `DragOverlay`, which
 is Phase 5's "drag ghost".
 
+## UI redesign Phase 4 — the plot & conditions panel
+
+Every phase so far ended by saying the shape picker was still radios and the
+conditions form still nested fieldsets. It also left a number nobody had looked
+at: the settings column held **1,434px of content in an 844px box**, and with
+two crops placed the "Problems & suggestions" panel's top edge sat **263px below
+the bottom of the screen**. The app's live feedback was off screen while you
+edited the form that changes it — the review's §2.6 finding, surviving Phase 1's
+move intact. Reasoning in ADR
+[0033](./adr/0033-warnings-dock-shape-tiles-and-segmented-conditions.md).
+
+**The acceptance criterion was restated before it was tested.** The review asks
+for "zero vertical page scroll at 1440×900", and since Phase 1 the _page_ has
+never scrolled at all — `e2e/workspace-layout.spec.ts` asserts it — so as
+written it was already true and meant nothing. What is measured instead is the
+column's own internal overflow, and whether a warning is visible at the same time
+as the control that causes it. **590px → 0**, and 894px → 0 with a warning
+present; the dock's top edge is 381px _above_ the column's bottom where the old
+panel's was 263px below it.
+
+**The warnings list is a dock, and the column stops scrolling as a whole.** The
+two form panels scroll in a box of their own and the dock is a fixed sibling
+below them, capped at 45% and scrolling itself past that — the construction
+`PlantPalette` and `PlotCanvasSection` already use, applied a third time. That
+makes the criterion true _structurally_: whatever you scroll to in the form, the
+warning it causes is beside it. The cap is on the `<details>` rather than on the
+list inside it because a flex chain through a disclosure passes through Chrome's
+`::details-content` and silently stops shrinking — measured, 37px of overflow
+that ignored its own cap.
+
+**Pinning did not buy the room; shrinking the forms did.** Shape went 440px →
+292px and conditions 635px → 302px, which is what let all three panels **stay
+open by default** — the thing ADR 0030 argued for explicitly and this phase had
+to re-answer rather than assume.
+
+**The shape picker's tiles are drawn by the factory the button applies.**
+`plot/shape-glyph.ts` calls `rectangleRegion`/`lShapeRegion`/`circleRegion` with
+the picker's own metres and draws the polygon that comes back, so a tile is the
+outline you will get rather than an illustration of one, and the L's notch moves
+as you retype it. It reads the picker's state and never `plot-store`'s region,
+because `spacing/region.ts` is explicit that "nothing remembers it was a
+preset". `buildRegion` returns a result rather than throwing — it runs on every
+keystroke — and carries the factory's own message, which the picker shows inline
+under the fields with `aria-describedby` pointing at it.
+
+**Three `<select>`s became segmented controls, and the fieldsets were re-cut
+rather than deleted.** `ui/SegmentedControl.tsx` shows all of a ≤4-option
+vocabulary at once over the same native-radio mechanic Phase 3 built for the
+palette's chips — now shared as `ui/choice.module.css`, which the palette
+composes back. Each fieldset was decided against one test, _is the group's name
+recoverable from its own members' labels?_: Soil's is and Location collapsed to
+one control, so both go; Shape's is not, so it stays with a hidden legend; and
+the three segmented controls are new flat fieldsets whose visible legends are
+the fields' labels. Three nested became four flat.
+
+**The severity word became an icon in both places at once.**
+`warnings/SeverityIcon.tsx` draws `severity.ts`'s existing `severityGlyph`
+(`i`/`!`/`×`) — the one Stage 6.2 added so the canvas badge carried severity in
+shape and not only colour — with the word moved into its `aria-label`, and it
+replaced the uppercase text in the dock _and_ in the canvas's
+selected-placement readout, so one severity never reads two ways on one screen.
+`severityCounts` supplies the dock's "2 ×, 1 !" badge row, ordered most urgent
+first, because this module is the one place that knows severities have an order.
+
+**"Show me" pans, by asking rather than by holding a DOM node.** ADR 0031 §7
+made panning the canvas viewport's native scroll deliberately, so
+`canvas-view-store` carries a _request_ (a placement id and a nonce) and
+`canvas/useRevealPlacement.ts` — called where the viewport ref lives — performs
+it. It does not zoom, and that is recorded rather than skipped: every warning
+today is a relationship between two placements, so zooming in on one is the
+likeliest way to push the other off screen.
+
+**Measured, not asserted.** `e2e/plot-settings.spec.ts` holds the phase's
+acceptance criteria: the column's overflow in both states, the warning card and
+"Use this shape" inside the column's box at the same time, the severity count
+badge, that soil is genuinely unreachable until its disclosure is opened, and
+that "Show me" scrolls a zoomed-in plot. Tab stops in the column went **13 → 11**
+(14 with soil open), counted by walking Tab in the browser; axe covers eight
+states; the keyboard walkthrough gained step 5b with its friction figures
+unchanged.
+
+**What this phase deliberately did not do:** undo/redo, persistence, the drag
+ghost and the micro-polish sweep are Phase 5's whole brief, and a dragged palette
+card is still clipped at the sidebar's edge for want of a dnd-kit `DragOverlay`.
+
 ## Where to look next
 
 | Topic                                                                 | File                                                                                                   |
@@ -988,6 +1073,12 @@ is Phase 5's "drag ghost".
 | The palette's two aria-labels, shared with the E2E suite              | `app/src/palette/labels.ts`                                                                            |
 | Why the palette is compact cards with the reasoning on demand         | [`adr/0032`](./adr/0032-palette-compact-cards-and-details-on-demand.md)                                |
 | The palette acceptance criteria (crops visible, one click), as a test | `app/e2e/palette.spec.ts`                                                                              |
+| The warnings dock, severity icon and count badges                     | `app/src/warnings/WarningsPanel.tsx`, `app/src/warnings/SeverityIcon.tsx`                              |
+| The shared visually-hidden choice-control mechanic                    | `app/src/ui/choice.module.css`, `app/src/ui/SegmentedControl.tsx`                                      |
+| How a shape tile is drawn, and why from the picker's own state        | `app/src/plot/shape-glyph.ts`                                                                          |
+| Scrolling a warned-about placement into view                          | `app/src/canvas/useRevealPlacement.ts`                                                                 |
+| Why the settings column has a pinned dock                             | [`adr/0033`](./adr/0033-warnings-dock-shape-tiles-and-segmented-conditions.md)                         |
+| The settings-column acceptance criteria, as a test                    | `app/e2e/plot-settings.spec.ts`                                                                        |
 | The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)         | `app/src/canvas/`                                                                                      |
 | The placements store (what's placed on the canvas)                    | `app/src/state/placements-store.ts`                                                                    |
 | The drag-and-drop E2E journey                                         | `app/e2e/plot-canvas.spec.ts`                                                                          |

@@ -169,27 +169,6 @@
   font-size: var(--text-sm);
 }
 
-/* The severity word, coloured by `--severity-*` (mirrored from
- * `warnings/severity.ts`, which Konva needs as literals — see
- * `styles/tokens.css`). The word itself carries the meaning; colour only
- * reinforces it. This card is white, which is the background those values were
- * contrast-checked against. */
-.severity {
-  font-weight: 700;
-}
-
-.severity[data-severity='info'] {
-  color: var(--severity-info);
-}
-
-.severity[data-severity='warning'] {
-  color: var(--severity-warning);
-}
-
-.severity[data-severity='severe'] {
-  color: var(--severity-severe);
-}
-
 /*
  * The stacked fallback below `--layout-narrow` (`styles/tokens.css`): there is
  * no region to fill, so nothing is pinned and nothing is capped — the canvas

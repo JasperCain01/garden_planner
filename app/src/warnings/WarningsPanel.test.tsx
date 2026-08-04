@@ -4,6 +4,7 @@ import {
   validatePlant,
   type AntagonistAdjacencyWarning,
   type CompanionSuggestion,
+  type OvercrowdingWarning,
   type Plant,
 } from '@garden-planner/engine';
 import { WarningsPanel } from './WarningsPanel.tsx';
@@ -45,13 +46,24 @@ const SUGGESTION: CompanionSuggestion = {
   reason: 'Gardeners traditionally say onion grows well alongside garlic.',
 };
 
+/** A second, less urgent warning — enough to check that the badge row orders by severity rather than by arrival. */
+const INFO_WARNING: OvercrowdingWarning = {
+  kind: 'overcrowded',
+  severity: 'info',
+  subjects: [{ placementId: 'onion-1', plantId: 'onion' }],
+  plantedCount: 12,
+  maxCount: 10,
+  spacingSource: 'recorded',
+  reason: 'You have placed 12 onions where this bed fits about 10.',
+};
+
 describe('WarningsPanel', () => {
   it('shows reassuring copy when there is nothing to report', () => {
     render(
       <WarningsPanel warnings={[]} suggestions={[]} plants={[]} onFocusPlacement={() => {}} />,
     );
 
-    expect(screen.getByText(/no problems detected/i)).toBeTruthy();
+    expect(screen.getByText(/no problems — looking good/i)).toBeTruthy();
     expect(screen.getByText(/no companion suggestions/i)).toBeTruthy();
   });
 
@@ -66,12 +78,31 @@ describe('WarningsPanel', () => {
       />,
     );
 
-    expect(screen.getByText('SEVERE')).toBeTruthy();
+    // UI redesign Phase 4 replaced the uppercase severity *word* with the same
+    // glyph the canvas badges the marker with — so the assertion is on the
+    // accessible name, which is where the word went, not on the drawing.
+    expect(screen.getAllByRole('img', { name: 'severe' }).length).toBeGreaterThan(0);
     expect(screen.getByText(ANTAGONIST_WARNING.reason)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /show me/i }));
     // The warning's first subject — the same placement `PlotCanvas.tsx` badges.
     expect(onFocusPlacement).toHaveBeenCalledWith('potato-1');
+  });
+
+  it('counts the warnings by severity, most urgent first (UI redesign Phase 4)', () => {
+    render(
+      <WarningsPanel
+        warnings={[INFO_WARNING, ANTAGONIST_WARNING]}
+        suggestions={[]}
+        plants={[]}
+        onFocusPlacement={() => {}}
+      />,
+    );
+
+    // The dock's list scrolls when it is full; these badges are what stays on
+    // screen, so their order is the summary a user reads at a glance.
+    const badges = screen.getAllByLabelText(/^\d+ (severe|warning|info)$/);
+    expect(badges.map((badge) => badge.getAttribute('aria-label'))).toEqual(['1 severe', '1 info']);
   });
 
   it("resolves a suggestion's bare plant id to its display name and evidence tag", () => {

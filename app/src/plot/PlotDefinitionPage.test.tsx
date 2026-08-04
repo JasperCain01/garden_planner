@@ -38,11 +38,15 @@ describe('PlotDefinitionPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /use this shape/i }));
 
     // Fill in growing conditions: partial shade, clay soil, a named region.
-    fireEvent.change(screen.getByLabelText(/light level/i), {
-      target: { value: 'partial-shade' },
-    });
+    // Light is a segmented control since UI redesign Phase 4, so this is a
+    // click on the option rather than a change on a `<select>`.
+    fireEvent.click(screen.getByLabelText(/^partial shade$/i));
+    // Soil sits behind a disclosure now, and `getByLabelText` would happily
+    // drive it shut — which would leave this test green while the control was
+    // unreachable in a browser. Open it the way a user has to.
+    fireEvent.click(screen.getByText(/describe your soil/i));
     fireEvent.change(screen.getByLabelText(/soil texture/i), { target: { value: 'clay' } });
-    fireEvent.click(screen.getByLabelText(/pick a region/i));
+    // Location is one select now: the UK default is an option, not a mode.
     fireEvent.change(screen.getByLabelText(/^region$/i), {
       target: { value: 'south-west-england' },
     });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { severityColor, severityGlyph, worseSeverity } from './severity.ts';
+import type { Warning, WarningSeverity } from '@garden-planner/engine';
+import { severityColor, severityCounts, severityGlyph, worseSeverity } from './severity.ts';
 
 /** Relative luminance of an sRGB hex colour (WCAG 2.x contrast formula). */
 function relativeLuminance(hex: string): number {
@@ -56,5 +57,42 @@ describe('severityGlyph', () => {
       (['info', 'warning', 'severe'] as const).map((severity) => severityGlyph(severity)),
     );
     expect(glyphs.size).toBe(3);
+  });
+});
+
+describe('severityCounts', () => {
+  /** The dock's badge row only reads `severity`, so a fixture only needs to carry one honestly. */
+  function warningOf(severity: WarningSeverity): Warning {
+    return {
+      kind: 'overcrowded',
+      severity,
+      subjects: [{ placementId: 'p1', plantId: 'onion' }],
+      plantedCount: 2,
+      maxCount: 1,
+      spacingSource: 'recorded',
+      reason: 'fixture',
+    };
+  }
+
+  it('counts each severity and orders them most urgent first', () => {
+    const counts = severityCounts([
+      warningOf('info'),
+      warningOf('severe'),
+      warningOf('warning'),
+      warningOf('severe'),
+    ]);
+
+    // The order is this module's to supply — the engine's vocabulary carries
+    // no rank — and it is what the badge row reads left to right.
+    expect(counts).toEqual([
+      { severity: 'severe', count: 2 },
+      { severity: 'warning', count: 1 },
+      { severity: 'info', count: 1 },
+    ]);
+  });
+
+  it('omits severities with nothing in them rather than rendering a zero', () => {
+    expect(severityCounts([warningOf('warning')])).toEqual([{ severity: 'warning', count: 1 }]);
+    expect(severityCounts([])).toEqual([]);
   });
 });

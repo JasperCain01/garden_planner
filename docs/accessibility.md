@@ -697,6 +697,203 @@ one node. Whether that composite announces _usefully_, rather than merely
 validly, is exactly what only a real screen-reader session answers. It remains
 in `WORKPLAN.md` §5.2's backlog.
 
+## 9. Re-verified after the UI redesign's settings-column phase (2026-08-04)
+
+UI redesign Phase 4 (ADR
+[0033](./adr/0033-warnings-dock-shape-tiles-and-segmented-conditions.md))
+rewrote every control in the right-hand column, replaced a severity _word_ with
+an icon in two places, and put a form control behind a disclosure. Each of those
+is a reason this page could not be assumed to carry over.
+
+### The tab-stop budget, measured either side
+
+**13 before, 11 after** in the default state; **14** with the soil disclosure
+open. Counted by walking Tab in Chromium from the column's own anchor (the one
+the second skip link lands on) until focus left it — not by counting selectors,
+which would have miscounted the closed disclosure's contents.
+
+| stop | before                           | after                            |
+| ---- | -------------------------------- | -------------------------------- |
+| 1    | "Plot shape & size" summary      | "Plot shape & size" summary      |
+| 2    | shape radio group                | shape **tile** radio group       |
+| 3–4  | Width, Height                    | Width, Height                    |
+| 5    | "Use this shape"                 | "Use this shape"                 |
+| 6    | "Growing conditions" summary     | "Growing conditions" summary     |
+| 7    | Light level `<select>`           | Light level **segmented group**  |
+| 8–10 | Soil texture / pH / moisture     | "Describe your soil" summary     |
+| 11   | Location radio group             | Region `<select>`                |
+| 12   | Planting month `<select>`        | Planting month `<select>`        |
+| 13   | "Problems & suggestions" summary | "Problems & suggestions" summary |
+
+It went **down** because the phase spent no new stops. A segmented control is
+one radio group where a `<select>` was one control; the three soil facets sit
+behind one summary; and the shape tiles are the same single radio group the
+three radios already were — which is exactly why they are native radios rather
+than buttons (ADR 0032 §6's reasoning, reused). The three soil stops come back
+when the disclosure is opened, which is when they are reachable.
+
+The keyboard walkthrough's **step 4 is unchanged**: it tabs to Width, then
+expects Height, then "Use this shape". That adjacency survives both the tiles
+(a group is one stop) and the unit moving inside the field — checked rather than
+assumed, because it is the kind of thing that fails several steps later with a
+message about something else.
+
+### The unit is inside the field and still announced
+
+The review asks for "3 m" inside the dimension inputs. A decorative suffix drawn
+over the box is not in the accessible name, so the unit would have been visible
+and unspoken. The answer is in the label rather than in an `aria-describedby`:
+
+- visible label text: **"Width"**
+- accessible name: **"Width (m)"** — the "(m)" is a `visually-hidden` span
+
+WCAG 2.5.3 (label in name) wants the visible label contained in the accessible
+name, which holds. `aria-describedby` pointing at the suffix would have
+announced a bare "m" after the value instead, which says less.
+
+### The severity word did not disappear; it moved
+
+`WarningsPanel` and `PlotCanvasSection` both rendered
+`warning.severity.toUpperCase()`. Both now render `warnings/SeverityIcon.tsx`,
+which draws `severity.ts`'s **existing** `severityGlyph` (`i` / `!` / `×`) —
+the glyph Stage 6.2 added so the canvas marker's badge carried severity in shape
+and not only colour. Three things keep that honest:
+
+- The icon is `role="img"` with `aria-label={severity}`, so a screen reader
+  announces "severe" exactly where it used to read "SEVERE". `role="img"` also
+  makes the subtree presentational, so the glyph is never read out as a
+  character ("times").
+- A `title` puts the same word under a sighted pointer — which the uppercase
+  word never needed and a glyph does.
+- The count badges carry their own name: `aria-label="2 severe"` over a number
+  and an icon that are both hidden from the accessibility tree, so the badge
+  reads aloud as one unit rather than as "2" next to an unlabelled mark.
+
+Colour is still never the only signal (WCAG 1.4.1): each severity has its own
+glyph, the card keeps its severity-coloured left edge _and_ the icon, and the
+reason sentence carries the substance.
+
+### Contrast: four new pairings, and one rejected on measurement
+
+Computed the same way §2 and §8 computed everything else.
+
+| Pairing                                                      | Ratio          | Bar                   |
+| ------------------------------------------------------------ | -------------- | --------------------- |
+| `--text-on-dark` on `--green-700` (selected segment)         | 6.39:1 ✅      | 4.5:1                 |
+| `--text-on-dark` on `--green-900` (hovered selected segment) | 11.08:1 ✅     | 4.5:1                 |
+| `--text-strong` on `--green-100` (selected shape tile)       | 12.55:1 ✅     | 4.5:1                 |
+| `--green-700` tile/segment border on `--surface-card`        | 6.39:1 ✅      | 3:1 (1.4.11, control) |
+| `--severity-*` as icon and badge text on `--surface-card`    | 4.83–5.17:1 ✅ | 4.5:1                 |
+
+The severity figures are §2's, unchanged — and that is the point rather than a
+shortcut. **Every severity-coloured thing this phase drew is text or a border on
+the white card**, which is the background those values were measured against, so
+no severity pairing in the dock is a new sum at all. The one that would have
+been is the one the phase avoided: `--severity-severe` on the page cream is
+**4.35:1** ❌, which is why §2's standing rule is that any surface showing a
+severity is a card. The settings column is `--surface-card`, so the dock is.
+
+**What a filled count badge would actually have cost, since the obvious
+objection is the wrong one.** Contrast is symmetric, so white knocked out of a
+`--severity-*` pill measures exactly what the colour measures as text on white:
+
+| Fill                 | White on it | Same colour as text on white |
+| -------------------- | ----------- | ---------------------------- |
+| `--severity-severe`  | 4.83:1 ✅   | 4.83:1 ✅                    |
+| `--severity-warning` | 5.02:1 ✅   | 5.02:1 ✅                    |
+| `--severity-info`    | 5.17:1 ✅   | 5.17:1 ✅                    |
+
+So a filled badge would have **passed**, and it was not rejected on contrast. It
+was rejected because the icon inside it is meant to be the same mark Konva draws
+on the marker, at a size where a 10.5px glyph reversed out of a saturated fill
+is the least legible way to draw it, and because three filled pills in a 300px
+column read as more urgent than the sentence they are counting. Recorded here so
+the next person does not re-derive a failure that isn't there.
+
+### Structure: two headings kept, three fieldsets re-cut
+
+Phase 3 retired 144 per-item `<h3>`s and gave two reasons (ADR 0032 §3). The
+warnings dock's two — "Warnings" and "Companion suggestions" — were re-examined
+against both and **kept**: they are not inside a `role="button"` subtree that
+ARIA makes presentational, and two headings are not 144. They are how a
+screen-reader user moves between the dock's two lists, which is what document
+structure is for.
+
+The fieldsets were re-cut rather than deleted, each against one test — _is the
+group's name recoverable from its own members' labels?_
+
+| Group                       | Before                       | After                                 |
+| --------------------------- | ---------------------------- | ------------------------------------- |
+| Shape                       | `<fieldset>`, visible legend | kept, legend `visually-hidden`        |
+| Soil                        | `<fieldset>`, visible legend | retired — every member says "Soil"    |
+| Location                    | `<fieldset>`, two radios     | retired — collapsed to one `<select>` |
+| Light level / pH / moisture | plain `<label>` + `<select>` | **new** `<fieldset>`, visible legend  |
+
+Net: 3 nested fieldsets become 4 flat ones, and the nesting the review objected
+to is gone. Shape's legend is the only hidden one, because the panel heading
+above it already says "Plot shape & size" and the tiles draw the shapes; "Acid /
+Neutral / Alkaline" genuinely does not say what it is of, so those legends stay
+visible.
+
+### A closed `<details>` is not a hidden field to jsdom
+
+Soil moved behind a "Describe your soil (optional)" disclosure, and
+`getByLabelText` finds a control inside a closed `<details>` perfectly happily.
+Two component tests (`PlotConditionsForm.test.tsx`,
+`PlotDefinitionPage.test.tsx`) would have gone on passing while driving a
+control no browser user could reach. They open the disclosure now, and
+`e2e/plot-settings.spec.ts` asserts in Chromium that the control really is
+hidden until they do — the half jsdom structurally cannot answer.
+
+### axe: 0 violations, now in eight states
+
+Two more scans, following the precedent Phases 1–3 set of scanning what the
+phase newly created: the dock with a warning in it (a `role="img"` whose label
+is the only place the severity word survives, and count badges whose visible
+content is entirely `aria-hidden`), and the conditions form with the soil
+disclosure open (two more segmented fieldsets).
+
+```
+  ✓  1 the plot-definition page has no axe violations in its initial state
+  ✓  2 the plot-definition page has no axe violations once a plant is placed and selected
+  ✓  3 the canvas has no axe violations in edit-shape mode
+  ✓  4 the clear-all confirmation has no axe violations while open
+  ✓  5 the palette has no axe violations with a card’s reasoning expanded
+  ✓  6 the warnings dock has no axe violations with a warning in it
+  ✓  7 the growing-conditions form has no axe violations with the soil disclosure open
+  ✓  8 the add-crop dialog has no axe violations while open
+  8 passed
+```
+
+### The keyboard walkthrough: one more step, and the same friction
+
+§7 and §8's friction figures are **unchanged**: 4 tabs to the palette search
+field, 20 from there to the canvas, 4 from the canvas to the width field. The
+new step 5b walks the dock's "Show me", which is a new interaction and so falls
+under ADR 0026's rule that every one of them has a keyboard path.
+
+```
+=== Step 5: check warnings (read-only, but confirm reachable) ===
+  OK   the "Problems & suggestions" panel is present and reachable (no interaction needed to read it)
+  OK   the warnings dock and the "Use this shape" button are in the column together, unscrolled
+
+=== Step 5b: "Show me" (UI redesign Phase 4) ===
+  OK   the dock counts the new problem by severity, announced as "1 severe" rather than drawn only
+  OK   reached "Show me" in 12 tabs from the settings column and selected the warned-about plant ("Selected: Potato")
+```
+
+(Steps 0–4 and 6 are unchanged from §8's run and all pass.)
+
+### Still not done, still recorded
+
+**Real screen-reader testing (NVDA/VoiceOver/JAWS) has still not happened.**
+This phase adds two questions to that list. Whether a severity announced only as
+`role="img"`/"severe" reads as well as the word did in flow is exactly the kind
+of thing only a real session answers; and the count badge deliberately hides its
+own visible content behind `aria-hidden` in favour of a composed label, which is
+correct by the spec and worth hearing. It remains in `WORKPLAN.md` §5.2's
+backlog.
+
 ## Related
 
 - ADR [0026](./adr/0026-keyboard-placement-and-severity-glyphs.md) — the

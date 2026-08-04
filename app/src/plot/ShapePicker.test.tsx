@@ -69,4 +69,52 @@ describe('ShapePicker', () => {
     expect(handleApply).not.toHaveBeenCalled();
     expect(screen.getByRole('alert')).toBeTruthy();
   });
+
+  // ------------------------------------------- UI redesign Phase 4 additions
+
+  it('names the presets as one radio group, so they are one tab stop with arrow keys inside', () => {
+    render(<ShapePicker onApply={vi.fn()} />);
+
+    // The `<legend>` is visually hidden but the group still has to be named —
+    // "Rectangle / L-shape / Circle" does not say what it is a choice of. See
+    // the component doc for why this is the one legend that is hidden.
+    const presets = screen.getAllByRole('radio', { name: /rectangle|l-shape|circle/i });
+    expect(presets).toHaveLength(3);
+    for (const preset of presets) {
+      expect(preset.getAttribute('name')).toBe('plot-preset');
+    }
+  });
+
+  it("draws each tile from the picker's own dimensions, and redraws when they change", () => {
+    const { container } = render(<ShapePicker onApply={vi.fn()} />);
+
+    // The default 3 x 2m rectangle, at its own aspect — the review's "drawn
+    // with the actual aspect from current dimensions".
+    const rectangleTile = () => container.querySelector('svg')?.getAttribute('viewBox');
+    expect(rectangleTile()).toBe('0 0 300 200');
+
+    fireEvent.change(screen.getByLabelText(/width/i), { target: { value: '8' } });
+    expect(rectangleTile()).toBe('0 0 800 200');
+  });
+
+  it('falls back to an outline-free tile while a dimension is mid-edit, rather than throwing', () => {
+    const { container } = render(<ShapePicker onApply={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText(/width/i), { target: { value: '0' } });
+
+    // Two glyphs left (L-shape and circle, whose dimensions are untouched), so
+    // the rectangle's is the one that went — and the row kept its three tiles.
+    expect(container.querySelectorAll('svg')).toHaveLength(2);
+    expect(screen.getAllByRole('radio')).toHaveLength(3);
+  });
+
+  it('keeps the unit in the accessible name while showing it inside the field', () => {
+    render(<ShapePicker onApply={vi.fn()} />);
+
+    // Visible text is "Width"; the accessible name is "Width (m)". WCAG 2.5.3
+    // wants the first contained in the second, and every existing spec and the
+    // keyboard walkthrough select on the second.
+    const width = screen.getByLabelText(/^width \(m\)$/i);
+    expect(width.getAttribute('id')).toBe('plot-rect-width');
+  });
 });

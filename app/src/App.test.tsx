@@ -40,7 +40,10 @@ describe('App shell', () => {
     // stacked document it belonged to.
     expect(screen.getByRole('heading', { name: /plot shape/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /use this shape/i })).toBeTruthy();
-    expect(screen.getByLabelText(/light level/i)).toBeTruthy();
+    // Light level is a segmented radio group since UI redesign Phase 4, so it
+    // is named by a `<legend>` (announced as a `group`) rather than by a
+    // `<label>` — which is the grouping semantic the flattening had to keep.
+    expect(screen.getByRole('group', { name: /light level/i })).toBeTruthy();
   }, 15_000);
 
   // The three labelled `region` landmarks are how the workspace replaced the

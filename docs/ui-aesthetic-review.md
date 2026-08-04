@@ -514,19 +514,141 @@ This single phase fixes findings 1, 3, and half of 2.
 
 ### Phase 4 — Plot & conditions panel
 
+> **Status: implemented** (2026-08-04). The pinned dock in
+> `app/src/plot/PlotDefinitionPage.tsx` (+ its module CSS), shape tiles in
+> `plot/ShapePicker.tsx` drawn by `plot/shape-glyph.ts`, segmented controls in
+> `ui/SegmentedControl.tsx` over the shared mechanic in `ui/choice.module.css`,
+> the dock itself in `warnings/WarningsPanel.tsx` with `warnings/SeverityIcon.tsx`
+> and `severity.ts`'s new `severityCounts`, and "show me" in
+> `canvas/useRevealPlacement.ts` over a request in `state/canvas-view-store.ts`.
+> Decisions and the roads not taken: ADR
+> [0033](./adr/0033-warnings-dock-shape-tiles-and-segmented-conditions.md); what
+> changed and why, in `docs/architecture.md`; the tab-stop count and the
+> contrast working, measured, in `docs/accessibility.md` §9. Everything below is
+> what was asked for; the notes in brackets are where the implementation
+> differs.
+>
+> **The acceptance criterion was restated before it was tested, and the note
+> matters more than the bullet.** This phase asks for "zero vertical page scroll
+> at 1440×900" — but since Phase 1 the _page_ has never scrolled at all, and
+> `e2e/workspace-layout.spec.ts` has asserted exactly that, at exactly that
+> viewport, ever since. As written the criterion was already true and measured
+> nothing. The number that means something is the **settings column's own
+> internal overflow**: **590px** in the default state, **894px** with the
+> antagonist pair the E2E suite uses — with the "Problems & suggestions" panel's
+> top edge **263px below the bottom of the column** while the form that changes
+> it was fully visible. That is §2.6's finding surviving Phase 1's move intact,
+> and it is what this phase measures instead.
+>
+> **The bit this phase had to do first, which isn't in the list below.** 1,434px
+> of content in an 844px column is the whole problem, and every bullet either
+> spends that budget or reclaims it. Pinning the dock does not by itself buy the
+> room — it only changes who runs out of it — so the two form panels had to get
+> small enough to sit above it **open**, which is what ADR 0030 argued for
+> explicitly ("a first-run user should see that the controls exist"). They did:
+> 440px + 635px became **292px + 302px**. Had they not, the honest alternative
+> was closing "Growing conditions" by default and saying so.
+
 - Shape picker → three visual tiles (rectangle / L / circle glyphs drawn with the actual
   aspect from current dimensions), selected tile highlighted; dimension inputs beneath
   with unit suffixes inside the field ("3 m"); "Use this shape" becomes a primary
-  button; errors inline under the field they concern.
+  button; errors inline under the field they concern. _(Done. Each tile is drawn
+  by **the same engine factory "Use this shape" applies** (`shape-glyph.ts`), so
+  it isn't an illustration of a rectangle — it is the outline you will get,
+  notch and all, and the two cannot drift apart. Fed from the picker's own metre
+  state and never from `plot-store`, because `region.ts` is explicit that
+  "nothing remembers it was a preset" and a tile fed from the committed polygon
+  would start redrawing itself when a corner was dragged on the canvas.
+  Underneath, the tiles are the **same native radio group** the three radios
+  were — Phase 3's chip mechanic, now shared from `ui/choice.module.css` rather
+  than copied — so they are one tab stop, not three. The unit inside the field
+  cost one subtlety: the label reads "Width" and its accessible **name** is
+  still "Width (m)", via a `visually-hidden` span, so the unit is announced as
+  well as drawn and every existing selector still matches.)_
 - Conditions: flatten the fieldset nesting to labelled groups on one card; selects
   become segmented controls where options ≤4 (light level, pH, moisture); soil group
   behind a "Describe your soil (optional)" disclosure; region picker one select.
+  _(Done, and "flatten" was read as visual rather than as a licence to delete
+  grouping a screen reader announces. Each fieldset was decided against one
+  test — **does the group's name survive in its members' own labels?** Soil's
+  does ("Soil texture", "Soil pH", "Soil moisture" each say it) so it goes;
+  Location collapsed to one control so there is nothing left to group; Shape's
+  does not ("Rectangle / L-shape / Circle" doesn't say what it is a choice of)
+  so it stays, legend visually hidden. The three segmented controls are three
+  new **flat** fieldsets whose visible legends are the fields' labels. Net 3
+  nested → 4 flat, nesting zero. Soil **texture** keeps its `<select>`: five
+  options don't fit a 300px row, and the rule here is ≤4. Region's "no region
+  picked" is a named `uk-default` sentinel, not `''`, so it can never collide
+  with a real region id.)_
 - Warnings dock (bottom of right panel): count badge by severity ("2 ⚠ 1 ℹ"), each
   warning a small card — severity icon, reason, "show me" (existing `onFocusPlacement`)
   which selects _and pans/zooms to_ the placement. Empty state: "No problems — looking
-  good 🌿".
+  good 🌿". _(Done, with the icon being **`severity.ts`'s existing
+  `severityGlyph`** (`i`/`!`/`×`) rather than a new set: Stage 6.2 added it so
+  the canvas badge carried severity in shape and not only colour, and a marker
+  badged `×` beside a card marked `×` is the connection both surfaces exist for.
+  The severity **word** moved into the icon's accessible name, so a screen
+  reader still hears "severe" where it used to read "SEVERE" — and the uppercase
+  word went from the canvas's selected-placement readout at the same time, so
+  one severity never reads two ways on one screen. Nothing severity-coloured is
+  a **fill**: `docs/accessibility.md` §2 records that those tokens' 4.5:1
+  figures are against white, and white on `--severity-severe` is 3.68:1. Pans,
+  **does not zoom** — every warning today is a relationship between two
+  placements, so zooming in on one is the likeliest way to push the other off
+  screen. The two `<h3>`s stayed, on purpose: Phase 3's two reasons for
+  retiring 144 headings (ARIA presentational subtrees; an outline swamped)
+  apply to neither of these.)_
 - **Acceptance:** full tweak loop (change shape → palette re-ranks → warnings update)
-  happens with zero vertical page scroll at 1440×900.
+  happens with zero vertical page scroll at 1440×900. _(Met as restated above,
+  and measured in a real browser rather than asserted —
+  `e2e/plot-settings.spec.ts` takes the overflow figure and checks that the
+  warning card and the control that caused it are inside the column's box at the
+  same time.)_
+  - _**Internal overflow: 590px → 0**, and **894px → 0** with the antagonist
+    pair placed — the number this phase exists to change. The column's content
+    is 844px in an 844px box in both states._
+  - _**A warning and its cause are on screen together.** Before, the
+    "Problems & suggestions" panel's top edge was **263px below** the column's
+    bottom while "Use this shape" was visible; after, the dock's top edge is
+    **381px above** it. The spec asserts both boxes are inside the column's at
+    once, which is the thing "no page scroll" was trying and failing to say._
+  - _**Nothing in the column scrolls at rest.** Shape 440px → **292px**,
+    conditions 635px → **302px**, the empty dock 312px → **176px**. Loaded, the
+    dock caps at 45% (365px) and scrolls itself — the cap is on the `<details>`
+    and not on the list inside it, because Chrome's `::details-content` breaks a
+    flex chain through a disclosure and the panel overflowed its own cap by
+    **37px** when it was built the other way (ADR 0033 §1)._
+  - _**Tab stops in the column: 13 → 11**, or 14 with the soil disclosure open —
+    measured by walking Tab in the browser, not by counting selectors. Down
+    because the phase spent no new stops: a segmented control is one radio group
+    where a `<select>` was one control, and the tiles are the single group the
+    radios already were. `<select>`s went 5 → 3, `<fieldset>`s 3 nested → 4
+    flat._
+  - _The keyboard walkthrough's **step 4 is unchanged** — width → height → "Use
+    this shape", still three adjacent stops — which was checked rather than
+    assumed, and it gained a **step 5b** for the dock's "Show me" (reached in 12
+    tabs from the settings column, with the severity count announced as "1
+    severe")._
+  - _Standing bar: `npm test` **244 passing** (38 files), `npm run e2e` **27
+    passing**, `npm run a11y` **0 violations across eight states** (the dock
+    with a warning in it, and the conditions form with soil open, got their
+    own scans), keyboard walkthrough **all steps passing** — including a new
+    step 5b._
+  - _Two traps this phase had to disarm rather than discover late.
+    `PlotDefinitionPage.test.tsx` drives soil through `getByLabelText`, which
+    does not check visibility — so putting soil behind a disclosure would have
+    left it green in jsdom while the control was unreachable in a browser; the
+    component tests open the disclosure now and `e2e/plot-settings.spec.ts`
+    asserts in Chromium that it is genuinely hidden until they do. And
+    `warnings-overlay.spec.ts`'s `getByText('SEVERE').first()` was page-wide:
+    with the dock changed and the canvas readout not, it would have gone on
+    passing while proving nothing. It asserts on the **dock's** severity count
+    badge now, which is strictly more than it proved before._
+  - _On the timeout note `docs/qa-checklist.md` §4 carries: this container ran
+    `canvas-scale.spec.ts`'s two pixel-differencing specs in **21.8s and 19.8s**,
+    so they passed at the 30s default and the `--timeout=90000` override was not
+    needed. The note stays — 20s against a 30s budget is not much headroom, and
+    the machine that measured 33s and 39s is the one the note is for._
 
 ### Phase 5 — Play, persistence, delight
 

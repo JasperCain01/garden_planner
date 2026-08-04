@@ -75,6 +75,32 @@
  * a line of state. All three start open: the column scrolls internally, so
  * "open" costs nothing but reach, and a first-run user should see that the
  * controls exist before learning they collapse.
+ *
+ * **The third one is pinned now (UI redesign Phase 4, ADR 0033 §1).** The
+ * column was 1,434px of content in an 844px box — 590px of internal overflow,
+ * and 894px once the antagonist pair the E2E suite uses was placed, which put
+ * the "Problems & suggestions" panel's top edge 263px below the bottom of the
+ * screen. The engine's live feedback was off screen while you edited the form
+ * that changes it, which is the review's §2.6 finding surviving Phase 1's move
+ * intact.
+ *
+ * So the column stops being one scroll box of three panels: the two **form**
+ * panels scroll in a box of their own, and the warnings dock is a pinned
+ * sibling below them, capped at 45% and scrolling itself past that. The
+ * structure is `PlantPalette`'s (filters fixed, list scrolling) and
+ * `PlotCanvasSection`'s (toolbar, viewport, dock) applied a third time, and it
+ * is what makes the phase's acceptance criterion true *structurally* rather
+ * than by fitting: whatever you scroll to in the form, the warning it causes is
+ * on screen with it.
+ *
+ * **All three still start open**, which is the part ADR 0030 argued for and
+ * this phase had to re-answer rather than assume. Pinning the dock does not by
+ * itself buy the room — it just moves who runs out of it. What bought it was
+ * the two form panels getting smaller (ADR 0033 §3, §4): 440 + 635px of shape
+ * and conditions became small enough to fit above the dock with the panels
+ * open, so "a first-run user should see that the controls exist" survives
+ * unchanged. Had they not, the honest alternative would have been closing
+ * "Growing conditions" by default and saying so here.
  */
 
 import type { ReactNode } from 'react';
@@ -103,10 +129,28 @@ import styles from './PlotDefinitionPage.module.css';
  * the heading *inside* the `<summary>` so the panel is both a disclosure
  * control and a heading to navigate the document by — the two things the
  * numbered `<h2>`s used to do separately.
+ *
+ * `className` exists for the one panel that behaves differently: the warnings
+ * dock is pinned to the foot of the column, capped, and scrolls itself, where
+ * the two form panels above it are ordinary blocks inside a scrolling box.
+ * Everything else about it — the disclosure, the heading inside the summary,
+ * starting open — is deliberately identical, because to a user it is the same
+ * kind of thing.
  */
-function Panel({ title, children }: { readonly title: string; readonly children: ReactNode }) {
+function Panel({
+  title,
+  className,
+  children,
+}: {
+  readonly title: string;
+  readonly className?: string;
+  readonly children: ReactNode;
+}) {
   return (
-    <details className={styles.panel} open>
+    <details
+      className={className === undefined ? styles.panel : `${styles.panel} ${className}`}
+      open
+    >
       <summary className={styles.panelSummary}>
         <h2 className={styles.panelTitle}>{title}</h2>
       </summary>
@@ -183,19 +227,27 @@ export function PlotDefinitionPage() {
           id={PLOT_SETTINGS_ID}
           tabIndex={-1}
         >
-          <Panel title="Plot shape & size">
-            <p className={styles.panelIntro}>
-              Start from a preset shape, then use &ldquo;Edit shape&rdquo; on the plot itself to
-              drag, add or remove corners until the outline matches your real plot.
-            </p>
-            <ShapePicker onApply={setRegion} />
-          </Panel>
+          {/* The two form panels, in the one part of the column that scrolls. */}
+          <div className={styles.settings}>
+            <Panel title="Plot shape & size">
+              {/* The panel's one pointer at the canvas, kept short. Phase 2
+                  moved outline editing onto the plot itself, so this is the
+                  only thing telling a user in this panel where non-preset
+                  shapes come from — and it is three lines of a column whose
+                  budget is the whole subject of ADR 0033 §1. */}
+              <p className={styles.panelIntro}>
+                Fine-tune the outline with &ldquo;Edit shape&rdquo; on the plot.
+              </p>
+              <ShapePicker onApply={setRegion} />
+            </Panel>
 
-          <Panel title="Growing conditions">
-            <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
-          </Panel>
+            <Panel title="Growing conditions">
+              <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
+            </Panel>
+          </div>
 
-          <Panel title="Problems & suggestions">
+          {/* Pinned below them — see the module doc, and ADR 0033 §1. */}
+          <Panel title="Problems & suggestions" className={styles.dockPanel}>
             <WarningsSection canvasWarnings={canvasWarnings} />
           </Panel>
         </section>

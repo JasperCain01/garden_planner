@@ -1,0 +1,50 @@
+/*
+ * The severity icon (UI redesign Phase 4). Shared by the warnings dock and the
+ * canvas's selected-placement readout, so it is its own module rather than a
+ * rule in either of theirs.
+ *
+ * A ring in the severity colour with the glyph inside it, echoing the badge
+ * Konva draws on the marker itself (`canvas/PlotCanvas.tsx`) — the two are meant
+ * to be recognisably the same mark.
+ *
+ * Outlined rather than filled, and *not* for a contrast reason: contrast is
+ * symmetric, so a white glyph on a severe fill measures the same 4.83:1 the red
+ * measures as text on white, and all three severities clear the bar either way
+ * (`docs/accessibility.md` §9 carries the sums, so nobody re-derives a failure
+ * that isn't there). It is outlined because this is a 10.5px glyph, and a
+ * character that small reversed out of a saturated fill is the least legible
+ * way to draw one.
+ *
+ * What *is* a contrast constraint is the surface underneath: these tokens'
+ * 4.5:1 figures were measured against white, and `--severity-severe` manages
+ * only 4.35:1 on the page cream — so this only ever renders on a card
+ * (`docs/accessibility.md` §2).
+ */
+
+.icon {
+  display: inline-flex;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid currentcolor;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1;
+  /* The mark reads as a mark, not as a letter in the sentence beside it. */
+  user-select: none;
+}
+
+.icon[data-severity='info'] {
+  color: var(--severity-info);
+}
+
+.icon[data-severity='warning'] {
+  color: var(--severity-warning);
+}
+
+.icon[data-severity='severe'] {
+  color: var(--severity-severe);
+}

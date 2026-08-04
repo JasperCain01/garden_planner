@@ -18,6 +18,22 @@ import { chromium } from '@playwright/test';
  * link (there are two as of that phase) and one for the add-crop dialog it
  * introduced.
  *
+ * **UI redesign Phase 4 re-measured step 4 and added step 5b.** The settings
+ * column's controls changed shape — three preset radios became three tiles,
+ * three `<select>`s became segmented controls, and the soil block went behind a
+ * disclosure — so its tab-stop count was measured either side rather than
+ * assumed: **13 before, 11 after** in the default state, and 14 with the soil
+ * disclosure open. Down, not up, because the phase spent no new stops: a
+ * segmented control is one radio group where a `<select>` was one control, and
+ * the three soil facets are behind one summary. Step 4's three-in-a-row
+ * (width → height → "Use this shape") survives unchanged, which was worth
+ * checking rather than assuming: the tiles are a radio *group*, so they are the
+ * single stop the radios already were, and the unit moving inside the field
+ * left the label's accessible name ("Width (m)") exactly as it was — see
+ * `plot/ShapePicker.tsx` on why the unit is `visually-hidden` in the label
+ * rather than only drawn in the box. Step 5b walks the dock's new "Show me",
+ * which does something it did not do before (ADR 0033 §6).
+ *
  * **UI redesign Phase 3 added step 2b.** The palette card became a disclosure
  * as well as a drag surface, which is a new keyboard interaction on an element
  * that already had one — Space still starts a drag, Enter now opens the
@@ -371,7 +387,8 @@ if (tabsBackToCanvasAfterEdit === null) {
 log('\n=== Step 4: describe the plot (keyboard only) ===');
 // The settings column is the last region in reading order, so from the canvas
 // it is a handful of stops away: the selected placement's Remove button, the
-// "Plot shape & size" disclosure, then the shape radios and dimension fields.
+// "Plot shape & size" disclosure, then the shape tiles (one radio group, one
+// stop — UI redesign Phase 4) and the dimension fields.
 const tabsToWidth = await tabUntil(/width \(m\)/i, 15);
 if (tabsToWidth !== null) {
   ok(`reached the rectangle width field in ${tabsToWidth} tabs from the canvas`);
@@ -407,6 +424,96 @@ if (warningsHeading) {
   );
 } else {
   fail('the "Problems & suggestions" panel is visible');
+}
+
+// UI redesign Phase 4's own criterion, checked here because it is the same
+// question a keyboard user asks: is the feedback where I can see it *while* I
+// am changing the thing that causes it, or do I have to go and find it? Before
+// this phase the panel's top edge sat 263px below the bottom of the column.
+const dockedTogether = await page.evaluate(() => {
+  const column = document.getElementById('plot-settings');
+  if (column === null) return false;
+  const columnBox = column.getBoundingClientRect();
+  const inside = (element) => {
+    if (!element) return false;
+    const box = element.getBoundingClientRect();
+    return box.height > 0 && box.top >= columnBox.top - 1 && box.bottom <= columnBox.bottom + 1;
+  };
+  const shapeButton = [...column.querySelectorAll('button')].find((button) =>
+    /use this shape/i.test(button.textContent ?? ''),
+  );
+  const dockHeading = [...column.querySelectorAll('h3')].find((heading) =>
+    /^warnings$/i.test(heading.textContent ?? ''),
+  );
+  return inside(shapeButton) && inside(dockHeading);
+});
+if (dockedTogether) {
+  ok('the warnings dock and the "Use this shape" button are in the column together, unscrolled');
+} else {
+  fail('the warnings dock is visible at the same time as the control that changes the plot');
+}
+
+log('\n=== Step 5b: "Show me" (UI redesign Phase 4) ===');
+// The dock's "Show me" used to select a placement and stop there, which on a
+// zoomed-in plot highlights a marker that is off screen. It scrolls the canvas
+// to it now (ADR 0033 §6), and ADR 0026 makes every interaction's keyboard path
+// contractual — so it is walked with no pointer at all.
+//
+// A warning first: the shipped dataset's one well-supported antagonist pair,
+// placed with the same "Add to plot" button step 2 used. `firstFreePosition`
+// scatters the second crop 60cm from the first, inside the rule's 75cm
+// threshold.
+for (const crop of ['Potato', 'Tomato']) {
+  const searchBox = await page.getByLabel(/^search$/i);
+  await searchBox.fill(crop);
+  await page.waitForTimeout(400);
+  const addButton = page.getByRole('button', {
+    name: new RegExp(`add ${crop} to the plot`, 'i'),
+  });
+  await addButton.focus();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+}
+
+const severityAnnounced = await page
+  .locator('#plot-settings')
+  .getByLabel('1 severe')
+  .isVisible()
+  .catch(() => false);
+if (severityAnnounced) {
+  ok('the dock counts the new problem by severity, announced as "1 severe" rather than drawn only');
+} else {
+  fail('the dock shows a severity count badge for the antagonist pair');
+}
+
+// Reach "Show me" from the settings column's own anchor, which is where the
+// second skip link lands — the short way a keyboard user would actually take,
+// rather than back through the whole palette.
+await page.evaluate(() => document.getElementById('plot-settings')?.focus());
+const tabsToShowMe = await tabUntil(/^show me$/i, 20);
+if (tabsToShowMe === null) {
+  fail('reached a "Show me" button by Tab from the settings column', 'gave up after 20 tabs');
+} else {
+  const selectedBefore = await page
+    .getByText(/^Selected:/)
+    .textContent()
+    .catch(() => null);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(400);
+  const selectedAfter = await page
+    .getByText(/^Selected:/)
+    .textContent()
+    .catch(() => null);
+  if (selectedAfter !== null && selectedAfter !== selectedBefore) {
+    ok(
+      `reached "Show me" in ${tabsToShowMe} tabs from the settings column and selected the warned-about plant ("${selectedAfter?.trim()}")`,
+    );
+  } else {
+    fail(
+      'pressing "Show me" selected the warning’s own placement',
+      `selection went "${selectedBefore}" → "${selectedAfter}"`,
+    );
+  }
 }
 
 log('\n=== Step 6: the add-crop dialog (UI redesign Phase 1) ===');

@@ -50,12 +50,74 @@
   border-right: 1px solid var(--border);
 }
 
-/* The checks column *does* scroll as a whole: its three panels are ordinary
- * content of varying length, with nothing in them worth pinning. */
+/*
+ * The checks column, split in two by UI redesign Phase 4 (ADR 0033 §1).
+ *
+ * It used to scroll as a whole — "its three panels are ordinary content of
+ * varying length, with nothing in them worth pinning". Measured, that was
+ * 1,434px of content in an 844px box: 590px of internal overflow, and the panel
+ * worth pinning turned out to be the third one. With two crops placed, the
+ * "Problems & suggestions" panel's top edge sat **263px below the bottom of the
+ * column** — the app's live feedback off screen while you edited the form that
+ * changes it.
+ *
+ * So the column itself no longer scrolls: `.settings` (the two form panels)
+ * does, and the warnings dock is a fixed sibling under it. Same construction as
+ * the plants column, one step further in.
+ */
 .checks {
   gap: var(--space-2);
-  overflow-y: auto;
+  overflow: hidden;
   border-left: 1px solid var(--border);
+}
+
+/* The scrolling half. `min-height: 0` is what lets it shrink below its content
+ * rather than stretching the column and pushing the dock off the bottom — the
+ * same rule every scrolling flex child in this app depends on. */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/*
+ * The pinned half. It takes the height its contents want, up to a cap: past
+ * that it scrolls itself. Without the cap a plot with a dozen problems would
+ * push the form it is complaining about out of the column, which is the bug
+ * this phase exists to fix, arriving from the other direction.
+ *
+ * 45% is the largest share that still leaves the whole shape panel and the top
+ * of the conditions form reachable at 1440×900 with the dock at its cap —
+ * measured against `e2e/plot-settings.spec.ts`, not picked for looks.
+ *
+ * **The scroll is on the `<details>` itself, not on the list inside it**, and
+ * that is deliberate rather than lazy. A flex chain from here down to the list
+ * would have to pass *through* the disclosure's content box, which Chrome
+ * exposes as a `::details-content` pseudo-element and other engines don't: the
+ * body ends up a grandchild of the flex container and silently refuses to
+ * shrink, so the panel overflows its own cap. Measured, that was 37px of column
+ * overflow with two crops placed. Scrolling the panel needs no flex at all and
+ * behaves the same in every engine.
+ */
+.dockPanel {
+  flex-shrink: 0;
+  max-height: 45%;
+  overflow-y: auto;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+/* Which leaves the panel's own heading free to scroll away with the cards, so
+ * it is pinned to the top of its scrollport instead — the dock has to keep
+ * saying what it is. */
+.dockPanel .panelSummary {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-card);
 }
 
 .canvas {
@@ -117,8 +179,11 @@
   font-size: var(--text-h2);
 }
 
+/* No bottom padding: a panel is already separated from the next by a gap and a
+ * hairline rule, so this was decoration paid for twice — and paid for out of
+ * the budget ADR 0033 §1 is about. */
 .panelBody {
-  padding-bottom: var(--space-3);
+  padding-bottom: 0;
 }
 
 .panelIntro {
@@ -153,5 +218,31 @@
     border-radius: var(--radius-card);
     background: var(--surface-card);
     box-shadow: var(--shadow-card);
+  }
+
+  /*
+   * The warnings dock degrades to what it was before Phase 4: an ordinary
+   * stacked card at the end of the column. A dock only means anything against a
+   * pinned column, and there isn't one here — this breakpoint deliberately
+   * gives up the three scrollports for one scrolling page (ADR 0030), so a
+   * capped, internally-scrolling panel would be a second scrollport inside a
+   * page that already scrolls.
+   */
+  .settings {
+    display: block;
+    overflow: visible;
+  }
+
+  .dockPanel {
+    max-height: none;
+    overflow: visible;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  /* Sticky against the *page* scrollport is not the same offer at all — it
+   * would park the heading over the content as the page scrolls. */
+  .dockPanel .panelSummary {
+    position: static;
   }
 }
