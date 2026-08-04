@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { rectangleRegion, type UserPlantInput } from '@garden-planner/engine';
 import { usePlacementsStore } from '../state/placements-store.ts';
@@ -32,6 +32,23 @@ function addBothFixtures(): void {
     useUserPlantsStore.getState().addUserPlant(SUN_LOVER);
     useUserPlantsStore.getState().addUserPlant(SHADE_DWELLER);
   });
+}
+
+/**
+ * The palette's rows, in rendered (i.e. ranked) order, named by each row's
+ * drag surface.
+ *
+ * This replaced `getAllByRole('heading', { level: 3 })` in UI redesign
+ * Phase 3, which dropped the per-crop `<h3>` — 144 crop headings ahead of the
+ * six that structure the app, and inside a `role="button"` element whose
+ * subtree ARIA treats as presentational anyway (`PlantPalette.tsx`'s doc). The
+ * drag surface is a better handle regardless: it is the row's own accessible
+ * name, so a test that reads order can't drift from what a user hears.
+ */
+function rowNames(): string[] {
+  return screen
+    .getAllByRole('button', { name: /^drag / })
+    .map((surface) => surface.getAttribute('aria-label') ?? '');
 }
 
 describe('PlantPalette', () => {
@@ -106,6 +123,91 @@ describe('PlantPalette', () => {
     expect(draggableCard.contains(button)).toBe(false);
   });
 
+  /**
+   * The tab-stop budget, as a test (UI redesign Phase 3,
+   * `docs/accessibility.md` §8). 144 crops × 2 focusable controls is 288 tab
+   * stops in the palette; a third control per row would make it 432, and the
+   * keyboard walkthrough's own step 6 gives up after 320. Making the card
+   * *itself* the disclosure — rather than adding a "why?" button beside it —
+   * is what keeps this at two, so it is worth failing loudly if a fourth
+   * affordance ever arrives as a third control.
+   */
+  it('spends exactly two tab stops per crop row (the card, then its ＋ button)', () => {
+    addBothFixtures();
+    render(<PlantPalette />);
+
+    for (const row of screen.getAllByRole('listitem')) {
+      const focusable = row.querySelectorAll(
+        'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      expect(focusable).toHaveLength(2);
+      expect(focusable[0].getAttribute('aria-label')).toMatch(/^drag /);
+      expect(focusable[1].getAttribute('aria-label')).toMatch(/to the plot, without dragging$/);
+    }
+  });
+
+  /**
+   * The phase's second acceptance criterion — "reasoning reachable in one
+   * click" — at the component level. The e2e spec proves the *pointer* gets
+   * there (a click on a drag surface with an activation constraint behind it
+   * is a real-browser question); this proves the content is exactly what used
+   * to be inlined, and that it isn't in the document until asked for.
+   */
+  it('opens the engine’s reasoning on the card’s first click, and closes it on the second', () => {
+    addBothFixtures();
+    render(<PlantPalette />);
+
+    const card = screen.getByLabelText(/drag sun lover onto the plot to place it/i);
+    const row = card.closest('li');
+    if (row === null) throw new Error('the drag surface is not inside a row');
+
+    expect(card.getAttribute('aria-expanded')).toBe('false');
+    expect(within(row).queryByText(/confidence:/i)).toBeNull();
+
+    fireEvent.click(card);
+
+    expect(card.getAttribute('aria-expanded')).toBe('true');
+    expect(within(row).getByText(/confidence:/i)).toBeTruthy();
+    // The per-dimension reasoning the engine produced, not a summary of it.
+    expect(within(row).getByText(/light:/i)).toBeTruthy();
+
+    fireEvent.click(card);
+
+    expect(card.getAttribute('aria-expanded')).toBe('false');
+    expect(within(row).queryByText(/confidence:/i)).toBeNull();
+  });
+
+  /**
+   * Enter, not Space: dnd-kit's `KeyboardSensor` keeps Space to start a
+   * keyboard drag, and `PlotDefinitionPage` narrows the sensor's start keys to
+   * exactly that so Enter is free for this (ADR 0032 §2). A `role="button"`
+   * `<div>` doesn't synthesise a click from Enter the way a real `<button>`
+   * does, so without this handler the disclosure would be pointer-only.
+   */
+  it('opens the reasoning from the keyboard too, on Enter', () => {
+    addBothFixtures();
+    render(<PlantPalette />);
+
+    const card = screen.getByLabelText(/drag sun lover onto the plot to place it/i);
+    fireEvent.keyDown(card, { key: 'Enter', code: 'Enter' });
+
+    expect(card.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('keeps at most one crop’s reasoning open at a time', () => {
+    addBothFixtures();
+    render(<PlantPalette />);
+
+    const sunLover = screen.getByLabelText(/drag sun lover onto the plot to place it/i);
+    const shadeDweller = screen.getByLabelText(/drag shade dweller onto the plot to place it/i);
+
+    fireEvent.click(sunLover);
+    fireEvent.click(shadeDweller);
+
+    expect(sunLover.getAttribute('aria-expanded')).toBe('false');
+    expect(shadeDweller.getAttribute('aria-expanded')).toBe('true');
+  });
+
   it('demotes a full-sun crop below a shade-tolerant one once the plot turns shady', () => {
     addBothFixtures();
     act(() => {
@@ -114,11 +216,9 @@ describe('PlantPalette', () => {
 
     render(<PlantPalette />);
 
-    const headings = screen
-      .getAllByRole('heading', { level: 3 })
-      .map((heading) => heading.textContent ?? '');
-    const shadeIndex = headings.findIndex((text) => text.includes('Shade Dweller'));
-    const sunIndex = headings.findIndex((text) => text.includes('Sun Lover'));
+    const names = rowNames();
+    const shadeIndex = names.findIndex((name) => name.includes('Shade Dweller'));
+    const sunIndex = names.findIndex((name) => name.includes('Sun Lover'));
 
     expect(shadeIndex).toBeGreaterThanOrEqual(0);
     expect(sunIndex).toBeGreaterThanOrEqual(0);
@@ -173,14 +273,45 @@ describe('PlantPalette', () => {
     expect(screen.queryByText('Sun Lover')).toBeNull();
   });
 
-  it('narrows the rendered list by category', () => {
+  /**
+   * The category filter is a chip — a radio in a group, visually hidden and
+   * styled through its label — rather than the `<select>` it was before UI
+   * redesign Phase 3. One tab stop for the whole group with arrow keys inside
+   * it is the native behaviour a roving-tabindex widget would have to imitate,
+   * and this palette counts its tab stops.
+   */
+  it('narrows the rendered list by category chip', () => {
     addBothFixtures();
     render(<PlantPalette />);
 
-    fireEvent.change(screen.getByLabelText(/category/i), { target: { value: 'herb' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Herb' }));
 
     expect(screen.getByText('Shade Dweller')).toBeTruthy();
     expect(screen.queryByText('Sun Lover')).toBeNull();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'All' }));
+    expect(screen.getByText('Sun Lover')).toBeTruthy();
+  });
+
+  /**
+   * "Great fits" = excellent + good (`filters.ts#matchesBand`, and the
+   * review's own definition). On a shady plot the full-sun fixture is
+   * unsuitable and the shade-tolerant one is not, so the chip should leave
+   * exactly one standing.
+   */
+  it('narrows the rendered list to great fits', () => {
+    addBothFixtures();
+    act(() => {
+      usePlotStore.getState().setConditionsInput({ light: 'full-shade' });
+    });
+
+    render(<PlantPalette />);
+    expect(screen.getByText('Sun Lover')).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText(/great fits/i));
+
+    expect(screen.queryByText('Sun Lover')).toBeNull();
+    expect(screen.getByText('Shade Dweller')).toBeTruthy();
   });
 
   it('shows an inline alert instead of a list when the plot conditions are invalid', () => {
@@ -213,6 +344,28 @@ describe('PlantPalette', () => {
       expect(img.getAttribute('alt')).toBe('');
       expect(img.getAttribute('aria-hidden')).toBe('true');
     });
+  });
+
+  /**
+   * The icon's disc is tinted by category (UI redesign Phase 3), which is the
+   * same mapping the canvas paints a marker's canopy with — so the tint is
+   * driven by a `data-category` attribute reading the plant's own category,
+   * never by a colour chosen per row. The colours themselves are
+   * `styles/tokens.css`' `--category-*-bg`, guarded there.
+   */
+  it('tints each icon disc by the crop’s own category', () => {
+    addBothFixtures();
+    render(<PlantPalette />);
+
+    const sunLoverRow = screen.getByText('Sun Lover').closest('li');
+    const shadeDwellerRow = screen.getByText('Shade Dweller').closest('li');
+
+    expect(sunLoverRow?.querySelector('[data-category]')?.getAttribute('data-category')).toBe(
+      'vegetable',
+    );
+    expect(shadeDwellerRow?.querySelector('[data-category]')?.getAttribute('data-category')).toBe(
+      'herb',
+    );
   });
 
   it('renders the generic fallback icon for a user-defined crop with no icon', () => {

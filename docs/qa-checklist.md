@@ -30,7 +30,11 @@ under test — it's the actual build users get, service worker included.
       location.
 - [ ] **Discover suitable plants.** Confirm the palette re-ranks when you
       change the plot's light/soil/location — a shady plot should demote
-      full-sun crops and promote shade-tolerant ones.
+      full-sun crops and promote shade-tolerant ones. Press a crop's card and
+      confirm its summary, confidence and per-dimension reasoning open beneath
+      it (UI redesign Phase 3 moved that content behind one press); confirm the
+      chip filters narrow the list and that unsuitable crops stay visible but
+      muted rather than vanishing.
 - [ ] **Plan the layout.** Drag a plant from the palette onto the canvas.
       Confirm a live count/density figure appears and updates as you place
       more of the same crop.
@@ -91,12 +95,12 @@ Lighthouse score slips or a keyboard step regresses, so re-run them, compare to
 the last-recorded result, and treat a material change as a note in `README.md`/
 `docs/accessibility.md` rather than a shrug.
 
-| Check                | Command                                                                                                 | Last recorded result                                                                                                                                                                                                                                                                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full E2E regression  | `PW_EXECUTABLE_PATH=/path/to/chromium npm run e2e`                                                      | 13/13 passing (UI redesign Phase 1 — was 7/7 through Stage 6.4; `workspace-layout.spec.ts` added six, holding that phase's layout acceptance criteria), and 10/10 consecutive clean full-suite runs. **Blocking in CI.** `plot-export.spec.ts`'s long-standing flake was diagnosed and fixed that phase — see §5.                                    |
-| Accessibility (axe)  | `npm run a11y -w app` (needs the preview server running)                                                | 0 violations, all three scanned states (unchanged since Stage 6.2; the third state — the add-crop modal — arrived with UI redesign Phase 1). **Blocking in CI.**                                                                                                                                                                                     |
-| Keyboard walkthrough | `PW_EXECUTABLE_PATH=/path/to/chromium npm run keyboard-walkthrough -w app`                              | All steps pass, 15 tab presses to the canvas (down from 35 — UI redesign Phase 1 moved the add-crop form's ~25 stops behind a dialog). Two skip links now, and two extra steps; see `docs/accessibility.md` §6. **Informational in CI.**                                                                                                             |
-| Lighthouse PWA audit | `npx lighthouse@11 http://localhost:4173/ --only-categories=pwa --chrome-flags="--headless=new" --view` | **0.88 / 1.00** — unchanged since Stage 5.1, and measured at exactly 0.88 again by CI at Stage 6.4. Same single failing audit (custom splash screen needs a PNG ≥512px icon; this project ships SVG icons only, an accepted gap — see `README.md`). **Informational in CI**, and this figure is the baseline its run-summary reporter warns against. |
+| Check                | Command                                                                                                 | Last recorded result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Full E2E regression  | `PW_EXECUTABLE_PATH=/path/to/chromium npm run e2e`                                                      | 22/22 passing (UI redesign Phase 3 — was 7/7 through Stage 6.4, 13/13 after Phase 1's `workspace-layout.spec.ts`, 18/18 after Phase 2's `canvas-scale.spec.ts`; `palette.spec.ts` adds four, holding Phase 3's acceptance criteria). **Blocking in CI.** `plot-export.spec.ts`'s long-standing flake was diagnosed and fixed in Phase 1 — see §5. Note that `canvas-scale.spec.ts`'s two pixel-differencing specs take 33s and 39s against a 30s default timeout on a slow machine; they are not flaky, they are slow, and `--timeout=90000` is the honest way to run them there. |
+| Accessibility (axe)  | `npm run a11y -w app` (needs the preview server running)                                                | 0 violations, all six scanned states (unchanged since Stage 6.2; each state arrived with the surface it scans — the add-crop modal in UI redesign Phase 1, edit-shape mode and the clear-all confirmation in Phase 2, an expanded palette card in Phase 3). **Blocking in CI.**                                                                                                                                                                                                                                                                                                   |
+| Keyboard walkthrough | `PW_EXECUTABLE_PATH=/path/to/chromium npm run keyboard-walkthrough -w app`                              | All steps pass, 20 tab presses to the canvas (35 before UI redesign Phase 1 moved the add-crop form's ~25 stops behind a dialog, then 15, then 20 once Phase 2's canvas toolbar joined the path). Two skip links, and a step each for the dialog, zoom, edit-shape and Phase 3's card disclosure; see `docs/accessibility.md` §6–§8. **Informational in CI.**                                                                                                                                                                                                                     |
+| Lighthouse PWA audit | `npx lighthouse@11 http://localhost:4173/ --only-categories=pwa --chrome-flags="--headless=new" --view` | **0.88 / 1.00** — unchanged since Stage 5.1, and measured at exactly 0.88 again by CI at Stage 6.4. Same single failing audit (custom splash screen needs a PNG ≥512px icon; this project ships SVG icons only, an accepted gap — see `README.md`). **Informational in CI**, and this figure is the baseline its run-summary reporter warns against.                                                                                                                                                                                                                              |
 
 ## 5. Known gaps — don't re-discover these, don't silently fix them
 
@@ -107,16 +111,18 @@ into a QA pass — and since Stage 6.4 each one has an explicit disposition and
 its unblocker named in [`WORKPLAN.md`](../WORKPLAN.md) §5.2's post-v1 backlog,
 alongside the rest of what v1 deliberately leaves out.
 
-- **The free-form plot-outline corner editor is pointer-only.**
-  (`app/src/plot/PlotOutlineEditor.tsx`) — dragging a corner to reshape an
-  outline has no keyboard equivalent. The corner handles are valid
-  `role="button"` elements (for axe's `aria-prohibited-attr` rule) but
-  deliberately have no `tabIndex` yet — see ADR 0026.
-- **Reaching the canvas after placing a crop takes ~15 tab presses** in a
+- **Closed, not a gap any more: the free-form plot-outline corner editor was
+  pointer-only.** UI redesign Phase 2 merged that editor into the plot canvas
+  and gave its corners the keyboard treatment placements already had — a
+  selection, ◀/▶ to move it, arrow keys to act (ADR 0031 §6,
+  `docs/accessibility.md` §7). `app/src/plot/PlotOutlineEditor.tsx` is deleted.
+- **Reaching the canvas after placing a crop takes ~20 tab presses** in a
   filtered search match with several results — real friction, not a dead
   end (it was ~35 before UI redesign Phase 1 moved the add-crop form into a
-  dialog). The "Skip to plot canvas" link helps before placing something, not
-  immediately after.
+  dialog, and ~15 until Phase 2's canvas toolbar joined the path). The "Skip to
+  plot canvas" link helps before placing something, not immediately after.
+  Phase 3's compact palette rows did _not_ change this: it kept two tab stops
+  per crop row, which is the budget `docs/accessibility.md` §8 records.
 - **No real screen-reader testing has been done** (NVDA/VoiceOver/JAWS). The
   scripted keyboard walkthrough proves reachability and operability, not that
   a screen reader announces state changes usefully.

@@ -18,6 +18,13 @@ import { chromium } from '@playwright/test';
  * link (there are two as of that phase) and one for the add-crop dialog it
  * introduced.
  *
+ * **UI redesign Phase 3 added step 2b.** The palette card became a disclosure
+ * as well as a drag surface, which is a new keyboard interaction on an element
+ * that already had one — Space still starts a drag, Enter now opens the
+ * engine's reasoning — so the walk presses it. The step counts either side are
+ * unchanged: the phase kept two tab stops per crop row, which is the budget
+ * `docs/accessibility.md` §8 records.
+ *
  * **UI redesign Phase 2 added two steps, and closed a gap.** The canvas
  * toolbar gained zoom controls and an "Edit shape" toggle, both of which have
  * to be operable without a pointer (ADR 0026) — step 3b walks them. And
@@ -187,6 +194,52 @@ if (selectedVisible) {
   ok('the placed crop shows as "Selected" (auto-selected on add, per addPlacement)');
 } else {
   fail('the placed crop shows as "Selected"');
+}
+
+log('\n=== Step 2b: read why a crop ranks where it does (UI redesign Phase 3) ===');
+// The palette card is a disclosure as well as dnd-kit's drag surface, and the
+// two gestures are told apart by key: Space picks the card up (which is what
+// the sensor's own screen-reader instructions tell you to press), Enter opens
+// the engine's reasoning. Worth walking because a `role="button"` <div> does
+// *not* synthesise a click from Enter the way a real <button> does — without
+// the handler behind it this would be a pointer-only affordance, which is
+// exactly what ADR 0026 says the app doesn't ship.
+//
+// Focus is on the "Add to plot" button from step 2, and the card is the stop
+// immediately before it — two per row, and no more.
+await page.keyboard.press('Shift+Tab');
+const cardName = await focusedAccessibleName();
+if (!/^drag .+ onto the plot/i.test(cardName ?? '')) {
+  fail(
+    'found the crop card as the stop before its "Add to plot" button',
+    `focus was on "${cardName}"`,
+  );
+} else {
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(150);
+  const expanded = await page.evaluate(
+    () => document.activeElement?.getAttribute('aria-expanded') ?? null,
+  );
+  const reasoningVisible = await page
+    .getByText(/^Confidence: \d+%$/)
+    .first()
+    .isVisible()
+    .catch(() => false);
+  if (expanded === 'true' && reasoningVisible) {
+    ok(
+      'opened a crop’s summary, confidence and per-dimension reasoning with Enter — one key, no pointer',
+    );
+  } else {
+    fail(
+      'opened the crop’s reasoning with Enter',
+      `aria-expanded=${expanded}, reasoning visible=${reasoningVisible}`,
+    );
+  }
+  // Close it and step back onto the button, so step 3's tab count below is
+  // measured from the same place it always has been — an expanded card would
+  // otherwise change what "from the search field" means.
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Tab');
 }
 
 log('\n=== Step 3: nudge it with arrow keys (keyboard only) ===');

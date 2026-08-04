@@ -123,10 +123,36 @@
    * Fills only (they carry no text), so 1.4.3 doesn't apply; the marker
    * always pairs them with the crop's icon and name.
    * Guarded against drift by `styles/tokens.test.ts`.
+   *
+   * **The `-bg` tints are UI redesign Phase 3's**, added for the same reason
+   * the `--band-*-bg` tints above exist: the palette needed a *surface* in a
+   * category's hue — the disc behind a crop's 40px icon, and the background of
+   * a selected category filter chip — and mixing one ad hoc in a component
+   * would put an unmeasured colour on screen. Each is a 12% mix of its own
+   * category colour over white, and each pairing was computed rather than
+   * eyeballed:
+   *
+   *   vegetable  #eaf1e6 — `--text-strong` 12.87:1 ✅, own dot 3.58:1 ✅
+   *   herb       #e0efed — `--text-strong` 12.52:1 ✅, own dot 4.49:1 ✅
+   *   fruit      #f7e7e6 — `--text-strong` 12.37:1 ✅, own dot 4.54:1 ✅
+   *
+   * ("own dot" is the pure category colour drawn on its own tint, held to WCAG
+   * 1.4.11's 3:1 bar for a graphical object rather than the text bar — it is
+   * the chip's colour swatch, and the chip's own word carries the meaning.)
+   *
+   * **Why a tint and not a filled chip.** A selected chip filled with the
+   * category colour and labelled in white is the obvious design, and it fails:
+   * white on `--category-vegetable` is **4.12:1**, short of 4.5:1, and moving
+   * the green to fix it would break the mirror with `CATEGORY_COLORS` and so
+   * change the canvas markers to fix a chip. Dark text on a light tint clears
+   * the bar three times over and leaves the canvas alone.
    */
   --category-vegetable: #4c8c2b;
   --category-herb: #00796b;
   --category-fruit: #c0392b;
+  --category-vegetable-bg: #eaf1e6;
+  --category-herb-bg: #e0efed;
+  --category-fruit-bg: #f7e7e6;
 
   /* ---------------------------------------------------- Severity colours
    * Mirrors `warnings/severity.ts`'s `SEVERITY_COLORS` (which Konva needs as
