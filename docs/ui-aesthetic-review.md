@@ -812,11 +812,169 @@ This single phase fixes findings 1, 3, and half of 2.
 
 ### Phase 6 — Nice-to-have (defer freely)
 
+> **Status: one of four implemented, three declined with their measurements**
+> (2026-08-04). The print stylesheet is `@media print` blocks in the files that
+> own the layouts they change — `styles/global.css` (the hub, and the three
+> rules), `routes/AppShell.module.css`, `plot/PlotDefinitionPage.module.css`,
+> `plot/PlotConditionsForm.module.css`, `canvas/PlotCanvasSection.module.css`,
+> `canvas/PlacementFeedbackPanel.module.css`, `designs/DesignChrome.module.css`
+> and `ui/SegmentedControl.module.css` — plus one four-line guard in
+> `canvas/useCanvasScale.ts` and one `className` in `plot/PlotDefinitionPage.tsx`.
+> Decisions, and the three declines in full: ADR
+> [0035](./adr/0035-print-the-plan-and-three-declined-nice-to-haves.md); what
+> changed and why, in `docs/architecture.md`; measured by
+> `app/e2e/print.spec.ts`.
+>
+> **"Defer freely" is in the heading, and it changes what good work looks
+> like here.** The other five phases had findings behind them — a 640px column,
+> a postage-stamp canvas, a palette with zero crops visible, 590px of overflow,
+> a refresh that lost your garden. This one has none: it is four ideas, and
+> **three of them rest on premises the repo contradicts.** So the deliverable
+> was not four features. It was each bullet investigated against the code and
+> the data, built if it survived contact, and recorded with its reasoning if it
+> did not. A bullet declined with a measured reason is a better outcome than one
+> forced; a bullet skipped silently is the worst available.
+>
+> **This phase had no acceptance criterion, so — like Phase 5 — the first thing
+> it owed was one**, stated before anything was built and enforced by
+> `e2e/print.spec.ts` the way `workspace-layout.spec.ts`, `canvas-scale.spec.ts`,
+> `palette.spec.ts` and `plot-settings.spec.ts` enforce their phases':
+>
+> > At 1440×900, printing the open plan produces a **document**: every placed
+> > crop, every warning and every companion suggestion the app is showing
+> > reaches the paper in full — nothing clipped by a box that only scrolls on a
+> > screen — the plot picture fits inside the page width, and neither the
+> > 144-crop palette nor a single control prints.
+>
+> **The number this phase exists to change: sheets of A4, 9 → 2.** With the
+> palette's 144 rows → 0 on them, 159 printed controls → 1, and the warnings
+> dock's 114px of clipped content → 0.
+
 - Sun-direction indicator on the canvas tied to the light-level setting.
+  _(**Declined**, and it cannot be built as written. `grep -rniE
+"north|south|compass|orientation"` across `app/src` and
+  `packages/engine/src` returns the L-shape's single offered rotation and
+  `spacing/packing.ts`'s row orientation, and nothing else — the app has **no
+  notion of compass direction anywhere**. And light level is not a direction: it
+  is one `full-sun | partial-shade | full-shade` for the whole plot,
+  deliberately the same enum a plant's requirement uses so `lightRequirementRank`
+  can measure the distance between them. Inventing an orientation input is the
+  only version that would make a north arrow honest, and it is a **design**
+  field — a stored-format change and a `DESIGNS_STORAGE_VERSION` bump, a control
+  in the 300px column whose budget is the whole subject of ADR 0033 §1, and a
+  decision about what the engine should do with it, which is engine work this
+  phase may not do. Drawing the light level on the stage without pretending to
+  be a compass was the other candidate, and it is redundant: the segmented
+  control 300px away already names all three options and shows which is chosen.
+  The one place the light level was genuinely missing is the **printed plan**,
+  and the bullet below puts it there. `canvas/grid.ts` quotes §2.5's "No grid,
+  no ruler, no north/sun indicator"; Phase 2 answered the first two and this is
+  the answer to the third.)_
 - Seasonal view: tint markers by whether the selected planting month is in each crop's
-  sow window.
+  sow window. _(**Declined on the dataset, and the measurement is the finding.**
+  **8 of 144 crops (5.6%) carry a `seasons` block at all** — apple, broad bean,
+  Brussels sprouts, Jerusalem artichoke, pear, pumpkin, raspberry, swede — which
+  `suitability/season.ts` records in its own module doc and `PlantPalette.tsx`'s
+  disclosure already tells the user. **0 of the 5 crops in the starter bed have
+  one**, so the bed the app offers on first run would show nothing at all. And
+  `plantingMonth` is optional and **absent from `DEFAULT_CONDITIONS_INPUT`**, so
+  the feature's input is unset until the user goes and picks one. The honest
+  version needs **three** states, not two — "in window", "outside it" and "no
+  sow data", since a two-state tint asserts "out of season" about 136 crops the
+  dataset says nothing about, which is exactly what `suitability/conditions.ts`
+  avoids by never defaulting the month to today's. It would also be a third
+  meaning in colour on a 40px disc that already carries category as its fill and
+  severity as a badge, on a canvas axe cannot see. Note that the app **already**
+  visualises the planting month where there is room for words: the palette
+  re-ranks on it and `scoreSowingMonth` returns a sentence. So this bullet's
+  output is a **data** finding, and it lands on a row that already exists:
+  `WORKPLAN.md` §5.2's "Hardiness/season data covers 8 of 144 crops", which
+  gains a Phase 6 addendum saying it now blocks a UI feature as well as an
+  engine dimension. Stage 1.2 is still ⚠️ partial and its PFAF/Permapeople
+  adapters are **not planned**, so this will not arrive by ingesting another
+  source — and the three-state requirement above is the design brief for
+  whenever it does clear.)_
 - Companion-suggestion lines drawn between markers on hover of a suggestion.
-- Print stylesheet for the exported plan.
+  _(**Declined because the bullet is false as written**, and the engine says so.
+  `warnings/companions.ts`: "for each crop already placed, what else the dataset
+  says grows well beside it **and isn't already on the plot** … a candidate
+  already among the placements is skipped". So one end of a
+  `CompanionSuggestion` is a marker and the other end is a crop that is
+  **guaranteed not to be one** — there is no second marker to draw a line to.
+  Verified against the starter bed rather than taken on trust: carrot and onion,
+  the dataset's one `well-supported` companion pair, are both planted, and the
+  dock's two suggestions are Lettuce (for carrot) and Watermelon Radish (for
+  beet). Of the two things the bullet might have been reaching for: **"these two
+  belong together" feedback for a pair already planted** is a real gap —
+  antagonists placed together warn, companions placed together are silent — but
+  it is a different feature, and one the engine excludes on purpose with
+  `DESIGN.md` §1 step 4 behind it; building it in `app/src` to avoid touching
+  the engine would put a second, contradicting definition of "companion" one
+  directory from the first. **A better way to show where a suggestion attaches**
+  is already answered: "Show me" selects and pans to `forPlacementId` (ADR 0033
+  §6), and the suggestion's own sentence names the placed crop it is for. And
+  **hover is pointer-only**, which is the exact shape of thing ADR 0026's
+  contractual keyboard paths exist to catch.)_
+- Print stylesheet for the exported plan. _(**Done — and as the app's print
+  path, not as a better PNG**, because two different features were hiding in one
+  bullet. The exported plan is a **PNG** (ADR 0020 — the rasterised stage plus a
+  composited plain-text key), so there was no page to style; and
+  `grep -rn "@media print" app/src` returned **nothing**, so printing the
+  workspace printed the workspace. Measured at 1440×900 with the example bed
+  placed: **9 sheets of A4**, five of them the 144-crop palette, 159 controls on
+  them, and the warnings dock still capped at 45% of a column that does not
+  exist on paper — **114px of it, one of its two items**, below the fold of a
+  box nobody can scroll. The PNG was left alone because it is not broken: its
+  limits are all recorded "a snapshot, not a save file" choices. Between a
+  feature with a 9-sheet defect behind it and one with none, this went where the
+  defect was. **Three rules shape the sheet**, written out at the top of
+  `styles/global.css`'s print block: **no print-only DOM** (everything on paper
+  is content the screen already shows, which is what makes the change provably
+  free of a11y cost — no tab stop moves and nothing exists that axe cannot see);
+  **a pane that scrolls on screen must not be a box that clips on paper**; and
+  **a control is an affordance, and paper has none** — `button { display: none }`
+  with one documented exception, the header's designs button, which is the only
+  place the open design's name is written. What is left, in order: title block,
+  plot picture, crop key, growing conditions, problems and suggestions.)_
+- **Acceptance** (stated by this phase, since the review didn't): the criterion
+  above, measured in a real browser at 1440×900. _(Met, and measured rather than
+  asserted — `e2e/print.spec.ts` rasterises a real PDF for the page count,
+  because `emulateMedia({ media: 'print' })` applies the print stylesheet but
+  keeps laying the page out in the browser's viewport: it measures the styles,
+  not the pagination.)_
+  - _**Sheets of A4: 9 → 2** — the number this phase exists to change. With it:
+    printed controls **159 → 1**, palette rows on the sheet **144 → 0**, and the
+    warnings dock's clipped content **114px → 0**, which is **1 of its 2 items
+    reaching the paper → 2 of 2**._
+  - _**Nothing on screen moved, and that is a property rather than a hope.**
+    Every rule this phase added is inside `@media print`, so
+    `workspace-layout.spec.ts`, `canvas-scale.spec.ts`, `plot-settings.spec.ts`
+    and `a11y.spec.ts` pass untouched — including the two pixel-differencing
+    specs, which count changed pixels between two readings of the stage and
+    would have noticed anything drawn on it. **The three declined bullets are
+    the reason the stage was not drawn on.** The header is still 1 tab stop at
+    rest, 2 with something to undo, 3 with a redo available._
+  - _**One trap that a stylesheet alone would not have found.** The print layout
+    makes the canvas's viewport as tall as its contents, and its contents are
+    the plot whose size `useCanvasScale`'s `ResizeObserver` decides — a loop.
+    Measured, the stage walked **582 → 487 → 387px** on successive frames. A PDF
+    rasterisation never triggers it (that snapshot is synchronous), which is what
+    makes it the dangerous kind: the path that does is a real user holding
+    **print preview** open. `useMeasuredViewport` stands down while
+    `matchMedia('print').matches` — the second place in `app/src` that reads a
+    media query in JS, after `usePrefersReducedMotion` — and the stylesheet
+    scales the picture to the page instead. `e2e/print.spec.ts` guards it, and
+    fails at 349×257px without the guard._
+  - _Standing bar: `npm test` **304 passing** (44 files, unchanged — the phase
+    adds no unit-testable pure function, which is itself a fact about it),
+    `npm run e2e` 35 → **39 passing**, `npm run a11y` **0 violations across eight
+    states**, keyboard walkthrough **all steps passing** with §7–§9's friction
+    figures unchanged (5 tabs to the palette search field, 20 from there to the
+    canvas, 4 from the canvas to the width field)._
+  - _On `docs/qa-checklist.md` §4's timeout note: this container ran
+    `canvas-scale.spec.ts`'s two pixel-differencing specs inside the 30s default,
+    as Phase 5's did, so `--timeout=90000` was not needed. The note stays, for
+    the machine that measured 33s and 39s._
 
 ---
 

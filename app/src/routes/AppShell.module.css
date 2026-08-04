@@ -108,3 +108,35 @@
     min-height: 100dvh;
   }
 }
+
+/*
+ * Print (UI redesign Phase 6, ADR 0035 — see `styles/global.css`'s print block
+ * for the whole story).
+ *
+ * The frame lets go for exactly the reason the narrow breakpoint above does,
+ * arriving from the other direction: a viewport-height grid pins the app to a
+ * screen, and a sheet of paper is not a screen — it is a medium that pages
+ * itself and has no viewport height to pin to. `100dvh` on paper means "one
+ * sheet, and the rest is clipped".
+ *
+ * The header stays. It is the only place the app's name and the open design's
+ * name appear, which on a printed plan is the title block —
+ * `designs/DesignChrome.module.css` does the rest of that job.
+ */
+@media print {
+  .shell {
+    display: block;
+    height: auto;
+  }
+
+  .header {
+    /* No card surface and no minimum: on paper this is a heading, not a band. */
+    min-height: 0;
+    padding: 0;
+    background: none;
+  }
+
+  .main {
+    min-height: 0;
+  }
+}

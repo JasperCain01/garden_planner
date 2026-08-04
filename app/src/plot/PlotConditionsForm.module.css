@@ -88,3 +88,15 @@
   color: var(--danger);
   font-size: var(--text-sm);
 }
+
+/* Print (UI redesign Phase 6, ADR 0035): the soil disclosure's chevron goes for
+ * the same reason the two panel chevrons do — see
+ * `PlotDefinitionPage.module.css`'s print block. What the disclosure is holding
+ * prints only if it was left open, which is deliberate: a plan is a snapshot of
+ * the workspace as it stands, and CSS cannot open a `<details>` in one engine
+ * the same way it can in another. */
+@media print {
+  .soilSummary::before {
+    display: none;
+  }
+}

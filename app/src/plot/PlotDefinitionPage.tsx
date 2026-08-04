@@ -261,7 +261,12 @@ export function PlotDefinitionPage() {
         >
           {/* The two form panels, in the one part of the column that scrolls. */}
           <div className={styles.settings}>
-            <Panel title="Plot shape & size">
+            {/* The one panel that carries a class of its own, and only so the
+                print stylesheet can leave it off the sheet — see
+                `PlotDefinitionPage.module.css`'s `@media print` block for why
+                the shape *controls* are not part of a plan. It changes nothing
+                on screen. */}
+            <Panel title="Plot shape & size" className={styles.shapePanel}>
               {/* The panel's one pointer at the canvas, kept short. Phase 2
                   moved outline editing onto the plot itself, so this is the
                   only thing telling a user in this panel where non-preset

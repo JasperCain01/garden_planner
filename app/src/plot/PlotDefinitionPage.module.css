@@ -246,3 +246,75 @@
     position: static;
   }
 }
+
+/*
+ * Print (UI redesign Phase 6, ADR 0035 — `styles/global.css`'s print block has
+ * the whole story; this file owns the part of it that is a *layout*).
+ *
+ * The workspace becomes a plan sheet: one column, in reading order, with the
+ * three scrollports and the dock's cap released. Structurally this is the
+ * narrow breakpoint above with two differences, and both are about what a plan
+ * is rather than about width.
+ *
+ * **The plants column does not print.** It is the single biggest thing on the
+ * sheet — 144 crops, measured at 5 of the 9 A4 pages the app produced before
+ * this phase — and it is a *catalogue of what you could plant*, which is the
+ * one thing a finished plan is not about. Everything it contributes to the plan
+ * proper is already elsewhere on the sheet: what is actually planted is drawn
+ * on the plot and listed in the crop key under it.
+ *
+ * **Neither does the shape panel** (`.shapePanel`, the one `Panel` that carries
+ * a class for this). Its three tiles, two number fields and Apply button are
+ * how you *change* the plot; what they say is already on the picture, where
+ * Phase 2 put the dimension labels precisely so the plot would stop being an
+ * unlabelled rectangle. Its one line of prose — "Fine-tune the outline with
+ * Edit shape on the plot" — is an instruction for a control that isn't there.
+ * "Growing conditions" is kept for the opposite reason: it is the only place on
+ * the sheet that says what kind of plot this is a plan *for*.
+ */
+@media print {
+  .workspace {
+    display: block;
+    height: auto;
+    padding: 0;
+  }
+
+  .plants,
+  .shapePanel {
+    display: none;
+  }
+
+  .checks,
+  .canvas {
+    overflow: visible;
+    padding: 0;
+    border: 0;
+  }
+
+  .settings {
+    display: block;
+    overflow: visible;
+  }
+
+  /* Rule 2 of the print block: a pane that scrolls on screen must not be a box
+   * that clips on paper. This is the cap that hid 114px of the dock — one of
+   * its two items — on the sheet the app printed before this phase. */
+  .dockPanel {
+    max-height: none;
+    overflow: visible;
+    border-top: 1px solid var(--border);
+  }
+
+  .dockPanel .panelSummary {
+    position: static;
+  }
+
+  /* The chevron is the disclosure's affordance and nothing else — it says "this
+   * opens and closes", which is the one promise a sheet of paper cannot keep.
+   * The heading it sits beside says everything it was there to say.
+   * `PlotConditionsForm.module.css` drops the soil disclosure's for the same
+   * reason. */
+  .panelSummary::before {
+    display: none;
+  }
+}

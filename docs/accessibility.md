@@ -1056,6 +1056,81 @@ well as a button name, or whether the repetition across a row of designs
 tiring, are both things only a real session answers. It remains in `WORKPLAN.md`
 §5.2's backlog.
 
+## 11. Re-verified after the UI redesign's print phase (2026-08-04)
+
+UI redesign Phase 6 (ADR
+[0035](./adr/0035-print-the-plan-and-three-declined-nice-to-haves.md)) is the
+first phase that changes a **medium** rather than a layout: it adds a print
+stylesheet, and declines the other three of its four bullets with their
+measurements. Two of those declines were made partly on the strength of this
+page's own rules, and the one thing that was built has an accessibility property
+worth stating as a property rather than as a hope.
+
+### Nothing moved, and the reason is a rule rather than a coincidence
+
+**The header is still 1 tab stop at rest, 2 with something to undo, 3 with a redo
+available** — §10's table is unchanged, and so are §7–§9's friction figures (5
+tabs to the palette search field, 20 from there to the canvas, 4 from the canvas
+to the width field, re-walked in Chromium for this phase).
+
+That is guaranteed by the phase's first rule rather than checked after the fact:
+**no print-only DOM.** Everything on the printed sheet is content the screen
+already shows, so there is nothing new in the accessibility tree, no new
+focusable element, and — the case that actually bites — no text that is invisible
+on screen and therefore invisible to `axe`, to this page's walkthrough, and to a
+sighted reviewer, while being perfectly audible to a screen reader. A print-only
+title block and a print-only conditions summary were both considered and rejected
+on exactly that.
+
+`e2e/print.spec.ts` asserts the visible-control count on paper is **1** — the
+header's designs button, the only place the open design's name is written. Every
+other control is hidden by `@media print`, which is a _visual_ change in a medium
+no assistive technology reads: the screen's accessibility tree is untouched.
+
+### Colour is never the only signal — including on paper
+
+§2's standing rule needed re-deciding once for print, because a browser drops
+background colours when printing by default. Audited, three things on the sheet
+use colour:
+
+| what                              | colour is the only signal? | decision                                |
+| --------------------------------- | -------------------------- | --------------------------------------- |
+| warning severity (border, badge)  | no — glyph + severity word | left alone (ADR 0026)                   |
+| companion evidence chip           | no — "Well-supported" text | left alone                              |
+| segmented control's chosen option | **yes** — the fill         | `print-color-adjust: exact` on it alone |
+
+The third is the one that had to change. Without it, "Full sun" prints identical
+to the two options beside it, and the plan stops saying what kind of plot it is a
+plan for. The fill also _inverts_ rather than tinting — `--green-700` with
+`--text-on-dark` on it, 6.39:1 — which is what makes it survive a mono laser
+printer as a dark block with light text; `ui/SegmentedControl.module.css` had
+already reasoned about that medium before this phase, and this makes the reasoning
+true.
+
+### Two of the three declines are accessibility findings
+
+- **Companion lines on hover.** Hover is pointer-only, and ADR 0026 makes every
+  interaction's keyboard path contractual — a hover-only affordance is the exact
+  shape of thing that rule exists to catch. (It was declined on a stronger
+  ground too: the engine emits no pair to draw a line between. ADR 0035 §3.)
+- **The seasonal tint** would have been a _third_ meaning carried by colour on a
+  40px marker that already carries category as its fill and severity as a badge —
+  so it would have needed a non-colour channel as well, on a canvas `axe` cannot
+  see and this page's walkthrough cannot reach. (Also declined on the data: 8 of
+  144 crops. ADR 0035 §2.)
+
+### axe, unchanged
+
+`npm run a11y` scans the same **eight states** and reports **0 violations**. No
+state was added: the printed sheet is not a state of the application, and axe
+evaluates the screen medium — which this phase deliberately did not touch.
+
+### Still not done, still recorded
+
+**Real screen-reader testing has still not happened**, and this phase adds
+nothing to that list, which is itself the point: it introduced no new announced
+content.
+
 ## Related
 
 - ADR [0026](./adr/0026-keyboard-placement-and-severity-glyphs.md) — the
@@ -1079,6 +1154,10 @@ tiring, are both things only a real session answers. It remains in `WORKPLAN.md`
   the persistence phase §10 re-verified this page against, including why the
   switcher is one header button rather than four controls, and why the skip links
   were not moved above the header to compensate.
+- ADR [0035](./adr/0035-print-the-plan-and-three-declined-nice-to-haves.md) —
+  the print phase §11 re-verified this page against, including the "no
+  print-only DOM" rule that keeps §10's tab-stop table true and the two declines
+  this page's own rules decided.
 - [`docs/stage-6.2-brief.md`](./stage-6.2-brief.md) — the brief this stage
   worked from.
 - [`WORKPLAN.md`](../WORKPLAN.md) §5.2 — the post-v1 backlog, where the two

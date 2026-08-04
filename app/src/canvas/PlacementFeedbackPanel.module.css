@@ -29,6 +29,23 @@
   border-top: 1px solid var(--border);
 }
 
+/*
+ * Print (UI redesign Phase 6, ADR 0035). The tally *is* the printed plan's crop
+ * key and stays; the headline sentence above it does not.
+ *
+ * That sentence is `fitPlant`'s summary for one crop — the selected placement's
+ * plant, or the most recently placed one — and both of those are screen states.
+ * On paper there is no selection and no "most recent", so it reads as one
+ * arbitrary crop out of five singled out for a reason the sheet cannot explain.
+ * `PlotCanvasSection.module.css` drops the selected-placement readout beside it
+ * for the same reason.
+ */
+@media print {
+  .summary {
+    display: none;
+  }
+}
+
 /* The "nothing placed yet" state — an invitation, not an error. */
 .empty {
   margin-top: var(--space-3);
