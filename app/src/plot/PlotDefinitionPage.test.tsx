@@ -20,8 +20,15 @@ describe('PlotDefinitionPage', () => {
   // rank (the "Add to plot" button, alongside the existing draggable
   // region) for keyboard-operable placement — genuinely more DOM per row,
   // and jsdom mounting + re-rendering that repeatedly (once per form edit
-  // below) now measures ~18-19s. Timeout raised with real headroom over
-  // that; not a regression to chase, just a bigger, still-correct tree.
+  // below) measured ~18-19s.
+  //
+  // **It is ~6s again as of UI redesign Phase 3**, which compacted every
+  // palette row from the engine's full reasoning (a summary, a confidence
+  // line and a four-bullet list, per crop) to an icon, a name and two chips.
+  // Roughly three times faster, from the same number of rows — a fair proxy
+  // for how much DOM that phase stopped building. The 30s timeout stays as
+  // headroom rather than being re-tuned to the new figure: it is insurance
+  // against a slow machine, and this test's cost has now moved twice.
   it('produces a region and conditions the engine actually accepts, driven end to end through the DOM', () => {
     render(<PlotDefinitionPage />);
 

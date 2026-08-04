@@ -93,6 +93,26 @@ test('the clear-all confirmation has no axe violations while open', async ({ pag
   expect(results.violations).toEqual([]);
 });
 
+test('the palette has no axe violations with a card’s reasoning expanded', async ({ page }) => {
+  // New surface in UI redesign Phase 3, and the one most worth scanning: the
+  // palette card is now a disclosure *and* dnd-kit's drag surface, so a single
+  // element carries `role="button"`, `aria-roledescription`, `aria-describedby`
+  // and `aria-expanded` at once — plenty of ways to end up with an invalid
+  // combination — and the `＋` button beside it went icon-only, which is a
+  // `button-name` failure the moment its `aria-label` slips.
+  //
+  // Scanned expanded rather than collapsed because the initial-state scan above
+  // already covers the compact card; this covers the state that only exists
+  // after a click, including the chip filters above it.
+  await page.goto('/');
+  const card = page.getByRole('button', { name: /^drag .+ onto the plot/i }).first();
+  await card.click();
+  await expect(card).toHaveAttribute('aria-expanded', 'true');
+
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+});
+
 test('the add-crop dialog has no axe violations while open', async ({ page }) => {
   // New surface in UI redesign Phase 1: "Add your own crop" moved out of the
   // page flow into a modal `<dialog>` (`ui/ModalDialog.tsx`). A modal is

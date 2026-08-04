@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import { CANVAS_PADDING_CM } from '../src/canvas/geometry.ts';
+import { paletteDragLabel } from '../src/palette/labels.ts';
 
 /**
  * The one way these specs drag a crop from the palette onto the plot canvas.
@@ -20,8 +21,8 @@ import { CANVAS_PADDING_CM } from '../src/canvas/geometry.ts';
  *
  * ## The two traps this helper exists to close
  *
- * **1. The locator must name the crop.** A wildcard like
- * `/drag .* onto the plot to place it/i` plus `.first()` is satisfied by
+ * **1. The locator must name the crop, and the name must be exact.** A
+ * wildcard like `/drag .* onto the plot/i` plus `.first()` is satisfied by
  * *whatever entry is currently rendered* — including a stale one from the
  * previous search term, before React has finished re-ranking 144 plants. The
  * drag then places the previous crop a second time and the intended one not at
@@ -32,6 +33,14 @@ import { CANVAS_PADDING_CM } from '../src/canvas/geometry.ts';
  * synchronising. It is also unambiguous where a wildcard is not — "Onion"
  * matches six shipped crops and "Kale" four, so `.first()` would silently
  * depend on the suitability ranking's order.
+ *
+ * The label itself comes from {@link paletteDragLabel} — the app's own
+ * definition, imported rather than restated, exactly as `CANVAS_PADDING_CM` is
+ * below. It was written out here as regex source until UI redesign Phase 3
+ * renamed it (the card became a disclosure as well as a drag surface, so its
+ * accessible name had to describe both jobs), which is the rename this import
+ * exists to survive. {@link dragSurface} keeps the **anchoring**, which is the
+ * part that must not be loosened: an unanchored name would match a longer one.
  *
  * **2. Both ends must be inside the viewport.** `page.mouse` works in
  * **viewport** coordinates and does not scroll.
@@ -54,10 +63,13 @@ import { CANVAS_PADDING_CM } from '../src/canvas/geometry.ts';
  * bounded box with its own scrollbar (`palette/PlantPalette.module.css` — it
  * fills the sidebar's height and scrolls the crops past the filters), so a
  * matching entry can be laid out below that box's own fold: rendered, reported
- * visible, and yet nowhere the mouse can reach it. Worse, a palette row still
- * renders the engine's full per-dimension reasoning, which for some crops is
- * ~560px tall — more than the whole list box — so "scroll it into view" cannot
- * make *all* of it reachable, only some of it. Hand-computing a press point
+ * visible, and yet nowhere the mouse can reach it. The sharper half of this is
+ * gone as of UI redesign Phase 3: a row used to render the engine's full
+ * per-dimension reasoning, ~560px for some crops — taller than the whole list
+ * box, so "scroll it into view" could not make *all* of it reachable — and a
+ * row is now a ~62px card. The first half stands, which is why nothing here
+ * changed: a matching entry can still be laid out below the list box's fold,
+ * and an expanded card is taller again. Hand-computing a press point
  * from `boundingBox()` gets this wrong (it aims at the centre of a box whose
  * centre is off-screen); `locator.hover()` gets it right, because scrolling
  * the element into view and picking a point on it that actually receives
@@ -95,9 +107,23 @@ import { CANVAS_PADDING_CM } from '../src/canvas/geometry.ts';
  * the whole block, which is what makes the difference between "wait longer for
  * something that will never happen" and "type it again".
  */
+/**
+ * The palette's drag surface for exactly `cropName`, matched on its whole
+ * accessible name.
+ *
+ * Anchored, and built from the app's own {@link paletteDragLabel} — see trap 1
+ * in the module doc for why both halves matter. Crop names are plain words, but
+ * they go through a regex, so the metacharacters are escaped rather than
+ * assumed absent.
+ */
+function dragSurface(page: Page, cropName: string): Locator {
+  const label = paletteDragLabel(cropName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return page.getByLabel(new RegExp(`^${label}$`, 'i'));
+}
+
 export async function filterPaletteTo(page: Page, cropName: string): Promise<void> {
   const searchBox = page.getByLabel(/^search$/i);
-  const entry = page.getByLabel(new RegExp(`^drag ${cropName} onto the plot to place it$`, 'i'));
+  const entry = dragSurface(page, cropName);
 
   await expect(async () => {
     await searchBox.fill(cropName);
@@ -213,7 +239,7 @@ export function atPlotCm(
  * anything is measured.
  *
  * @param cropName - the crop's `commonName`, matched exactly against the
- * palette entry's `aria-label` (`drag <name> onto the plot to place it`).
+ * palette entry's `aria-label` (see {@link dragSurface}).
  * @param canvas - the plot canvas locator.
  * @param dropPoint - where on the canvas to drop; defaults to its centre.
  */
@@ -223,7 +249,7 @@ export async function dragCropOntoCanvas(
   canvas: Locator,
   dropPoint: DropPoint = CANVAS_CENTRE,
 ): Promise<void> {
-  const source = page.getByLabel(new RegExp(`^drag ${cropName} onto the plot to place it$`, 'i'));
+  const source = dragSurface(page, cropName);
   await expect(source).toBeVisible();
 
   // Put the pointer on the entry. `hover()` rather than a hand-computed

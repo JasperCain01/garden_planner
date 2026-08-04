@@ -45,7 +45,10 @@
  * (`canvas/drop.ts`'s `CANVAS_DROPPABLE_ID`) — both need a shared `DndContext`
  * ancestor, and this page is where they're both composed, so it owns that
  * context and the drop handler (`useCanvasDropHandler`) rather than either
- * feature reaching for its own.
+ * feature reaching for its own — and, since UI redesign Phase 3, the sensors
+ * too (see `DRAG_ACTIVATION_DISTANCE_PX` below: the palette card is a
+ * disclosure as well as a drag source, and telling those two gestures apart is
+ * a sensor setting).
  *
  * **Warnings (Workplan Stage 3.5).** `useCanvasWarnings` is called once, here,
  * and the result threaded down to both `PlotCanvasSection` (badges the
@@ -75,7 +78,14 @@
  */
 
 import type { ReactNode } from 'react';
-import { DndContext } from '@dnd-kit/core';
+import {
+  DndContext,
+  KeyboardCode,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { usePlotStore } from '../state/plot-store.ts';
 import { PlantPalette } from '../palette/PlantPalette.tsx';
 import { PlotCanvasSection } from '../canvas/PlotCanvasSection.tsx';
@@ -105,7 +115,44 @@ function Panel({ title, children }: { readonly title: string; readonly children:
   );
 }
 
+/**
+ * The drag sensors, spelled out rather than left to dnd-kit's defaults (UI
+ * redesign Phase 3, ADR 0032 §2). They are configured here because this is
+ * where the `DndContext` is, but both changes exist for `palette/PlantPalette`
+ * — read that component's `PaletteEntry` doc alongside this.
+ *
+ * **A press that never travels is a click.** Phase 3 makes the palette card a
+ * disclosure as well as a drag surface, and without an activation constraint
+ * those are the same `pointerdown`: a click that drifts a single pixel becomes
+ * a drag and swallows the click, so "one click to see the reasoning" would
+ * work only for a perfectly steady hand. 4px is the same slop
+ * `canvas/PlotCanvas.tsx` uses to tell a pan from a deselect, for the same
+ * reason and to the same feel.
+ *
+ * **Space starts a keyboard drag; Enter no longer does.** dnd-kit's default is
+ * either key, which would leave the card's disclosure with no keyboard path at
+ * all — a `role="button"` `<div>` never synthesises a click from Enter the way
+ * a real `<button>` does. Space is the key the sensor's own screen-reader
+ * instructions name ("press the space bar"), so nothing announced changes;
+ * Enter goes to the disclosure, which is the key every other disclosure in the
+ * app opens with. Ending a drag still accepts either, plus Tab, as before —
+ * once a drag is running the card isn't a disclosure.
+ */
+const DRAG_ACTIVATION_DISTANCE_PX = 4;
+
 export function PlotDefinitionPage() {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX },
+    }),
+    useSensor(KeyboardSensor, {
+      keyboardCodes: {
+        start: [KeyboardCode.Space],
+        cancel: [KeyboardCode.Esc],
+        end: [KeyboardCode.Space, KeyboardCode.Enter, KeyboardCode.Tab],
+      },
+    }),
+  );
   const region = usePlotStore((state) => state.region);
   const setRegion = usePlotStore((state) => state.setRegion);
   const conditionsInput = usePlotStore((state) => state.conditionsInput);
@@ -114,7 +161,7 @@ export function PlotDefinitionPage() {
   const canvasWarnings = useCanvasWarnings(region);
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <SkipLinks />
       <div className={styles.workspace}>
         <section className={styles.plants} aria-label="Plants">

@@ -531,6 +531,172 @@ of that scene, and whether they are a _sufficient_ account is exactly the
 question only a real screen-reader session answers. It remains in
 `WORKPLAN.md` §5.2's backlog.
 
+## 8. Re-verified after the UI redesign's palette phase (2026-08-04)
+
+UI redesign Phase 3 (ADR
+[0032](./adr/0032-palette-compact-cards-and-details-on-demand.md)) rewrote the
+surface that §5's friction figures are mostly _about_ — 144 crops, two tab
+stops each — and put a second interaction on an element that already had one.
+Both are reasons this page could not be assumed to carry over.
+
+### The tab-stop budget, and why it is written down
+
+144 crops × 2 focusable controls per row = **288 tab stops in the palette**,
+plus six for the sidebar's own chrome (search, the category radio group, two
+toggle chips, the ranking-note disclosure, and the add-crop trigger): **294**
+measured in the browser. That number is the constraint the phase's shape was
+chosen against.
+
+The review asks for the reasoning to open on a click. The obvious way to build
+that is a third control per row — a "why?" button beside the drag surface and
+the `＋` — and that would make it **432**, past the point where this page's own
+keyboard walkthrough gives up hunting (its step 6 budget is 320). So the card
+_itself_ became the disclosure, which costs no stops at all.
+`PlantPalette.test.tsx` asserts two per row, and names them, so a fourth
+affordance can't quietly arrive as a third control.
+
+### One element, two gestures, and what each announces
+
+The palette card is dnd-kit's drag surface (`role="button"`, `tabIndex={0}`,
+`aria-roledescription="draggable"`) and now a disclosure as well. Three things
+make that honest rather than merely functional:
+
+|                   | pointer                                 | keyboard                                         |
+| ----------------- | --------------------------------------- | ------------------------------------------------ |
+| place the crop    | drag the card (past 4px), or press `＋` | `＋` (Enter/Space), or Space to pick the card up |
+| read why it ranks | click the card                          | Enter on the card                                |
+
+- **Enter is free for the disclosure** because `PlotDefinitionPage` narrows
+  dnd-kit's `KeyboardSensor` to start a drag on **Space alone** (its default is
+  either key). A `role="button"` `<div>` doesn't synthesise a click from Enter
+  the way a real `<button>` does, so without this the disclosure would have
+  been pointer-only — the exact class of gap ADR 0026 exists to prevent. Space
+  is the key dnd-kit's own screen-reader instructions name, so what a user is
+  told to press is unchanged.
+- **The accessible name says both jobs**: `drag <crop> onto the plot to place
+it, or press to see why it ranks here`. A control announced as "collapsed"
+  whose name mentions only dragging is a control whose name is wrong.
+  `aria-expanded` carries the state.
+- **No `aria-controls`.** The reasoning isn't in the DOM while collapsed, and
+  referencing an absent id is an `aria-valid-attr-value` violation; the
+  disclosure sits immediately after its trigger instead.
+
+The `＋` button's name is untouched — `Add <crop> to the plot, without
+dragging`, the string ADR 0026 made contractual and three specs plus the
+walkthrough select on. Only its drawing shrank to a glyph.
+
+### Structure: 144 headings retired
+
+The crop name was an `<h3>`. Two things were wrong with that, and only one is
+about clutter:
+
+1. ARIA makes a `role="button"` element's subtree **presentational**, and the
+   `<h3>` was inside the drag surface — so conforming assistive tech was
+   entitled to flatten it. The outline claimed structure it did not reliably
+   have.
+2. 144 crop headings sit ahead of the six that actually structure the app,
+   which makes heading navigation useless in the one document where it would
+   help most.
+
+What replaces them was already there: a `<ul>` of `<li>`, announced as "list,
+144 items". The ordering test that read the headings now reads each row's own
+accessible name.
+
+### Contrast: three new pairings, and one the review asked for that fails
+
+Computed the same way §2 computed everything else.
+
+| Pairing                                                  | Ratio      | Bar                     |
+| -------------------------------------------------------- | ---------- | ----------------------- |
+| `--text-strong` on `--category-vegetable-bg` (`#eaf1e6`) | 12.87:1 ✅ | 4.5:1 (chip text)       |
+| `--text-strong` on `--category-herb-bg` (`#e0efed`)      | 12.52:1 ✅ | 4.5:1                   |
+| `--text-strong` on `--category-fruit-bg` (`#f7e7e6`)     | 12.37:1 ✅ | 4.5:1                   |
+| `--category-vegetable` dot on its own tint               | 3.58:1 ✅  | 3:1 (1.4.11, graphical) |
+| `--category-herb` dot on its own tint                    | 4.49:1 ✅  | 3:1                     |
+| `--category-fruit` dot on its own tint                   | 4.54:1 ✅  | 3:1                     |
+
+The obvious alternative — a selected chip filled with its category colour,
+labelled in white — was **rejected on measurement**: white on
+`--category-vegetable` is **4.12:1**, and moving that green would change the
+canvas markers (`styles/tokens.test.ts` mirrors them) to fix a chip.
+
+**The review's `opacity: 0.6` for unsuitable crops is the pairing that fails**,
+and this phase declined it rather than carrying it forward. Composited over a
+white card:
+
+| Element at `opacity: 0.6`                                              | Full    | Composited    |
+| ---------------------------------------------------------------------- | ------- | ------------- |
+| the crop's name (`--text-strong`)                                      | 14.83:1 | **4.08:1** ❌ |
+| the category word (`--text-muted`)                                     | 5.58:1  | **2.49:1** ❌ |
+| the band chip's text (`--band-unsuitable`, tuned to 4.64:1 in Phase 0) | 4.64:1  | **2.24:1** ❌ |
+
+These were already true, at larger scale, of the pre-Phase-3 rows — this phase
+found them rather than introducing them. "Visible but muted" is now carried by
+the parts with no ratio to lose: a **greyscale icon on a neutral disc** instead
+of its category tint, and the name one step down to `--text-muted` (5.58:1).
+
+**And a word that colour alone would otherwise have carried.** The compact card
+keeps the category in _words_ beside the band chip, which the review's "icon,
+name, band chip. That's it" doesn't call for. The icon's disc is tinted by
+category, and without the word that tint is information conveyed by colour
+alone (WCAG 1.4.1). A legend does not fix that for the people 1.4.1 is about —
+a reader who can't tell the teal chip from the green one can't use a teal/green
+key either. Measured cost: at 287px the longest band label and the longest
+category word don't quite both fit, so **4 rows of 144** ellipsis "vegetable"
+to "vegetab…" — still unambiguous, where the alternative ("V…") was not.
+
+### axe: 0 violations, now in six states
+
+A palette card with its reasoning expanded got its own scan, following the
+precedent Phases 1 and 2 set for the dialogs and edit-shape mode. It is the
+state worth scanning: one element carrying `role="button"`,
+`aria-roledescription`, `aria-describedby` and `aria-expanded` at once has
+plenty of ways to end up invalid, and an icon-only `＋` button is a
+`button-name` failure the moment its label slips.
+
+```
+  ✓  1 the plot-definition page has no axe violations in its initial state
+  ✓  2 the plot-definition page has no axe violations once a plant is placed and selected
+  ✓  3 the canvas has no axe violations in edit-shape mode
+  ✓  4 the clear-all confirmation has no axe violations while open
+  ✓  5 the palette has no axe violations with a card’s reasoning expanded
+  ✓  6 the add-crop dialog has no axe violations while open
+  6 passed
+```
+
+### The keyboard walkthrough: one more step, and the same counts
+
+The friction figures §7 recorded are **unchanged**: 4 tabs to the palette
+search field, **20** from there to the canvas. That is the point — the phase
+changed what a row _is_ without changing what a row _costs_.
+
+```
+=== Step 1: find a crop (keyboard only) ===
+  OK   reached the palette search field in 4 tabs and typed a crop name
+
+=== Step 2: place it (keyboard only, via "Add to plot") ===
+  OK   activated "Add to plot" via keyboard (Tab + Enter) — no drag involved
+  OK   the placed crop shows as "Selected" (auto-selected on add, per addPlacement)
+
+=== Step 2b: read why a crop ranks where it does (UI redesign Phase 3) ===
+  OK   opened a crop’s summary, confidence and per-dimension reasoning with Enter — one key, no pointer
+
+=== Step 3: nudge it with arrow keys (keyboard only) ===
+  OK   reached the plot canvas by Tab alone (20 presses from the search field)
+  OK   nudged the selected plant into a new position with arrow keys, no pointer at all
+```
+
+(Steps 0, 3b, 3c, 4, 5 and 6 are unchanged from §7's run and all pass.)
+
+### Still not done, still recorded
+
+**Real screen-reader testing (NVDA/VoiceOver/JAWS) has still not happened.**
+This phase adds a specific question to that list: the palette card is now a
+draggable, a disclosure and — while dragging — an `aria-pressed` toggle, all on
+one node. Whether that composite announces _usefully_, rather than merely
+validly, is exactly what only a real screen-reader session answers. It remains
+in `WORKPLAN.md` §5.2's backlog.
+
 ## Related
 
 - ADR [0026](./adr/0026-keyboard-placement-and-severity-glyphs.md) — the
@@ -542,6 +708,10 @@ question only a real screen-reader session answers. It remains in
 - ADR [0031](./adr/0031-canvas-as-hero-live-scale-and-one-plot-picture.md) —
   the canvas phase §7 re-verified this page against, including why the outline
   editor's keyboard path is the same pattern ADR 0026 chose for placements.
+- ADR [0032](./adr/0032-palette-compact-cards-and-details-on-demand.md) — the
+  palette phase §8 re-verified this page against, including the tab-stop budget
+  that decided the shape of the disclosure and why the review's `opacity: 0.6`
+  was declined.
 - [`docs/stage-6.2-brief.md`](./stage-6.2-brief.md) — the brief this stage
   worked from.
 - [`WORKPLAN.md`](../WORKPLAN.md) §5.2 — the post-v1 backlog, where the two

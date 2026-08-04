@@ -401,23 +401,116 @@ This single phase fixes findings 1, 3, and half of 2.
 
 ### Phase 3 — Palette redesign
 
+> **Status: implemented** (2026-08-04). Compact card, chip filters and the
+> details disclosure in `app/src/palette/PlantPalette.tsx` (+ its module CSS),
+> the band predicate in `app/src/palette/filters.ts`, the two shared
+> aria-labels in `app/src/palette/labels.ts`, the drag/click activation
+> constraint in `app/src/plot/PlotDefinitionPage.tsx`. Decisions and the roads
+> not taken: ADR
+> [0032](./adr/0032-palette-compact-cards-and-details-on-demand.md); what
+> changed and why, in `docs/architecture.md`; the tab-stop budget and the
+> contrast working, measured, in `docs/accessibility.md` §8. Everything below
+> is what was asked for; the notes in brackets are where the implementation
+> differs.
+>
+> **The bit this phase had to do first, which isn't in the list below.** The
+> review assumed a taller list than the workspace gives: the sidebar spent
+> 442px of its 836px on chrome, leaving the crop list **394px**, in which a
+> "~64px" card is six crops and not eight. So the count moved onto the
+> heading's line, the filters became chips, and the intro paragraph became a
+> closed disclosure directly above the list — **kept**, because "read the
+> confidence and per-plant reasoning, not just the band" is the last sentence a
+> phase that hides the reasoning should drop. Chrome: 442px → **249px**.
+
 - **Compact card** (one per crop): 40px icon on a category-tinted circle, name, band
   chip. That's it — ~64px tall, or a 2-col grid of square tiles. 144 crops scan in
-  seconds.
+  seconds. _(Done, as the row rather than the tile grid: at 287px of sidebar a
+  2-column grid is ~135px tiles, so two crops per ~143px row against one per
+  66px — arithmetically a wash, while truncating most of the dataset's names.
+  62px, and **uniform**, which matters more than the figure: a row whose height
+  depends on how its name wraps makes "how many crops fit" a distribution
+  rather than a number. The card also keeps the **category in words** beside
+  the band chip — without it the icon disc's category tint is meaning carried
+  by colour alone, and a legend doesn't fix that for the readers WCAG 1.4.1 is
+  about.)_
 - **Details on demand:** clicking the card (not dragging) opens a popover/expando with
   the summary, confidence, and per-dimension reasoning — the exact content currently
-  inlined. Nothing is lost; it's just re-altituded.
+  inlined. Nothing is lost; it's just re-altituded. _(Done, as an expando —
+  inside a scrolling list a popover has to be positioned against a scrollport
+  that moves under it, and this is a paragraph and four bullets, i.e. something
+  to read rather than point at. **At most one is open at a time**: the expanded
+  content is ~470px, and several at once rebuilds the wall of text. Making the
+  drag surface *also* a disclosure took a `PointerSensor` activation constraint
+  (4px — the slop the canvas already uses to tell a pan from a deselect) so a
+  click isn't a one-pixel drag, dnd-kit's `KeyboardSensor` narrowed to start on
+  **Space alone** so Enter is free for the disclosure, and a renamed
+  accessible name that describes both jobs. ADR 0032 §2.)_
 - **Filters as chips:** category chips (colour-coded) + band filter ("Great fits" =
   excellent+good) + the existing search box and hide-unsuitable toggle, restyled.
-  Sticky at the top of the sidebar.
+  Sticky at the top of the sidebar. _(Done. The chips are native radios and
+  checkboxes, visually hidden and styled through their labels — a radio group is
+  **one** tab stop with arrow keys inside it, which matters when the palette
+  already spends 288. `matchesBand` is a pure predicate in `filters.ts` beside
+  `matchesSearch`/`matchesCategory`, not a condition in JSX. Nothing is
+  `position: sticky`: Phase 1 already made the sidebar a flex column in which
+  only the list scrolls, so the filters stay put by construction.)_
 - Unsuitable crops: keep visible-but-muted (current 0.6 opacity idea, plus greyscale
-  icon) — honest and tidy.
+  icon) — honest and tidy. _(Half done, deliberately. The greyscale icon, yes —
+  on a neutral disc rather than its category tint. The **0.6 opacity, no**: over
+  a white card it takes the crop's name from 14.83:1 to **4.08:1**, the category
+  word to **2.49:1**, and the band chip's own text — hand-tuned to 4.64:1 in
+  Phase 0 — to **2.24:1**. Three WCAG 1.4.3 failures to say "long shot", all of
+  them already true of the old rows. The name steps down to `--text-muted`
+  (5.58:1) instead. `docs/accessibility.md` §8.)_
 - "Add to plot" becomes a small `＋` icon-button on the card (aria-label preserved);
   whole card remains the drag surface. Keep the sibling-not-nested DOM structure that
-  the axe `nested-interactive` comment explains.
+  the axe `nested-interactive` comment explains. _(Done. Both of the palette's
+  aria-labels now live in `palette/labels.ts` and are **imported** by
+  `e2e/drag.ts` rather than restated there as regex source — the drag label had
+  to change to describe the card's second job, and that duplication rots in
+  exactly one direction. The anchoring stays.)_
 - A one-line legend at the sidebar top mapping category colours (matches canvas).
+  _(Done **as the category chips themselves**: a chip carrying a category's own
+  canvas colour and its name is that mapping, and a separate line would restate
+  it for ~24px of the vertical budget the list needed.)_
 - **Acceptance:** ≥8 crops visible in the sidebar without scrolling at 900px height;
   reasoning reachable in one click; drag and keyboard paths intact.
+  _(Met, and measured in a real browser rather than asserted —
+  `e2e/palette.spec.ts` counts the crops against the scrollport's own client
+  box and reports the slack under the last one, so a regression says how close
+  it came.)_
+  - _**Crops visible without scrolling: 8** at 1440×900, against **0** before —
+    the number this phase exists to change — and **11** at 1920×1080. The ninth
+    needs 66px and the list has 65 spare, so the margin is a whole row minus a
+    pixel rather than a rounding error._
+  - _The row is **62px, uniform**, where it was 589–820px with a **median of
+    631px**. The list box grew from 287×394 to **287×595**, and the whole list
+    is **9,508px** where it was ~93,900 — a tenth._
+  - _**Reasoning in one click**, and it is the same content in the same words:
+    the summary, the confidence, and the four per-dimension reasons, ~470px of
+    it. In the DOM only while open. From the keyboard it is one Enter._
+  - _**Tab stops unchanged at 288** (144 rows × 2), plus six for the sidebar's
+    chrome — 294 measured. A "why?" button per row would have made it 432, past
+    the keyboard walkthrough's own 320 budget, which is why the card itself is
+    the disclosure. `PlantPalette.test.tsx` asserts the two-per-row shape._
+  - _The per-crop **`<h3>` is gone**, on purpose: ARIA makes a `role="button"`
+    element's subtree presentational, so those headings were never reliably
+    headings — while they did put 144 entries in the outline ahead of the six
+    that structure the app. The ordering test reads each row's accessible name
+    now._
+  - _Standing bar: `npm test` **225 passing** (36 files), `npm run e2e` **22
+    passing**, `npm run a11y` **0 violations across six states** (an expanded
+    card got its own scan), keyboard walkthrough **all steps passing** —
+    including a new step 2b for the disclosure, and with §7's friction figures
+    unchanged (4 tabs to the search field, 20 from there to the canvas)._
+  - _Two notes on the E2E run. The two Phase 2 pixel-differencing specs in
+    `canvas-scale.spec.ts` take 33s and 39s against a 30s default timeout in
+    this container and time out under load; they pass with headroom
+    (`--timeout=90000`), and **the same two fail identically on the
+    pre-Phase-3 commit**, so it is this machine's speed against
+    `getImageData` serialisation, not a regression. Separately,
+    `PlotDefinitionPage.test.tsx` got about **three times faster** — ~6s where
+    it was ~18–19s — because the palette is now a fraction of the DOM it was._
 
 ### Phase 4 — Plot & conditions panel
 

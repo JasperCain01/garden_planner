@@ -885,65 +885,135 @@ deleted (the store forgets it synchronously; animating that needs history
 state, which Phase 5 builds properly). The palette rows are still fully
 expanded (Phase 3) and the shape picker is still radios (Phase 4).
 
+## UI redesign Phase 3 — the palette redesign
+
+Phases 1 and 2 both ended by saying the palette rows were still fully expanded.
+They were: every one of 144 crops rendered the engine's whole answer — icon,
+name, band, category, summary, confidence and a four-bullet reasoning list —
+which in a 320px sidebar measured a **median 631px per row** in a **394px**
+list box. The number of crops you could see without scrolling was **zero**.
+Reasoning in ADR
+[0032](./adr/0032-palette-compact-cards-and-details-on-demand.md).
+
+**The row is a compact card, and the reasoning is a press away.** 62px, uniform
+— a 40px icon on a category-tinted disc, the name, the band chip, the category
+word — with the summary, confidence and per-dimension reasoning opening in
+place beneath it, at most one at a time. Nothing was cut; it was re-altituded.
+The list is **9,508px** where it was ~93,900.
+
+**The sidebar's chrome shrank with it, which the review didn't ask for and the
+criterion needed.** Eight cards want ~530px of an 836px sidebar, so the count
+moved onto the heading's line, the filters became chips, and the intro
+paragraph became a closed disclosure directly above the list — kept, not
+deleted, because "read the confidence and per-plant reasoning, not just the
+band" is exactly the sentence a phase that hides the reasoning must not drop.
+Chrome went from 442px to **249px**.
+
+**The card is a drag surface and a disclosure, and telling those apart is a
+sensor setting.** dnd-kit had no activation constraint, so a click that drifted
+a pixel became a drag and swallowed the click; `PlotDefinitionPage` now gives
+the `PointerSensor` a 4px `activationConstraint` — the same slop `PlotCanvas`
+uses to tell a pan from a deselect — and narrows the `KeyboardSensor` to start
+on **Space alone**, freeing Enter for the disclosure (a `role="button"` `<div>`
+never synthesises a click from Enter). The card's accessible name says both
+jobs now, and `palette/labels.ts` is where both of the palette's aria-labels
+live, imported by `e2e/drag.ts` instead of restated as regex source there.
+
+**Two focusable controls per row, still, and no `<h3>`s.** 144 crops is 288 tab
+stops; a third control per row would be 432, so the card itself is the
+disclosure rather than gaining a "why?" button beside it, and
+`PlantPalette.test.tsx` asserts the count. The per-crop `<h3>` is gone: ARIA
+makes a `role="button"` element's subtree presentational, so those headings were
+never reliably headings, while they did put 144 entries in the outline ahead of
+the six that structure the app.
+
+**Filters are chips, and the category chips are the legend.** Native radios
+(one tab stop, arrow keys inside) styled through their labels, plus a "Great
+fits" band filter that lives in `palette/filters.ts` as a pure predicate beside
+`matchesSearch`/`matchesCategory`. A chip carrying a category's own canvas
+colour and its name _is_ the colour legend the review asked for separately.
+
+**Muting measured rather than assumed.** The review's `opacity: 0.6` for
+unsuitable crops takes the crop's name to 4.08:1, the category word to 2.49:1
+and the band chip's own hand-tuned text to 2.24:1 — three WCAG 1.4.3 failures.
+The muting is a greyscale icon on a neutral disc and a name one step down to
+`--text-muted` (5.58:1) instead (`docs/accessibility.md` §8).
+
+**Measured, not asserted.** `e2e/palette.spec.ts` holds the phase's acceptance
+criteria: **8 crops** visible without scrolling at 1440×900 (11 at 1920×1080),
+counted against the scrollport's own client box; the reasoning open in one real
+click; a drag that still places and does _not_ expand; and Enter reaching the
+disclosure with the `＋` button's contractual name intact. axe covers a sixth
+state, and the keyboard walkthrough gained step 2b with its tab counts
+unchanged.
+
+**What this phase deliberately did not do:** the shape picker is still radios
+and the conditions form still nests fieldsets (Phase 4), and a dragged card is
+still clipped at the sidebar's edge — that fix is a dnd-kit `DragOverlay`, which
+is Phase 5's "drag ghost".
+
 ## Where to look next
 
-| Topic                                                             | File                                                                                                   |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Concept, data-source assessment, licensing rationale              | [`DESIGN.md`](../DESIGN.md)                                                                            |
-| Staged build plan, per-stage models, verification                 | [`WORKPLAN.md`](../WORKPLAN.md)                                                                        |
-| Specific decisions and their alternatives                         | [`adr/`](./adr/)                                                                                       |
-| The plant-record schema (types + validation)                      | `packages/engine/src/schema/`                                                                          |
-| User-crop input schema and its upcast to a `Plant`                | `packages/engine/src/schema/user-plant.ts`                                                             |
-| Location/climate static data and `resolveClimate`                 | `packages/engine/src/climate/`                                                                         |
-| Suitability scoring, its reasoning, and `rankPlants`              | `packages/engine/src/suitability/`                                                                     |
-| The plot-region polygon, packing geometry, `fitPlant`             | `packages/engine/src/spacing/`                                                                         |
-| Warnings, companion suggestions, `evaluatePlot`                   | `packages/engine/src/warnings/`                                                                        |
-| App shell, routing, GitHub Pages basename                         | `app/src/routes/`                                                                                      |
-| Design tokens (colour, space, type) and the global primitives     | `app/src/styles/tokens.css`, `app/src/styles/global.css`                                               |
-| The self-hosted heading font and why it's declared by hand        | `app/src/styles/fonts.css`, [`adr/0029`](./adr/0029-design-tokens-css-modules-and-self-hosted-font.md) |
-| The CSS↔TypeScript colour-mirror guard                            | `app/src/styles/tokens.test.ts`                                                                        |
-| The UI redesign plan and which phase owns what                    | [`docs/ui-aesthetic-review.md`](./ui-aesthetic-review.md)                                              |
-| The workspace layout: shell frame, three-column grid, breakpoint  | `app/src/routes/AppShell.module.css`, `app/src/plot/PlotDefinitionPage.module.css`                     |
-| Why the app is a workspace and not a document                     | [`adr/0030`](./adr/0030-workspace-layout-not-a-document.md)                                            |
-| The modal-dialog primitive (and its jsdom fallback)               | `app/src/ui/ModalDialog.tsx`                                                                           |
-| The canvas's live scale: fit, zoom, and where it is stored        | `app/src/canvas/useCanvasScale.ts`, `app/src/state/canvas-view-store.ts`                               |
-| Pixel⟷centimetre maths, and the first-free-position search        | `app/src/canvas/geometry.ts`                                                                           |
-| How big a crop's marker is, and why that figure                   | `app/src/canvas/footprint.ts`                                                                          |
-| Editing the plot outline on the canvas (pointer and keyboard)     | `app/src/canvas/useOutlineEditing.ts`, `app/src/canvas/outline-edit.ts`                                |
-| Why the canvas is the hero, and what it cost ADR 0016             | [`adr/0031`](./adr/0031-canvas-as-hero-live-scale-and-one-plot-picture.md)                             |
-| The add-crop dialog off the plants sidebar                        | `app/src/user-crops/AddCropDialog.tsx`                                                                 |
-| The workspace layout acceptance criteria, as a test               | `app/e2e/workspace-layout.spec.ts`                                                                     |
-| Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`                                                                    |
-| The user-plant overlay store and merged `usePlantList`            | `app/src/state/`                                                                                       |
-| The plot-definition page, shape picker, outline editor            | `app/src/plot/`                                                                                        |
-| The plot store (current region + conditions input)                | `app/src/state/plot-store.ts`                                                                          |
-| The ranked/searchable/filterable plant palette                    | `app/src/palette/`                                                                                     |
-| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)     | `app/src/canvas/`                                                                                      |
-| The placements store (what's placed on the canvas)                | `app/src/state/placements-store.ts`                                                                    |
-| The drag-and-drop E2E journey                                     | `app/e2e/plot-canvas.spec.ts`                                                                          |
-| The warnings overlay, companion suggestions, placement derivation | `app/src/warnings/`                                                                                    |
-| The warnings-overlay E2E journey                                  | `app/e2e/warnings-overlay.spec.ts`                                                                     |
-| The add-crop form, id-collision check, edit/remove                | `app/src/user-crops/`                                                                                  |
-| The add-custom-crop E2E journey                                   | `app/e2e/add-custom-crop.spec.ts`                                                                      |
-| The icon set, `resolveIcon`, and its style guide                  | `app/src/icons/`, [`docs/icon-style-guide.md`](./icon-style-guide.md)                                  |
-| The icon generator (developer tool, not shipped)                  | `tools/icons/`                                                                                         |
-| The plot-image export pipeline and legend builder                 | `app/src/canvas/export.ts`                                                                             |
-| The plot-export E2E journey                                       | `app/e2e/plot-export.spec.ts`                                                                          |
-| The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                                                                               |
-| The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                                                                            |
-| Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`                                                                         |
-| Maintainer-curated full-plant input                               | `packages/etl/src/curated/`                                                                            |
-| The UK-outdoor exclusion list (which crops are pruned, and why)   | `packages/etl/src/exclusions/`                                                                         |
-| The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                                                                              |
-| The committed dataset artifact and its caveats                    | `data/README.md`                                                                                       |
-| Service worker + manifest config (`VitePWA`)                      | `app/vite.config.ts`                                                                                   |
-| Manifest icons (`any` + maskable)                                 | `app/public/pwa-icon.svg`, `app/public/maskable-icon.svg`                                              |
-| The offline E2E journey                                           | `app/e2e/offline.spec.ts`                                                                              |
-| Lighthouse PWA audit command and today's recorded score           | root `README.md`                                                                                       |
-| Accessibility writeup, contrast/ARIA findings, responsive fix     | [`docs/accessibility.md`](./accessibility.md)                                                          |
-| The axe check (locally-runnable, today's result recorded)         | `app/e2e/a11y.spec.ts`, root `README.md`                                                               |
-| The keyboard-only walkthrough script and its recorded findings    | `app/keyboard-walkthrough.mjs`, [`docs/accessibility.md`](./accessibility.md)                          |
-| The two skip links (canvas, plot settings)                        | `app/src/plot/SkipLinks.tsx`                                                                           |
-| The CI checks workflow and what each job gates                    | `.github/workflows/checks.yml`, [`adr/0027`](./adr/0027-ci-checks-workflow-and-blocking-policy.md)     |
-| Why there is no deploy-on-merge, and the recipe if you want one   | [`adr/0028`](./adr/0028-deploy-on-merge-not-automated.md)                                              |
-| The closing security review (npm audit triage, XSS check)         | [`docs/security-review.md`](./security-review.md)                                                      |
+| Topic                                                                 | File                                                                                                   |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Concept, data-source assessment, licensing rationale                  | [`DESIGN.md`](../DESIGN.md)                                                                            |
+| Staged build plan, per-stage models, verification                     | [`WORKPLAN.md`](../WORKPLAN.md)                                                                        |
+| Specific decisions and their alternatives                             | [`adr/`](./adr/)                                                                                       |
+| The plant-record schema (types + validation)                          | `packages/engine/src/schema/`                                                                          |
+| User-crop input schema and its upcast to a `Plant`                    | `packages/engine/src/schema/user-plant.ts`                                                             |
+| Location/climate static data and `resolveClimate`                     | `packages/engine/src/climate/`                                                                         |
+| Suitability scoring, its reasoning, and `rankPlants`                  | `packages/engine/src/suitability/`                                                                     |
+| The plot-region polygon, packing geometry, `fitPlant`                 | `packages/engine/src/spacing/`                                                                         |
+| Warnings, companion suggestions, `evaluatePlot`                       | `packages/engine/src/warnings/`                                                                        |
+| App shell, routing, GitHub Pages basename                             | `app/src/routes/`                                                                                      |
+| Design tokens (colour, space, type) and the global primitives         | `app/src/styles/tokens.css`, `app/src/styles/global.css`                                               |
+| The self-hosted heading font and why it's declared by hand            | `app/src/styles/fonts.css`, [`adr/0029`](./adr/0029-design-tokens-css-modules-and-self-hosted-font.md) |
+| The CSS↔TypeScript colour-mirror guard                                | `app/src/styles/tokens.test.ts`                                                                        |
+| The UI redesign plan and which phase owns what                        | [`docs/ui-aesthetic-review.md`](./ui-aesthetic-review.md)                                              |
+| The workspace layout: shell frame, three-column grid, breakpoint      | `app/src/routes/AppShell.module.css`, `app/src/plot/PlotDefinitionPage.module.css`                     |
+| Why the app is a workspace and not a document                         | [`adr/0030`](./adr/0030-workspace-layout-not-a-document.md)                                            |
+| The modal-dialog primitive (and its jsdom fallback)                   | `app/src/ui/ModalDialog.tsx`                                                                           |
+| The canvas's live scale: fit, zoom, and where it is stored            | `app/src/canvas/useCanvasScale.ts`, `app/src/state/canvas-view-store.ts`                               |
+| Pixel⟷centimetre maths, and the first-free-position search            | `app/src/canvas/geometry.ts`                                                                           |
+| How big a crop's marker is, and why that figure                       | `app/src/canvas/footprint.ts`                                                                          |
+| Editing the plot outline on the canvas (pointer and keyboard)         | `app/src/canvas/useOutlineEditing.ts`, `app/src/canvas/outline-edit.ts`                                |
+| Why the canvas is the hero, and what it cost ADR 0016                 | [`adr/0031`](./adr/0031-canvas-as-hero-live-scale-and-one-plot-picture.md)                             |
+| The add-crop dialog off the plants sidebar                            | `app/src/user-crops/AddCropDialog.tsx`                                                                 |
+| The workspace layout acceptance criteria, as a test                   | `app/e2e/workspace-layout.spec.ts`                                                                     |
+| Dataset-loading layer (loads + validates the shipped list)            | `app/src/dataset/shipped-plants.ts`                                                                    |
+| The user-plant overlay store and merged `usePlantList`                | `app/src/state/`                                                                                       |
+| The plot-definition page, shape picker, outline editor                | `app/src/plot/`                                                                                        |
+| The plot store (current region + conditions input)                    | `app/src/state/plot-store.ts`                                                                          |
+| The ranked/searchable/filterable plant palette                        | `app/src/palette/`                                                                                     |
+| The palette's two aria-labels, shared with the E2E suite              | `app/src/palette/labels.ts`                                                                            |
+| Why the palette is compact cards with the reasoning on demand         | [`adr/0032`](./adr/0032-palette-compact-cards-and-details-on-demand.md)                                |
+| The palette acceptance criteria (crops visible, one click), as a test | `app/e2e/palette.spec.ts`                                                                              |
+| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)         | `app/src/canvas/`                                                                                      |
+| The placements store (what's placed on the canvas)                    | `app/src/state/placements-store.ts`                                                                    |
+| The drag-and-drop E2E journey                                         | `app/e2e/plot-canvas.spec.ts`                                                                          |
+| The warnings overlay, companion suggestions, placement derivation     | `app/src/warnings/`                                                                                    |
+| The warnings-overlay E2E journey                                      | `app/e2e/warnings-overlay.spec.ts`                                                                     |
+| The add-crop form, id-collision check, edit/remove                    | `app/src/user-crops/`                                                                                  |
+| The add-custom-crop E2E journey                                       | `app/e2e/add-custom-crop.spec.ts`                                                                      |
+| The icon set, `resolveIcon`, and its style guide                      | `app/src/icons/`, [`docs/icon-style-guide.md`](./icon-style-guide.md)                                  |
+| The icon generator (developer tool, not shipped)                      | `tools/icons/`                                                                                         |
+| The plot-image export pipeline and legend builder                     | `app/src/canvas/export.ts`                                                                             |
+| The plot-export E2E journey                                           | `app/e2e/plot-export.spec.ts`                                                                          |
+| The ETL pipeline shell, GBIF resolver, adding a source                | `packages/etl/README.md`                                                                               |
+| The hand-verified spacing table (curation, not ingest)                | `packages/etl/src/spacing/`                                                                            |
+| Evidence-tagged companion/antagonist data                             | `packages/etl/src/companions/`                                                                         |
+| Maintainer-curated full-plant input                                   | `packages/etl/src/curated/`                                                                            |
+| The UK-outdoor exclusion list (which crops are pruned, and why)       | `packages/etl/src/exclusions/`                                                                         |
+| The Stage 1.5 merge, validation gate, and artifact                    | `packages/etl/src/merge/`                                                                              |
+| The committed dataset artifact and its caveats                        | `data/README.md`                                                                                       |
+| Service worker + manifest config (`VitePWA`)                          | `app/vite.config.ts`                                                                                   |
+| Manifest icons (`any` + maskable)                                     | `app/public/pwa-icon.svg`, `app/public/maskable-icon.svg`                                              |
+| The offline E2E journey                                               | `app/e2e/offline.spec.ts`                                                                              |
+| Lighthouse PWA audit command and today's recorded score               | root `README.md`                                                                                       |
+| Accessibility writeup, contrast/ARIA findings, responsive fix         | [`docs/accessibility.md`](./accessibility.md)                                                          |
+| The axe check (locally-runnable, today's result recorded)             | `app/e2e/a11y.spec.ts`, root `README.md`                                                               |
+| The keyboard-only walkthrough script and its recorded findings        | `app/keyboard-walkthrough.mjs`, [`docs/accessibility.md`](./accessibility.md)                          |
+| The two skip links (canvas, plot settings)                            | `app/src/plot/SkipLinks.tsx`                                                                           |
+| The CI checks workflow and what each job gates                        | `.github/workflows/checks.yml`, [`adr/0027`](./adr/0027-ci-checks-workflow-and-blocking-policy.md)     |
+| Why there is no deploy-on-merge, and the recipe if you want one       | [`adr/0028`](./adr/0028-deploy-on-merge-not-automated.md)                                              |
+| The closing security review (npm audit triage, XSS check)             | [`docs/security-review.md`](./security-review.md)                                                      |

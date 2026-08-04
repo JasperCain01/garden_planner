@@ -51,3 +51,4 @@ old one and mark the old one `Superseded`.
 - [0029 — The design system: CSS custom properties + CSS Modules, and one self-hosted font](./0029-design-tokens-css-modules-and-self-hosted-font.md)
 - [0030 — The app is a workspace, not a document](./0030-workspace-layout-not-a-document.md)
 - [0031 — The canvas as hero: a live scale, footprint-true markers, and one picture of the plot](./0031-canvas-as-hero-live-scale-and-one-plot-picture.md)
+- [0032 — The palette: compact cards, reasoning on demand, and one element with two gestures](./0032-palette-compact-cards-and-details-on-demand.md)
