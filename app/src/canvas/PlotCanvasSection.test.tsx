@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { rectangleRegion, validatePlant, type Plant } from '@garden-planner/engine';
 import { useCanvasViewStore } from '../state/canvas-view-store.ts';
+import { resetHistory, useDesignHistory } from '../state/design-history.ts';
 import { usePlotStore } from '../state/plot-store.ts';
 import { usePlacementsStore } from '../state/placements-store.ts';
 import { exportPlotImage } from './export.ts';
@@ -45,6 +46,11 @@ describe('PlotCanvasSection export button', () => {
       outlineError: null,
       draftVertices: null,
     });
+    // The design history subscribes to both design stores at module load (UI
+    // redesign Phase 5), so the `setState` calls above leave steps on its stack
+    // — which is exactly what the two tests that assert on `undoLabel` would
+    // otherwise be reading.
+    resetHistory();
   });
 
   it('renders an export button', () => {
@@ -187,7 +193,12 @@ describe('PlotCanvasSection export button', () => {
       expect(screen.getByRole('alert').textContent).toBeTruthy();
     });
 
-    it('asks before clearing the plot, and only clears when confirmed', () => {
+    // UI redesign Phase 5 retired the confirmation this used to assert on. The
+    // test is rewritten rather than deleted, because what it was really
+    // guarding — that "Clear all" is not a click you can lose your plot to — is
+    // still true and is now the history's job (ADR 0034 §5). It clears
+    // immediately, *and* the way back exists and is named.
+    it('clears the plot at once, and leaves a named undo behind it', () => {
       usePlacementsStore.setState({
         placements: [{ id: 'placement-1', plant: ONION, x: 10, y: 10 }],
         selectedId: null,
@@ -195,20 +206,32 @@ describe('PlotCanvasSection export button', () => {
       render(<PlotCanvasSection canvasWarnings={null} />);
 
       fireEvent.click(screen.getByRole('button', { name: /clear all/i }));
-      // Nothing is gone yet: the confirmation is the point.
-      expect(usePlacementsStore.getState().placements).toHaveLength(1);
-
-      fireEvent.click(screen.getByRole('button', { name: /keep them/i }));
-      expect(usePlacementsStore.getState().placements).toHaveLength(1);
-
-      fireEvent.click(screen.getByRole('button', { name: /clear all/i }));
-      fireEvent.click(screen.getByRole('button', { name: /clear all plants/i }));
       expect(usePlacementsStore.getState().placements).toEqual([]);
+      expect(screen.queryByRole('button', { name: /keep them/i })).toBeNull();
+
+      expect(useDesignHistory.getState().undoLabel).toBe('removing Onion');
+      act(() => useDesignHistory.getState().undo());
+      expect(usePlacementsStore.getState().placements).toHaveLength(1);
     });
 
     it('offers no Clear all at all when there is nothing to clear', () => {
       render(<PlotCanvasSection canvasWarnings={null} />);
       expect(screen.queryByRole('button', { name: /clear all/i })).toBeNull();
+    });
+
+    // The starter bed (UI redesign Phase 5). Offered on the toolbar rather than
+    // in a first-run modal — see `designs/example-bed.ts` — so "when is it
+    // offered" is a rendering question this test can ask directly.
+    it('offers the example bed only while the plot is empty, and undoes as one step', () => {
+      render(<PlotCanvasSection canvasWarnings={null} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /start with an example bed/i }));
+      expect(usePlacementsStore.getState().placements.length).toBeGreaterThan(1);
+      expect(screen.queryByRole('button', { name: /start with an example bed/i })).toBeNull();
+
+      expect(useDesignHistory.getState().undoLabel).toBe('starting from the example bed');
+      act(() => useDesignHistory.getState().undo());
+      expect(usePlacementsStore.getState().placements).toEqual([]);
     });
   });
 

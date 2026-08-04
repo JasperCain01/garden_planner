@@ -1,0 +1,115 @@
+/*
+ * The designs switcher's contents (UI redesign Phase 5). The dialog frame
+ * itself is `ui/ModalDialog.module.css`; this is only what goes inside it.
+ */
+
+.notice {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  border-left: 3px solid var(--severity-warning);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+}
+
+/* A text button, so "Dismiss" reads as part of the sentence rather than as a
+ * second action competing with the row's own. */
+.dismiss {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--green-700);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/*
+ * The open design, marked by the same green the selected shape tile and the
+ * selected segment use — `--green-100` behind `--text-strong` is the pairing
+ * `docs/accessibility.md` §9 measured at 12.55:1, so this is a reuse and not a
+ * new sum.
+ */
+.row[data-active='true'] {
+  border-color: var(--green-700);
+  background: var(--green-100);
+}
+
+.rowMain {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.name {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+/* "— open" is a plain word rather than a coloured dot: the row's tint says the
+ * same thing to a sighted user and would say nothing at all otherwise (WCAG
+ * 1.4.1, the rule the palette's category chips follow). */
+.openTag {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.meta {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.rowActions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.confirmQuestion {
+  font-size: var(--text-sm);
+  color: var(--text-strong);
+}
+
+.rename {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.rename input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}

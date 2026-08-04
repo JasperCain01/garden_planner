@@ -677,6 +677,15 @@ Format for each: **Goal**, **Depends on**, **Deliverables**, **Model**,
   this merged list and must not care which source a plant came from. (User crops
   live only for the session; there is no persistence layer — the app exports a
   _picture_, not a re-loadable save file, see Stage 3.7.)
+  - _Addendum, UI redesign Phase 5 (2026-08-04): there **is** a persistence layer
+    now — designs are saved to `localStorage` and there is a re-loadable save
+    file in all but name. This sentence still holds where it matters, though, and
+    deliberately: `state/user-plants-store.ts` is **still** an in-memory,
+    session-scoped overlay that writes nothing. A user crop outlives the tab only
+    by travelling inside a saved design that uses it, which is what stops one
+    accumulating in a browser forever. ADR
+    [0034](./docs/adr/0034-designs-persistence-and-one-history-over-two-stores.md)
+    §2 argues it out against this line rather than around it._
 - **Model:** **Sonnet.**
 - **Verification:** App loads the bundled dataset and renders a placeholder;
   builds correctly under the Pages base path.

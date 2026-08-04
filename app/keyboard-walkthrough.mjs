@@ -18,6 +18,21 @@ import { chromium } from '@playwright/test';
  * link (there are two as of that phase) and one for the add-crop dialog it
  * introduced.
  *
+ * **UI redesign Phase 5 changed what the first Tab presses land on, and added
+ * step 2c.** The header carried one control (the title link) for the app's whole
+ * life until this phase; it now carries undo, redo and the designs switcher, and
+ * they sit *before* the skip links because the header precedes the route's
+ * content in the DOM. Step 0 counts Tab presses positionally, so it says so. The
+ * cost is smaller than it looks and the script shows why: on a fresh load only
+ * the switcher is a stop, because a `disabled` button is not in the tab order
+ * and there is nothing yet to undo. Step 2c walks undo and redo once there is.
+ *
+ * The other thing this phase changed is what a **reload** means here. This walk
+ * reloads three times for "a clean run of the rest of the journey", and the app
+ * now restores the saved design — so those three would have quietly started
+ * measuring through a canvas with crops already on it. See the `addInitScript`
+ * below.
+ *
  * **UI redesign Phase 4 re-measured step 4 and added step 5b.** The settings
  * column's controls changed shape — three preset radios became three tiles,
  * three `<select>`s became segmented controls, and the soil block went behind a
@@ -86,6 +101,33 @@ const browser = await chromium.launch({
 // a different reading order and worth its own pass if that is what you want to
 // check.
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+
+/**
+ * Every navigation in this walk starts from an empty plot (UI redesign Phase
+ * 5).
+ *
+ * This script reloads three times to get "a clean run of the rest of the
+ * journey" — and since the app started saving the open design, a reload is the
+ * opposite of clean: it brings the crops back. Nothing here would have *failed*
+ * either; the walk would simply have gone on counting tab presses through a
+ * canvas that still had plants on it, which is worse than a failure because it
+ * reads as a pass.
+ *
+ * An `addInitScript` rather than a clear between loads, because the app
+ * restores before its first render (`src/main.tsx`). The one place this walk
+ * deliberately does *not* reload — before step 4, so the journey runs against
+ * the state it has built up — is untouched by this, which is the point: the two
+ * meanings of "reload" in this file are now actually different operations.
+ * Persistence itself is proved in a real browser by `e2e/persistence.spec.ts`.
+ */
+await page.addInitScript(() => {
+  try {
+    window.localStorage.removeItem('garden-planner:designs');
+  } catch {
+    // Storage disabled: nothing saved, nothing to clear.
+  }
+});
+
 await page.goto('http://localhost:4173/');
 await page.waitForSelector('text=Plot shape');
 
@@ -129,7 +171,19 @@ log(
 // palette puts between "Add to plot" and nudging the placement) and the plot
 // settings (Phase 1's, for the block the palette now puts between the top of
 // the page and the shape/conditions form). See `src/plot/SkipLinks.tsx`.
+//
+// **UI redesign Phase 5 put a control between them and the title.** The header
+// was one tab stop for the app's whole life until this phase; it now carries
+// undo, redo and the designs switcher, and they come *before* the skip links
+// because the header comes before the route's content in the DOM (which is
+// where it belongs visually, so re-ordering would fix a tab count by breaking
+// WCAG 2.4.3 — the same trade `SkipLinks.tsx` already refused once).
+//
+// On a **fresh** load it is one extra stop, not three: a `disabled` button is
+// not in the tab order and there is nothing yet to undo or redo. Step 2c below
+// walks them once there is.
 await page.keyboard.press('Tab'); // title link
+await page.keyboard.press('Tab'); // "Designs: …" — the switcher
 await page.keyboard.press('Tab'); // first skip link
 const skipCanvasName = await focusedAccessibleName();
 if (/skip to plot canvas/i.test(skipCanvasName ?? '')) {
@@ -146,7 +200,7 @@ if (/skip to plot canvas/i.test(skipCanvasName ?? '')) {
   }
 } else {
   fail(
-    'found the "Skip to plot canvas" link as the second Tab stop',
+    'found the "Skip to plot canvas" link as the third Tab stop',
     `focus was on "${skipCanvasName}"`,
   );
 }
@@ -154,6 +208,7 @@ if (/skip to plot canvas/i.test(skipCanvasName ?? '')) {
 await page.goto('http://localhost:4173/');
 await page.waitForSelector('text=Plot shape');
 await page.keyboard.press('Tab'); // title link
+await page.keyboard.press('Tab'); // the designs switcher
 await page.keyboard.press('Tab'); // skip to plot canvas
 await page.keyboard.press('Tab'); // skip to plot settings
 const skipSettingsName = await focusedAccessibleName();
@@ -171,7 +226,7 @@ if (/skip to plot settings/i.test(skipSettingsName ?? '')) {
   }
 } else {
   fail(
-    'found the "Skip to plot settings" link as the third Tab stop',
+    'found the "Skip to plot settings" link as the fourth Tab stop',
     `focus was on "${skipSettingsName}"`,
   );
 }
@@ -256,6 +311,60 @@ if (!/^drag .+ onto the plot/i.test(cardName ?? '')) {
   // otherwise change what "from the search field" means.
   await page.keyboard.press('Enter');
   await page.keyboard.press('Tab');
+}
+
+log('\n=== Step 2c: undo and redo the placement (UI redesign Phase 5) ===');
+// A new interaction, so ADR 0026's standing rule applies: it must have a
+// keyboard path, and the path is the two real header buttons rather than the
+// Ctrl+Z accelerator (a chord is invisible, undiscoverable, and unavailable to
+// anyone driving the app by switch or voice — see
+// `src/designs/useUndoRedoShortcuts.ts`).
+//
+// The buttons name what they will do, which is not decoration either: it is the
+// affordance that replaced the "Clear all" confirmation dialog this phase
+// retired, so "Undo planting Onion" being announced is the feature.
+const tabsBackToUndo = await shiftTabUntil(/^undo /i, 20);
+if (tabsBackToUndo === null) {
+  fail('reached the header’s Undo button by Shift+Tab from the palette', 'gave up after 20 tabs');
+} else {
+  const undoName = await focusedAccessibleName();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(200);
+  const gone = await page
+    .getByText(/nothing placed yet/i)
+    .isVisible()
+    .catch(() => false);
+  if (gone && /onion/i.test(undoName ?? '')) {
+    ok(
+      `reached Undo in ${tabsBackToUndo} Shift+Tabs from the palette and undid the placement — announced as "${undoName}", not a bare "Undo"`,
+    );
+  } else {
+    fail('undid the placement from the header', `button was "${undoName}", plot empty=${gone}`);
+  }
+
+  // Redo is the very next stop, and putting the crop back is what leaves the
+  // rest of the walk running against the state it had — steps 3 onwards nudge
+  // and select that placement.
+  await page.keyboard.press('Tab');
+  const redoName = await focusedAccessibleName();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(200);
+  const back = await page
+    .getByText(/^Selected:/)
+    .isVisible()
+    .catch(() => false);
+  if (back && /^redo /i.test(redoName ?? '')) {
+    ok(`redid it from the adjacent button ("${redoName}")`);
+  } else {
+    fail('redid the placement', `button was "${redoName}", selection restored=${back}`);
+  }
+
+  // Back onto the "Add to plot" button, so step 3's count below is measured
+  // from where it always has been — the same reason step 2b steps back.
+  const returned = await tabUntil(/add .* to the plot/i, 30);
+  if (returned === null) {
+    fail('returned focus to the palette after using the header', 'gave up after 30 tabs');
+  }
 }
 
 log('\n=== Step 3: nudge it with arrow keys (keyboard only) ===');

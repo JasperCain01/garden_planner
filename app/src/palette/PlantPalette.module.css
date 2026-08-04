@@ -273,15 +273,15 @@
 /*
  * The drag surface: transparent, because the card around it is `.row`.
  *
- * **A known limit of dragging out of a scrollport.** `.list` scrolls, which
- * makes it a clipping box on *both* axes (CSS Overflow 3: a `visible` or
- * `clip` value beside a scrolling one computes to `auto`/`hidden`), so the
- * card below — which follows the pointer via an inline transform, in place —
- * is clipped the moment it leaves the sidebar. The canvas still lights up as a
- * drop target throughout (`canvas/PlotCanvas.module.css`), so the drag is
- * never unguided. The real fix is a dnd-kit `DragOverlay` — a ghost rendered
- * outside the clipping context — which is exactly what Phase 5's "drag ghost
- * slightly enlarged with shadow" is.
+ * **The clipping this rule used to warn about is fixed** (UI redesign Phase 5).
+ * `.list` scrolls, which makes it a clipping box on *both* axes (CSS Overflow
+ * 3: a `visible` or `clip` value beside a scrolling one computes to
+ * `auto`/`hidden`), so a card that followed the pointer via an inline transform
+ * *in place* was cut off the moment the drag left the sidebar. What follows the
+ * pointer now is a dnd-kit `<DragOverlay>` ghost rendered outside that box
+ * entirely (`.ghost` below, `plot/PlotDefinitionPage.tsx`), so this element
+ * stays where it is and only dims. Three ADRs deferred that fix to this phase;
+ * ADR 0034 §7 records it landing.
  */
 .entry {
   display: flex;
@@ -294,13 +294,38 @@
   touch-action: none;
 }
 
-/* While dragging, the card follows the pointer via an inline transform (the
- * one style that has to stay inline — it changes every pointer move); this
- * fades the original so the drag reads as a lift. */
+/* While dragging, this card stays in the list and the ghost does the moving —
+ * so the original fades to read as the space the crop has been lifted out of.
+ * No shadow here any more: the lift belongs to the thing that is lifted. */
 .entry[data-dragging='true'] {
   opacity: 0.4;
   cursor: grabbing;
+}
+
+/*
+ * The drag ghost (UI redesign Phase 5) — the review's "slightly enlarged with
+ * shadow".
+ *
+ * **4% and not 15%.** dnd-kit positions the overlay on the dragged element's
+ * own measured rect, so the scale is about the *centre*: at 1.04 a ~290px card
+ * grows about 12px, which reads as a lift without moving the card's edges far
+ * enough from the pointer to make aiming worse. The transform origin is the
+ * centre for the same reason.
+ *
+ * Not transitioned: this element appears mid-gesture already at its final size,
+ * so there is nothing to animate — and `global.css`'s reduced-motion block
+ * switches transitions off anyway, which a scale that only ever applies once
+ * has no need of.
+ */
+.ghost {
+  transform: scale(1.04);
+  border-color: var(--green-500);
   box-shadow: var(--shadow-overlay);
+  cursor: grabbing;
+  /* The list's own width, so the ghost is the card and not a card-shaped thing:
+   * `<DragOverlay>` sizes itself from the dragged element's rect, and the row
+   * inside it should fill that. */
+  width: 100%;
 }
 
 /*

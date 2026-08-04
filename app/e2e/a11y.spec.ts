@@ -53,6 +53,11 @@ test('the plot-definition page has no axe violations once a plant is placed and 
   // Previous-next-placement state (`PlotCanvasSection.tsx`) and whatever the
   // warnings panel shows for that crop, without needing the tall-viewport
   // dance `e2e/drag.ts` documents for a real pointer drag.
+  //
+  // Since UI redesign Phase 5 it also covers the header in its *live* state:
+  // placing a crop is what turns Undo from a disabled button into one whose
+  // accessible name is "Undo planting …". A label that is composed per state is
+  // exactly the kind of thing that regresses to an unnamed button quietly.
   await page
     .getByRole('button', { name: /add .+ to the plot, without dragging/i })
     .first()
@@ -78,20 +83,29 @@ test('the canvas has no axe violations in edit-shape mode', async ({ page }) => 
   expect(results.violations).toEqual([]);
 });
 
-test('the clear-all confirmation has no axe violations while open', async ({ page }) => {
-  // Also new in Phase 2, and the app's second use of `ui/ModalDialog.tsx`.
-  // Scanned in the state a user actually meets it in, for the same reason the
-  // add-crop dialog is below: a dialog that lost its accessible name, or whose
-  // heading restarted the document outline, would pass every other check here.
+test('the designs switcher has no axe violations, including mid-confirmation', async ({ page }) => {
+  // This scan replaces UI redesign Phase 2's clear-all confirmation, which
+  // Phase 5 retired: clearing the plot is undoable now, so a dialog asking
+  // whether you meant it buys nothing (ADR 0034 §5). What took its place is
+  // this — the app's third `ui/ModalDialog.tsx`, and the one with the most
+  // inside it: a list whose rows carry three buttons each, an inline
+  // confirmation that *replaces* those buttons in place, and a text field that
+  // renames the open design.
+  //
+  // The in-place swap is the part worth scanning. Focus is on a button that
+  // ceases to exist the moment it is pressed, and the row's remaining controls
+  // change meaning around it.
   await page.goto('/');
-  await page
-    .getByRole('button', { name: /add .+ to the plot, without dragging/i })
-    .first()
-    .click();
-  await page.getByRole('button', { name: /^clear all$/i }).click();
-  await expect(page.getByRole('button', { name: /clear all plants/i })).toBeVisible();
+  await page.getByRole('button', { name: /designs:/i }).click();
+  await expect(page.getByRole('heading', { name: /your designs/i })).toBeVisible();
 
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  let results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+
+  await page.getByRole('button', { name: /^delete my garden$/i }).click();
+  await expect(page.getByText(/delete for good/i)).toBeVisible();
+
+  results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   expect(results.violations).toEqual([]);
 });
 

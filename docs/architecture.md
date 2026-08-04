@@ -1037,6 +1037,104 @@ unchanged.
 ghost and the micro-polish sweep are Phase 5's whole brief, and a dragged palette
 card is still clipped at the sidebar's edge for want of a dnd-kit `DragOverlay`.
 
+## UI redesign Phase 5 — play, persistence, delight
+
+The review's §2.7 lists what makes the app hard to play with: no undo/redo, and
+"no localStorage persistence of the arrangement (refresh loses the design)".
+This phase fixes both, adds a named-designs switcher and a starter bed, and
+closes out the micro-polish list. Reasoning in ADR
+[0034](./adr/0034-designs-persistence-and-one-history-over-two-stores.md).
+
+**It had no acceptance criterion, so the first thing it owed was one.** Phases
+0–4 each carry a testable line in the review; Phase 5 is five bullets and a
+polish sweep. The criterion stated before anything was built: _at 1440×900, a
+design built in the browser survives a full round trip — place → undo → redo →
+**reload** → the same design — with every restored value passing the engine's own
+validators rather than a cast._ The number it exists to change, in the way Phase
+4's was 590px of overflow → 0: **placements surviving a reload, 0 → all of
+them.** `e2e/persistence.spec.ts` holds both.
+
+**A design is the plot, the conditions and the planting — and stored by
+reference.** `state/design.ts` defines it as `plot-store`'s region and conditions
+plus `placements-store`'s placements, as a derived view rather than a fifth
+store. `canvas-view-store` is deliberately not in it (scrolling the plot is not
+an edit), and a stored placement is `{ id, plantId, x, y }` — **104 bytes**
+against the **3,223** a serialised potato record costs, so a twenty-placement
+design is 2,050 bytes rather than 73,610 and a ~5 MiB quota holds ~2,557 designs
+rather than ~71. The in-memory store still holds whole `Plant`s, for the reasons
+it always did; `state/design-codec.ts` owns the translation.
+
+**A user crop travels with the design; a deleted shipped crop is dropped by
+name.** ADR 0025 removed 24 crops from the dataset on purpose and the dataset is
+a build artifact, so a `plantId` can dangle — and a `user-` one dangles the
+moment the tab closes, because those crops are session-scoped by explicit design
+in three places. A design therefore carries the `UserPlantInput`s its placements
+reference, restored through `createUserPlant` — the same trust boundary the
+add-crop form uses — which leaves `user-plants-store` session-scoped and writing
+nothing. A shipped crop that is gone has its placement dropped and named in a
+restore notice; a tombstone would be a marker the canvas cannot draw honestly,
+since a marker's size _is_ the crop's footprint.
+
+**One undo history over the two stores a design spans.**
+`state/design-history.ts` holds a stack of whole designs, noticed by subscription
+rather than by call site, so no store action has to remember to record. Per-store
+history is the option that cannot work: a real edit loop crosses both stores, so
+per-store stacks give a Ctrl+Z whose meaning depends on which store was touched
+last. Change detection is three identity comparisons — exact, and it ignores
+`selectPlacement`, which is not an edit. A gesture is one step: consecutive
+changes merge only within 600ms **and** at the same structure **and** when the
+previous step was itself a movement, which is what keeps "place a crop, then
+nudge it" as two steps.
+
+**"Clear all" stopped asking, and Delete still does.** The dialog's own reason
+was that clearing "throws away every placement and there is no undo until Phase
+5"; the rule is reversibility rather than destructiveness, so clearing is now one
+Ctrl+Z away and deleting a saved design — which the per-design history cannot
+reach — confirms inline in the switcher. What replaced the dialog is a better
+affordance: the header's Undo button is named for what it will undo ("Undo
+clearing the plot"), derived from a diff of the two designs.
+
+**Restore is a trust boundary, and an offline one.** `main.tsx` calls
+`restoreDesigns()` before the first render, so a saved garden is the first paint
+rather than a replacement for it, and everything it needs is local — no network,
+which matters because the service worker means a reload frequently has none.
+Nothing is cast: `safeValidatePlotRegion`, `PlotConditionsInputSchema`,
+`createUserPlant`, and resolution against the live plant list. A design that
+fails a gate is skipped and reported, never repaired and never fatal. There is no
+"Save" button, because the open design autosaves (debounced 200ms, flushed on
+`pagehide`/`visibilitychange`) and a save command only earns its place when
+unsaved work can exist.
+
+**The header stopped being one tab stop, and costs what it earns.** Undo, redo
+and one switcher button — not the review's four controls, because the header is
+the app's first tab stop and sits before the skip links. Measured: **one** extra
+stop at rest, **two** with something to undo, **three** with a redo available,
+because a `disabled` button is not in the tab order. The chrome renders itself
+away on `NotFound`, which shares the shell.
+
+**The sweep was audited rather than redone.** Transitions, reduced motion and
+focus rings were already done in Phases 0–2; what was outstanding was the **drag
+ghost** (a dnd-kit `<DragOverlay>`, deferred here by three ADRs — the crop list
+scrolls, so a card following the pointer in place was clipped at the sidebar's
+edge) and the **favicon** (`index.html` declared none at all; it is now the
+manifest's own `pwa-icon.svg`). The exit fade ADR 0031 also deferred here is
+recorded as **not done**, with the premise re-derived rather than repeated: the
+history is a stack of design snapshots, not a per-placement lifecycle, so undo
+was never the thing that unblocked it — and an undo can now put a placement back
+while its ghost is still fading.
+
+**Measured, not asserted.** `e2e/persistence.spec.ts` holds the round trip, the
+storage cost, the retired confirmation, Ctrl+Z standing down inside a text field,
+the starter bed, the designs switcher, the un-clipped ghost and the header's
+tab-stop count. `npm test` 244 → **304**, `npm run e2e` 27 → **35**, axe **0
+violations across eight states** (the clear-all confirmation's scan replaced by
+the switcher's), and the keyboard walkthrough gained step 2c. Two traps this
+phase had to disarm rather than discover late, both consequences of a reload
+meaning something new: `canvas-scale.spec.ts` reloads inside one test and would
+have measured through a plot that still had crops on it (`e2e/storage.ts`), and
+`keyboard-walkthrough.mjs` reloads three times for "a clean run" and would have
+gone on counting tab stops without failing.
+
 ## Where to look next
 
 | Topic                                                                 | File                                                                                                   |
@@ -1079,6 +1177,15 @@ card is still clipped at the sidebar's edge for want of a dnd-kit `DragOverlay`.
 | Scrolling a warned-about placement into view                          | `app/src/canvas/useRevealPlacement.ts`                                                                 |
 | Why the settings column has a pinned dock                             | [`adr/0033`](./adr/0033-warnings-dock-shape-tiles-and-segmented-conditions.md)                         |
 | The settings-column acceptance criteria, as a test                    | `app/e2e/plot-settings.spec.ts`                                                                        |
+| What a design is, and how it is read from / written to the stores     | `app/src/state/design.ts`                                                                              |
+| The stored format, its validators, and the missing-crop rule          | `app/src/state/design-codec.ts`                                                                        |
+| Undo/redo: one history over two stores, and what it won't touch       | `app/src/state/design-history.ts`                                                                      |
+| The designs library, autosave, and the restore that runs before paint | `app/src/state/designs-store.ts`, `app/src/main.tsx`                                                   |
+| The header's undo/redo buttons and the designs switcher               | `app/src/designs/`                                                                                     |
+| The starter bed, and why it is a toolbar button and not a modal       | `app/src/designs/example-bed.ts`                                                                       |
+| Why designs persist, and why one history spans two stores             | [`adr/0034`](./adr/0034-designs-persistence-and-one-history-over-two-stores.md)                        |
+| The persistence acceptance criteria (the round trip), as a test       | `app/e2e/persistence.spec.ts`                                                                          |
+| Keeping a spec's second page load from restoring its own earlier work | `app/e2e/storage.ts`                                                                                   |
 | The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)         | `app/src/canvas/`                                                                                      |
 | The placements store (what's placed on the canvas)                    | `app/src/state/placements-store.ts`                                                                    |
 | The drag-and-drop E2E journey                                         | `app/e2e/plot-canvas.spec.ts`                                                                          |

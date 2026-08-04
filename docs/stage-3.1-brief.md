@@ -93,6 +93,14 @@ never a rewrite of the shipped artifact, never persisted across a reload
 (there is no persistence layer, by design — a user crop lives for the tab's
 lifetime and no longer).
 
+> **Addendum (UI redesign Phase 5, 2026-08-04).** The app does persist now —
+> designs go to `localStorage` — and this paragraph is still accurate about the
+> thing it is describing. The **overlay** writes nothing and has no rehydration
+> step; what crosses a reload is a _design_, carrying the user crops its own
+> placements reference so it can be opened at all. See ADR
+> [0034](./adr/0034-designs-persistence-and-one-history-over-two-stores.md) §2,
+> which weighs that against persisting the store outright.
+
 The engine is **deliberately indifferent to where a plant came from** — every
 function in `@garden-planner/engine` takes a `Plant` and does not care whether
 it's shipped or user-defined (`isUserPlant(plant)` exists in

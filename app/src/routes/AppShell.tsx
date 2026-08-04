@@ -26,9 +26,24 @@
  * gives three cramped scroll areas instead of one readable page. The media
  * query in `AppShell.module.css` returns the shell to ordinary document flow,
  * which is what the stacked layout the page falls back to at that width wants.
+ *
+ * **The header holds more than a wordmark now (UI redesign Phase 5).**
+ * `designs/DesignChrome.tsx` adds undo, redo and the designs switcher — the
+ * first controls this band has ever carried, and therefore the first change to
+ * what the app's *first* tab stops are. Two things about that are decisions
+ * rather than side effects, both recorded in ADR 0034 §6: the switcher is one
+ * button opening a dialog rather than four controls in the band, because every
+ * control here is a stop before the skip links; and the band still has to fit
+ * on one row at 390px, because a second row is height taken out of the canvas
+ * that `e2e/workspace-layout.spec.ts` measures.
+ *
+ * The chrome renders itself away on `NotFound`, which shares this shell — see
+ * its own doc for why undo/redo on a page with no design open is worse than no
+ * buttons at all.
  */
 
 import { Link, Outlet } from 'react-router-dom';
+import { DesignChrome } from '../designs/DesignChrome.tsx';
 import styles from './AppShell.module.css';
 
 export function AppShell() {
@@ -38,6 +53,7 @@ export function AppShell() {
         <h1 className={styles.wordmark}>
           <Link to="/">Garden Planner 🌱</Link>
         </h1>
+        <DesignChrome />
       </header>
       <main className={styles.main}>
         <Outlet />
