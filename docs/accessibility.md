@@ -894,6 +894,168 @@ own visible content behind `aria-hidden` in favour of a composed label, which is
 correct by the spec and worth hearing. It remains in `WORKPLAN.md` §5.2's
 backlog.
 
+## 10. Re-verified after the UI redesign's persistence phase (2026-08-04)
+
+UI redesign Phase 5 (ADR
+[0034](./adr/0034-designs-persistence-and-one-history-over-two-stores.md)) is the
+first phase to **add chrome rather than reshape it**: the header carried one
+control for the app's whole life and now carries three, and they are the app's
+first tab stops. It also added a third modal dialog, retired a second one, and
+changed what a page reload means.
+
+### The tab-stop budget: the header, measured either side
+
+**1 before, 1–3 after**, depending on what there is to undo — and the range is
+the finding rather than a hedge. A `disabled` button is not in the tab order, so
+the cost appears only when the reach does:
+
+| state                            | header tab stops | what they are            |
+| -------------------------------- | ---------------- | ------------------------ |
+| before this phase                | 1                | title link               |
+| a fresh load                     | 2                | title link, "Designs: …" |
+| after one edit                   | 3                | + Undo                   |
+| after an undo, with a redo ready | 4                | + Redo                   |
+
+Counted by walking Tab in Chromium from the top of the document, not by counting
+selectors, and asserted in `e2e/persistence.spec.ts` so it stays true. The two
+skip links still follow immediately.
+
+**Why the skip links were not moved above the header** to keep the bypass first.
+They target `#plot-canvas` and `#plot-settings`, which exist only on the
+workspace route, and `NotFound` renders through the same shell — links pointing
+at absent targets on that page would be a worse fault than one to three stops.
+The design chrome renders itself away off the workspace route instead, so
+`NotFound`'s header is exactly what it always was.
+
+**Why the switcher is one button and not four.** save/load/duplicate/delete in
+the band would have been four stops before the skip links on every load, for
+every keyboard user, forever. One button opening a dialog is one — and the dialog
+has room for what each design is, which a chip in a 56px band does not.
+
+### The friction figures moved by exactly the stop that was added
+
+| leg                                | §7–§9 | now   |
+| ---------------------------------- | ----- | ----- |
+| top of page → palette search field | 4     | **5** |
+| search field → plot canvas         | 20    | 20    |
+| canvas → rectangle width field     | 4     | 4     |
+
+The walkthrough gained **step 2c**, which walks undo and redo from the header
+with no pointer — a new interaction, so ADR 0026's standing rule applies. The
+buttons are the keyboard path; Ctrl+Z is an accelerator over them, because a
+chord is invisible, undiscoverable and unavailable to anyone driving the app by
+switch or voice. It also stands down entirely inside a text field, where Ctrl+Z
+means the browser's own text undo and a user would be astonished to find it
+removing a plant instead.
+
+```
+=== Step 2c: undo and redo the placement (UI redesign Phase 5) ===
+  OK   reached Undo in 10 Shift+Tabs from the palette and undid the placement — announced as "Undo planting Onion", not a bare "Undo"
+  OK   redid it from the adjacent button ("Redo planting Onion")
+```
+
+### A button that names what it will undo, and why that is the feature
+
+`aria-label` is "Undo planting Onion", not "Undo" — composed from a diff of the
+two designs (`state/design.ts`'s `describeEdit`). This is not decoration: it is
+what replaced the "Clear all" confirmation dialog. That dialog existed because
+clearing could not be undone; with undo it is a click that buys nothing, and the
+thing a user who has just emptied their plot actually needs is to be told the way
+back exists and what it will bring. A dialog asked a question; a named button
+answers one.
+
+The rule applied is **reversibility, not destructiveness** — deleting a saved
+design still confirms, because the history is per-design and cannot reach it.
+
+### The keyboard walkthrough caught something reasoning had not
+
+Undo and redo restore the design; a **selection** is not part of a design and is
+deliberately not recorded. But the canvas's arrow keys act on the selected
+placement, so a redo that put a plant back without selecting it left a keyboard
+user pressing arrows at nothing — visible in the walk as a "Selected:" readout
+that never came back, and invisible to every unit test. A history step now
+carries the selection it happened in, which is a different claim from recording
+selections: `selectPlacement` still costs no undo step.
+
+### Contrast: three new pairings, all reuse or near it
+
+Computed the same way §2, §8 and §9 computed everything else.
+
+| Pairing                                                     | Ratio         | Bar                    |
+| ----------------------------------------------------------- | ------------- | ---------------------- |
+| `--text-strong` on `--green-100` (the open design's row)    | 12.55:1 ✅    | 4.5:1                  |
+| `--text-muted` on `--green-100` (that row's "5 plants · …") | **4.72:1** ✅ | 4.5:1                  |
+| `--text` on `--surface-sunken` (the restore notice)         | 9.70:1 ✅     | 4.5:1                  |
+| `--green-700` on `--surface-sunken` (its "Dismiss")         | **5.18:1** ✅ | 4.5:1                  |
+| `--green-500` drag-ghost border on `--surface-card`         | 3.83:1 ✅     | 3:1 (1.4.11, non-text) |
+
+The first is §9's figure unchanged, and that is the point: the switcher marks its
+open design with the same `--green-100` the selected shape tile and the selected
+segment use, so it is a reuse rather than a new sum. The two genuinely new text
+pairings are the muted meta line on that tint and the notice's inline "Dismiss",
+and both clear 4.5:1 with room.
+
+`--severity-warning` appears in the restore notice only as a 3px left rule (4.07:1
+on `--surface-sunken`, above the 3:1 non-text bar), never as a fill and never as
+the only signal — the sentence beside it carries the substance. That keeps §2's
+standing rule intact: every surface showing a severity is a white card, because
+`--severity-severe` on the page cream is 4.35:1.
+
+### Structure: what the new surfaces announce
+
+- **The designs switcher** is `ui/ModalDialog.tsx` again — a real `<dialog>`, so
+  the focus trap, Esc and focus-return are the browser's (ADR 0030). Its rows are
+  a `<ul>`; each design's buttons carry the design's name in their accessible
+  names ("Open My garden", "Duplicate My garden"), because "Open" three times over
+  is a list a screen-reader user cannot navigate.
+- **"— open" is a word, not a dot.** The open design's row is tinted, and a tint
+  alone would be meaning carried by colour (WCAG 1.4.1) — the same reason the
+  palette's category chips carry their names.
+- **The switcher button's visible text is its whole accessible name.** WCAG 2.5.3
+  wants the visible label contained in the name, and "Untitled design 2" is only
+  distinguishable from "Untitled design" if the name is spoken in full — so the
+  design name **truncates with an ellipsis** at narrow widths rather than being
+  hidden, since `display: none` would take it out of the accessibility tree along
+  with the pixels.
+- **The example-bed button is the one place a short visible label sits inside a
+  longer name**: "Example bed", named "Start with an example bed". That is a
+  measurement, not a preference — spelled out, it wrapped the canvas toolbar to a
+  second row and cost 35px of the canvas. 2.5.3 holds either way.
+- **The drag ghost is `aria-hidden`.** dnd-kit announces drags through its own
+  live region and the card the user picked up keeps its name and its focus; a
+  second copy of "Drag Onion onto the plot" in the tree mid-drag would be one crop
+  announced twice.
+
+### axe: 0 violations, still in eight states
+
+The clear-all confirmation's scan is gone with the dialog, and the designs
+switcher took its place — scanned **twice over**, before and during its inline
+delete confirmation, because that confirmation replaces the focused button in
+place and the row's remaining controls change meaning around it. The
+plant-placed scan now also covers the header in its live state, since placing a
+crop is what turns Undo from a disabled button into a named one.
+
+```
+  ✓  1 the plot-definition page has no axe violations in its initial state
+  ✓  2 the plot-definition page has no axe violations once a plant is placed and selected
+  ✓  3 the canvas has no axe violations in edit-shape mode
+  ✓  4 the designs switcher has no axe violations, including mid-confirmation
+  ✓  5 the palette has no axe violations with a card’s reasoning expanded
+  ✓  6 the warnings dock has no axe violations with a warning in it
+  ✓  7 the growing-conditions form has no axe violations with the soil disclosure open
+  ✓  8 the add-crop dialog has no axe violations while open
+  8 passed
+```
+
+### Still not done, still recorded
+
+**Real screen-reader testing (NVDA/VoiceOver/JAWS) has still not happened**, and
+this phase adds two questions to that list. Whether "Undo planting Onion" reads
+well as a button name, or whether the repetition across a row of designs
+("Open My garden", "Duplicate My garden", "Delete My garden") is helpful or
+tiring, are both things only a real session answers. It remains in `WORKPLAN.md`
+§5.2's backlog.
+
 ## Related
 
 - ADR [0026](./adr/0026-keyboard-placement-and-severity-glyphs.md) — the
@@ -909,6 +1071,14 @@ backlog.
   palette phase §8 re-verified this page against, including the tab-stop budget
   that decided the shape of the disclosure and why the review's `opacity: 0.6`
   was declined.
+- ADR [0033](./adr/0033-warnings-dock-shape-tiles-and-segmented-conditions.md) —
+  the settings-column phase §9 re-verified this page against, including where the
+  severity word went and why a filled badge was declined on legibility rather
+  than on contrast.
+- ADR [0034](./adr/0034-designs-persistence-and-one-history-over-two-stores.md) —
+  the persistence phase §10 re-verified this page against, including why the
+  switcher is one header button rather than four controls, and why the skip links
+  were not moved above the header to compensate.
 - [`docs/stage-6.2-brief.md`](./stage-6.2-brief.md) — the brief this stage
   worked from.
 - [`WORKPLAN.md`](../WORKPLAN.md) §5.2 — the post-v1 backlog, where the two

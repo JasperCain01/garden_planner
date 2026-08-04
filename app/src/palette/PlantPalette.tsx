@@ -93,14 +93,15 @@
 
 import { useMemo, useState, type KeyboardEvent } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import {
   BAND_LABELS,
   EdibleCategorySchema,
   rankPlants,
   resolvePlotConditions,
   type EdibleCategory,
+  type Plant,
   type RankedPlant,
+  type SuitabilityBand,
 } from '@garden-planner/engine';
 import { resolveIcon } from '../icons/index.ts';
 import type { PaletteDragData } from '../canvas/drop.ts';
@@ -320,10 +321,16 @@ export function PlantPalette() {
  * budget):
  *
  * 1. **Pointer/keyboard drag** — `useDraggable` carries the row's `Plant` as
- *    drag data and follows the pointer via a CSS transform while dragging,
- *    so `canvas/drop.ts`'s `resolveDrop` can read the dragged card's own
- *    rect as the drop point (see that module's doc for why). Applied to the
- *    inner `<div>`, not the `<li>` — see below.
+ *    drag data, and since UI redesign Phase 5 the thing that follows the
+ *    pointer is a `<DragOverlay>` ghost ({@link PaletteDragGhost}) rather than
+ *    this card: the card stays put and dims. That is what un-clips the drag at
+ *    the sidebar's edge, and it is why the inline `transform` this element used
+ *    to carry is gone. `canvas/drop.ts`'s `resolveDrop` is unaffected — it
+ *    prefers the real pointer for a pointer drag, and its keyboard-drag
+ *    fallback reads dnd-kit's own `active.rect.current.translated`, which
+ *    dnd-kit computes from the measured rect and the drag transform whether or
+ *    not anything renders that transform. Applied to the inner `<div>`, not the
+ *    `<li>` — see below.
  * 2. **"Add to plot" (Workplan Stage 6.2, ADR 0026)** — the `＋` button places
  *    `plant` directly on the plot and selects it, no drag at all. This is the
  *    primary non-pointer path (see the module doc's "Keyboard alternative").
@@ -380,6 +387,86 @@ export function PlantPalette() {
  * 144 rows to re-render on every outline edit just to keep an unused prop
  * current.
  */
+/**
+ * What a compact card looks like: the icon on its category disc, the crop's
+ * name, its suitability band and its category.
+ *
+ * Split out in UI redesign Phase 5 so the **drag ghost** can be the same card
+ * rather than a lookalike ({@link PaletteDragGhost}). It carries no
+ * interaction and no accessible name of its own — the element around it does,
+ * and in the ghost's case there is deliberately nothing to announce at all.
+ */
+function PaletteCardFace({
+  plant,
+  band,
+}: {
+  readonly plant: Plant;
+  readonly band: SuitabilityBand;
+}) {
+  const icon = resolveIcon(plant);
+  return (
+    <>
+      <span className={styles.iconWrap} data-category={plant.category}>
+        <img src={icon.url} alt="" className={styles.icon} aria-hidden="true" />
+      </span>
+      <span className={styles.body}>
+        <span className={styles.name}>{plant.commonName}</span>
+        <span className={styles.meta}>
+          <span className={styles.band} data-band={band}>
+            {BAND_LABELS[band]}
+          </span>
+          {/*
+           * The category, in words, next to the chip whose colour also says
+           * it. The icon disc behind this card is tinted by category (and the
+           * filter chips above map those tints to names), so without this word
+           * the tint would be meaning carried by colour alone — WCAG 1.4.1,
+           * the same reason the band is a labelled chip rather than a coloured
+           * dot.
+           */}
+          <span className={styles.category}>{plant.category}</span>
+        </span>
+      </span>
+    </>
+  );
+}
+
+/**
+ * The card that follows the pointer during a drag (UI redesign Phase 5) —
+ * rendered by `plot/PlotDefinitionPage.tsx` inside dnd-kit's `<DragOverlay>`,
+ * which is why it lives here but is not used here.
+ *
+ * **This is the fix three ADRs deferred to this phase.** The crop list scrolls,
+ * which makes it a clipping box on both axes, so a card that followed the
+ * pointer *in place* was cut off at the sidebar's edge the moment the drag
+ * started towards the canvas (ADR 0030 §consequences, and the note at the
+ * clipping rule in this component's stylesheet). An overlay is rendered outside
+ * that box entirely, so the ghost crosses the workspace intact — and it is the
+ * review's "drag ghost slightly enlarged with shadow" at the same time.
+ *
+ * **It is `aria-hidden`, and that is not an oversight.** dnd-kit announces
+ * drags through its own live region, the card the user picked up keeps its
+ * accessible name and its focus, and a second copy of "Drag Onion onto the
+ * plot" appearing in the accessibility tree mid-drag would be one crop
+ * announced twice.
+ */
+export function PaletteDragGhost({
+  plant,
+  band,
+}: {
+  readonly plant: Plant;
+  readonly band: SuitabilityBand;
+}) {
+  return (
+    <div className={`${styles.row} ${styles.ghost}`} data-band={band} aria-hidden="true">
+      <div className={styles.head}>
+        <div className={styles.entry}>
+          <PaletteCardFace plant={plant} band={band} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PaletteEntry({
   entry,
   expanded,
@@ -390,12 +477,12 @@ function PaletteEntry({
   readonly onToggle: () => void;
 }) {
   const { plant, suitability } = entry;
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: plant.id,
-    data: { plant } satisfies PaletteDragData,
+    // The band travels with the plant so the overlay can draw this exact card
+    // without reaching back into the ranked list — see `canvas/drop.ts`.
+    data: { plant, band: suitability.band } satisfies PaletteDragData,
   });
-
-  const icon = resolveIcon(plant);
 
   /**
    * Place this crop somewhere it can actually be seen (UI redesign Phase 2).
@@ -445,36 +532,8 @@ function PaletteEntry({
           aria-expanded={expanded}
           className={styles.entry}
           data-dragging={isDragging}
-          // The one style that has to stay inline: it changes on every pointer
-          // move while dragging, which is not something a stylesheet can carry.
-          // `zIndex`/`position` come with it so the dragged card lifts above its
-          // neighbours for the duration.
-          style={{
-            transform: CSS.Translate.toString(transform),
-            zIndex: isDragging ? 1 : undefined,
-            position: isDragging ? 'relative' : undefined,
-          }}
         >
-          <span className={styles.iconWrap} data-category={plant.category}>
-            <img src={icon.url} alt="" className={styles.icon} aria-hidden="true" />
-          </span>
-          <span className={styles.body}>
-            <span className={styles.name}>{plant.commonName}</span>
-            <span className={styles.meta}>
-              <span className={styles.band} data-band={suitability.band}>
-                {BAND_LABELS[suitability.band]}
-              </span>
-              {/*
-               * The category, in words, next to the chip whose colour also
-               * says it. The icon disc behind this card is tinted by category
-               * (and the filter chips above map those tints to names), so
-               * without this word the tint would be meaning carried by colour
-               * alone — WCAG 1.4.1, the same reason the band is a labelled
-               * chip rather than a coloured dot.
-               */}
-              <span className={styles.category}>{plant.category}</span>
-            </span>
-          </span>
+          <PaletteCardFace plant={plant} band={suitability.band} />
         </div>
         <button
           type="button"

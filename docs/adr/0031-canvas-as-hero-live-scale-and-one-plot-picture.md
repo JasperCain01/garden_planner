@@ -1,6 +1,6 @@
 # 0031 — The canvas as hero: a live scale, footprint-true markers, and one picture of the plot
 
-- **Status:** Accepted
+- **Status:** Accepted, with a dated addendum at the foot of this file
 - **Date:** 2026-08-03
 - **Phase:** UI redesign Phase 2 — canvas as hero
   ([`docs/ui-aesthetic-review.md`](../ui-aesthetic-review.md))
@@ -262,3 +262,29 @@ one notion of "where the plot is" rather than two that can disagree.
   have become over 250cm — past the rule's 75cm threshold, so the spec would
   have gone on passing while testing nothing. Drop points that mean a distance
   now say so in centimetres.
+
+## Addendum, 2026-08-04 — the exit fade is still not done, and the reason changed
+
+The alternatives above defer the delete animation with a specific promise: "That
+is history state, and Phase 5 is building history state (undo/redo) properly."
+UI redesign Phase 5 built the history (ADR
+[0034](./0034-designs-persistence-and-one-history-over-two-stores.md) §3) and the
+fade is **still not done** — so the deferral is answered here rather than left
+pointing at a phase that has been and gone.
+
+**The premise did not survive contact.** The history is a stack of whole design
+snapshots, held so that undo can put one back; it is not a per-placement
+lifecycle, and it does not keep a removed placement "around" in any sense the
+canvas can draw. A fade would still need its own recently-removed list in
+`PlotCanvas`, exactly as it would have before — undo was never the thing that
+unblocked it.
+
+And the history gives that list a **new** way to be wrong: an undo can restore a
+placement while its ghost is still fading, so the same crop would be drawn twice
+for the remainder of the animation, at two opacities, with two hit targets. That
+is a worse defect than the missing polish.
+
+What the drop pop's reasoning above still gets right is the technique: a
+`node.to()` call on an already-constructed Konva node, linear, ~150ms. Whoever
+picks this up should reconcile the ghost list against the store's placements on
+every render rather than only on a timer.

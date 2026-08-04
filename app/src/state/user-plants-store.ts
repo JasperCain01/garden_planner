@@ -17,6 +17,17 @@
  * In-memory and unpersisted **by design** (`docs/stage-3.1-brief.md`): a user
  * crop lives for the tab's lifetime and no longer. Nothing here writes to
  * storage, and there is deliberately no rehydration step.
+ *
+ * **That survived UI redesign Phase 5, which is worth saying explicitly**, since
+ * that phase gave the app persistence and this is the store it most obviously
+ * did *not* give it to. A saved design carries the user crops **its own
+ * placements reference** (`state/design-codec.ts`), as the `UserPlantInput` the
+ * add-crop form produced, and opening that design calls {@link addUserPlant}
+ * with each — the same validating path a form submission takes. So a crop
+ * outlives the tab only for as long as a design that uses it does, and a crop
+ * nothing was ever planted with is still gone when the tab closes. ADR 0034 §2
+ * weighs that against persisting this store outright, which would have been the
+ * obvious answer and would have accumulated crops in a browser forever.
  */
 
 import { create } from 'zustand';

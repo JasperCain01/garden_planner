@@ -53,3 +53,4 @@ old one and mark the old one `Superseded`.
 - [0031 — The canvas as hero: a live scale, footprint-true markers, and one picture of the plot](./0031-canvas-as-hero-live-scale-and-one-plot-picture.md)
 - [0032 — The palette: compact cards, reasoning on demand, and one element with two gestures](./0032-palette-compact-cards-and-details-on-demand.md)
 - [0033 — The settings column: a pinned warnings dock, shape tiles, and segmented conditions](./0033-warnings-dock-shape-tiles-and-segmented-conditions.md)
+- [0034 — What a design is: named designs in storage, and one undo history over two stores](./0034-designs-persistence-and-one-history-over-two-stores.md)

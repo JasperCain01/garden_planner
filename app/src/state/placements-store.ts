@@ -12,6 +12,13 @@
  * regardless, so there is nothing to save by storing an id and re-looking it
  * up through `usePlantList()` on every render.
  *
+ * **That reasoning is about memory, and it stops at the storage boundary** (UI
+ * redesign Phase 5). A serialised `Plant` is up to 4.6 KB — potato is 3,223
+ * bytes, 89% of it `provenance` and `antagonists` — so a *saved* design stores
+ * a `plantId` and resolves it back through the plant list on load.
+ * `state/design-codec.ts` owns that translation and ADR 0034 §1 records why the
+ * two halves differ.
+ *
  * This stage stops at "placed, moved, removed, honestly counted" — whether a
  * placement is *valid* (inside the outline, not overcrowded, not next to an
  * antagonist) is Stage 3.5's job (`evaluatePlot`), not this store's.
@@ -45,12 +52,29 @@ interface PlacementsState {
    * `docs/ui-aesthetic-review.md` §2.7 lists its absence under what makes the
    * app hard to play with: "No undo/redo… no 'clear all'").
    *
-   * Destructive and, for now, unrecoverable — undo is Phase 5's job — which is
-   * why the *button* asks for confirmation before calling this. The store
-   * itself stays a plain action: confirming is a UI decision, and a store that
-   * refused to do what it was told would be a worse place to put it.
+   * Destructive and, as of UI redesign Phase 5, **recoverable**: the design
+   * history (`state/design-history.ts`) holds the placements this drops, and
+   * the header's Undo button names them ("Undo clearing the plot"). That is
+   * what retired the confirmation dialog the button used to open — ADR 0034 §5
+   * records the trade, and `canvas/PlotCanvasSection.tsx` carries the short
+   * version at the button.
+   *
+   * The store itself stays a plain action either way: whether to confirm is a
+   * UI decision, and a store that refused to do what it was told would be a
+   * worse place to put it.
    */
   readonly clearPlacements: () => void;
+  /**
+   * Replace the whole list — how a saved design is restored and how undo/redo
+   * puts one back (`state/design.ts`'s `applyDesign`).
+   *
+   * **Keeps the selection when it survives and drops it when it doesn't.**
+   * Which marker is highlighted is view state, not part of a design (see
+   * `design.ts`), so it is neither recorded nor restored; but silently pointing
+   * `selectedId` at a placement that is no longer there would leave the canvas
+   * with a "Selected: …" readout for a plant that has ceased to exist.
+   */
+  readonly replacePlacements: (placements: readonly PlacedPlant[]) => void;
   /** Select a placement, or pass `null` to deselect (e.g. clicking empty canvas). */
   readonly selectPlacement: (id: string | null) => void;
 }
@@ -84,6 +108,14 @@ export const usePlacementsStore = create<PlacementsState>((set) => ({
   },
 
   clearPlacements: () => set({ placements: [], selectedId: null }),
+
+  replacePlacements: (placements) =>
+    set((state) => ({
+      placements,
+      selectedId: placements.some((placement) => placement.id === state.selectedId)
+        ? state.selectedId
+        : null,
+    })),
 
   selectPlacement: (id) => set({ selectedId: id }),
 }));

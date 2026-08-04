@@ -136,14 +136,9 @@
   font-size: var(--text-sm);
 }
 
-/* The Clear-all confirmation's two buttons, with the destructive one last —
- * the position a user's hand does not land on by reflex. */
-.confirmActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  justify-content: flex-end;
-}
+/* The Clear-all confirmation's buttons lived here until UI redesign Phase 5
+ * retired the dialog: clearing is undoable now, and a confirmation for a
+ * reversible action buys nothing (ADR 0034 §5). */
 
 .selected {
   margin-top: var(--space-3);

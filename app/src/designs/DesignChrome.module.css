@@ -1,0 +1,75 @@
+/*
+ * The header's design controls (UI redesign Phase 5).
+ *
+ * The one hard constraint here is **height**: `routes/AppShell.module.css`
+ * gives the header its natural height and hands the rest of the viewport to the
+ * content row, so a header that grows a second row takes that height out of the
+ * canvas — and `e2e/workspace-layout.spec.ts` measures the canvas region's share
+ * of the viewport at two sizes, while the narrow test at 390×844 is the one
+ * where wrapping is actually likely. So nothing here wraps: the design name
+ * truncates instead.
+ */
+
+.chrome {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  /* Pushed to the right of the wordmark, which is the only other thing in the
+   * band. `margin-left: auto` rather than `justify-content` on the header, so
+   * the header keeps working if anything is ever added between the two. */
+  margin-left: auto;
+  min-width: 0;
+}
+
+.history {
+  display: flex;
+  gap: var(--space-1);
+}
+
+/*
+ * Square, like the canvas toolbar's zoom and selection buttons — the same
+ * `iconButton` shape, kept as its own rule rather than shared because the two
+ * live in different modules and one is 2rem while the other follows the
+ * toolbar's smaller scale.
+ */
+.iconButton {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.designsButton {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/*
+ * The active design's name, truncated rather than hidden.
+ *
+ * `text-overflow: ellipsis` keeps the text in the accessibility tree, which is
+ * the point: the button's accessible name is its own text content, and
+ * `display: none` on this span would quietly turn "Designs: My allotment" into
+ * "Designs:" for a screen reader as well as for the eye.
+ */
+.designName {
+  overflow: hidden;
+  max-width: 10rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 899px) {
+  .chrome {
+    gap: var(--space-2);
+  }
+
+  /* A phone header has room for the wordmark and the controls or for a long
+   * design name, not both. */
+  .designName {
+    max-width: 4.5rem;
+  }
+}

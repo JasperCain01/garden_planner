@@ -652,19 +652,163 @@ This single phase fixes findings 1, 3, and half of 2.
 
 ### Phase 5 — Play, persistence, delight
 
+> **Status: implemented** (2026-08-04). The design shape in
+> `app/src/state/design.ts`, its stored form and validators in
+> `state/design-codec.ts`, undo/redo in `state/design-history.ts`, the library
+> and its autosave in `state/designs-store.ts` (restored from `src/main.tsx`
+> before the first render), the header controls and switcher in `src/designs/`,
+> the starter bed in `designs/example-bed.ts`, and the drag ghost in
+> `palette/PlantPalette.tsx` over a `<DragOverlay>` in
+> `plot/PlotDefinitionPage.tsx`. Decisions and the roads not taken: ADR
+> [0034](./adr/0034-designs-persistence-and-one-history-over-two-stores.md);
+> what changed and why, in `docs/architecture.md`; the tab-stop counts and the
+> contrast working, measured, in `docs/accessibility.md` §10. Everything below is
+> what was asked for; the notes in brackets are where the implementation
+> differs.
+>
+> **This phase had no acceptance criterion, so the first thing it owed was
+> one.** Phases 0–4 each carry a testable line here. Phase 5 is five bullets and
+> a polish sweep, with no number in it — which is not permission to skip the
+> measurement step. The criterion, stated before anything was built and enforced
+> by `e2e/persistence.spec.ts` the way `workspace-layout.spec.ts` and
+> `plot-settings.spec.ts` enforce their phases':
+>
+> > At 1440×900, a design built in the browser survives a **full round trip** —
+> > place → undo → redo → **reload** → the same design — with every restored
+> > value passing the engine's own validators rather than a cast.
+>
+> **The number this phase exists to change: placements surviving a reload,
+> 0 → all of them.** With the outline and the conditions alongside them, and the
+> engine's warnings recomputed from the restored state rather than from a cast.
+>
+> **The bit this phase had to do first, which isn't in the list below.** What
+> "a design" _is_ — because everything in the list either writes that shape or
+> reads it, and two measured facts constrain it. `placements-store.ts`
+> deliberately holds a whole `Plant` per placement (its reasons are good, and
+> they are about memory), and a serialised `Plant` is up to 4,574 bytes — potato
+> is **3,223**, 89% of it `provenance` and `antagonists`. A **stored** placement
+> is `{ id, plantId, x, y }`: **104 bytes**. A twenty-placement design is
+> **2,050 bytes** rather than **73,610**, which is ~2,557 designs in a ~5 MiB
+> origin quota rather than ~71.
+
 - **Undo/redo** for placements + plot shape (Zustand temporal middleware or a simple
-  history stack in the stores); header buttons + Ctrl+Z/Ctrl+Shift+Z.
+  history stack in the stores); header buttons + Ctrl+Z/Ctrl+Shift+Z. _(Done, as
+  **one** history over the two stores a design spans rather than a stack in
+  each — a real edit loop crosses `plot-store` and `placements-store`, so
+  per-store history gives a Ctrl+Z whose meaning depends on which store you
+  touched last, and no way at all to undo "Clear all". That doesn't contradict
+  ADR 0015: its thesis is about which store **owns** a concern, and
+  `design-history.ts` owns none. Edits are noticed by subscription rather than by
+  call site, so no store action has to remember to record; detection is three
+  identity comparisons, which is exact and ignores `selectPlacement`. A gesture
+  is one step — a corner drag writes the region every pointer move — but only
+  within 600ms **and** at unchanged structure **and** when the previous step was
+  itself a movement, which is what keeps "place a crop, then nudge it" as two.
+  Deliberately outside it: the canvas view, the crop library, and design
+  switches. Ctrl+Z is an accelerator over the buttons, never the only path (ADR
+  0026), and it stands down inside a text field.)_
 - **Persistence:** serialise plot + placements + conditions to localStorage (the
   user-crops store may already have persistence patterns to copy); restore on load;
-  "New design" resets.
+  "New design" resets. _(Done — and **the review's premise here is false**, which
+  changed the work. There was no persistence anywhere in `app/src`: what existed
+  was a recorded decision **against** it, in three places, so this phase reverses
+  a design choice rather than extending one and has to answer those three rather
+  than cite them. Two things follow. Restored state is **untrusted input** —
+  `climate/schema.ts` already anticipates "a malformed `lat`/`lng` from, say, a
+  corrupted `localStorage`" — so every value goes through the engine's own gates
+  (`safeValidatePlotRegion`, `PlotConditionsInputSchema`, `createUserPlant`) and a
+  design that fails one is skipped and reported, never repaired and never fatal.
+  And restore is synchronous, before the first render, so it works with the
+  network off and paints the saved garden rather than replacing the default one a
+  frame later. **There is no "Save" button**: the open design autosaves, so a
+  save command would act on a state that cannot exist.)_
 - **Multiple designs:** a simple named-designs switcher in the header (save/load/
   duplicate/delete from localStorage). This is the "play with different garden ideas"
-  feature, and it's cheap once serialisation exists.
+  feature, and it's cheap once serialisation exists. _(Done, as **one** header
+  button opening a dialog rather than four controls in the band. The header is
+  the app's first tab stop and sits before the skip links, so every control put
+  there is a stop each keyboard user pays on every load — and a dialog has room
+  to say which design is open, how many plants are on it and when it was last
+  edited. **What happens when a saved design names a crop that no longer
+  exists** is the question this bullet really turns on, and it gets two answers
+  rather than one: a **user** crop travels inside the design that uses it, as the
+  `UserPlantInput` the add-crop form produced, which leaves `user-plants-store`
+  session-scoped and writing nothing; a **shipped** crop that ADR 0025 deleted
+  has its placement dropped and named in a restore notice, because a marker's
+  size is the crop's footprint and a tombstone would be a shape the canvas cannot
+  draw honestly.)_
 - **Starter template:** first-run offers "Start with an example bed" that loads a small
-  pre-arranged plot — instant demonstration of what the app does.
+  pre-arranged plot — instant demonstration of what the app does. _(Done, as a
+  **toolbar button** and deliberately not a first-run modal: `text=Plot shape` is
+  the whole app's readiness signal in `keyboard-walkthrough.mjs` and two more
+  surfaces reach for the header heading on load, so a dialog over the workspace
+  at first paint would race all of them. It takes exactly the space "Clear all"
+  and the selection arrows occupy once something *is* placed, so the toolbar's
+  busiest state is unchanged — and it comes back whenever the plot is emptied,
+  which a once-only prompt would not. The bed itself is chosen against the engine
+  rather than for looks: five crops that suit the default full-sun plot, spaced so
+  nothing warns, and a companion suggestion in the dock the moment it lands.)_
 - Micro-polish sweep: 120–200ms transitions on hover/expand/collapse, drag ghost
   slightly enlarged with shadow, `prefers-reduced-motion` honoured, favicon + header
   wordmark (the 🌱 can stay — it's charming), styled focus rings everywhere.
+  _(**Audited, not redone.** Already done and left alone: the transitions
+  (`--motion-fast`/`--motion-medium`, Phase 0, spent throughout),
+  `prefers-reduced-motion` (globally in `global.css` **and** in JS for the canvas,
+  since a stylesheet cannot reach inside Konva), the focus rings (Phase 0, moved
+  onto the visible element wherever a control is visually hidden), and the
+  wordmark. Genuinely outstanding, and done: the **drag ghost**, which is the
+  `DragOverlay` three ADRs deferred here, and the **favicon**, which `index.html`
+  declared none of at all.)_
+- **Acceptance** (stated by this phase, since the review didn't): the round trip
+  above, measured in a real browser at 1440×900. _(Met, and measured rather than
+  asserted — `e2e/persistence.spec.ts` builds a design, undoes, redoes, reloads,
+  and compares the stored design either side.)_
+  - _**Placements surviving a reload: 0 → all of them**, at **104 bytes** each
+    rather than the 3,223 an embedded potato record would have cost — the number
+    this phase exists to change. The engine's warnings come back too, recomputed
+    from restored state: the antagonist pair still reads "grow poorly together"
+    after the reload._
+  - _**Tab stops in the header: 1 → 1, 2 or 3**, depending on what there is to
+    undo, and that is better than designed rather than a fudge: a `disabled`
+    button is not in the tab order, so a fresh load costs one extra stop (the
+    switcher), an edit costs two, and only an undo makes it three. The skip links
+    still follow. Measured by walking Tab in Chromium, not by counting
+    selectors._
+  - _**Nothing else moved.** The stage is still 732×539 at 1440×900 (Phase 2's
+    figure, unchanged), the settings column's internal overflow is still **0**
+    (Phase 4's), and the header is still one 56px row at 390px — which the
+    example-bed button briefly broke by wrapping the canvas toolbar, costing 35px
+    of canvas, until its visible label was shortened. That is why it reads
+    "Example bed" with "Start with an example bed" as its accessible name._
+  - _Standing bar: `npm test` **304 passing** (44 files), `npm run e2e` **35
+    passing**, `npm run a11y` **0 violations across eight states** (the clear-all
+    confirmation's scan replaced by the designs switcher's, scanned twice over
+    since its inline delete confirmation replaces the focused button in place),
+    keyboard walkthrough **all steps passing** — including a new step 2c for
+    undo/redo, and with §7–§9's friction figures moving by exactly the one stop
+    the header gained (5 tabs to the palette search field where it was 4; 20 from
+    there to the canvas and 4 from the canvas to the width field, both
+    unchanged)._
+  - _**Two traps disarmed rather than discovered late, both because a reload now
+    means something new.** Playwright gives each *test* a fresh context, not each
+    navigation — and `canvas-scale.spec.ts`'s pixel-differencing helper reloads
+    between the two crops it compares, so its second measurement started from a
+    plot that still had a radish on it. `e2e/storage.ts` is the answer. The same
+    inversion hits `keyboard-walkthrough.mjs`, which reloads three times for "a
+    clean run of the rest of the journey": it would not have failed, it would
+    have gone on counting tab stops through a canvas with crops on it._
+  - _**One deferral is answered "no", with the premise re-derived.** ADR 0031
+    declined the exit fade on delete because "that is history state, and Phase 5
+    is building history state properly". It isn't done, because that premise did
+    not survive contact: the history is a stack of whole design snapshots, not a
+    per-placement lifecycle, so a fade would still need its own recently-removed
+    list in the canvas — and that list now has a new way to be wrong, since an
+    undo can restore a placement while its ghost is still fading and draw the same
+    crop twice._
+  - _On `docs/qa-checklist.md` §4's timeout note: this container ran
+    `canvas-scale.spec.ts`'s two pixel-differencing specs in **21.6s and 21.6s**,
+    so the whole suite passed at the 30s default and `--timeout=90000` was not
+    needed. The note stays, for the machine that measured 33s and 39s._
 
 ### Phase 6 — Nice-to-have (defer freely)
 

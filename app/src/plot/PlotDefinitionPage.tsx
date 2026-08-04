@@ -103,17 +103,21 @@
  * "Growing conditions" by default and saying so here.
  */
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   DndContext,
+  DragOverlay,
   KeyboardCode,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core';
+import type { PaletteDragData } from '../canvas/drop.ts';
 import { usePlotStore } from '../state/plot-store.ts';
-import { PlantPalette } from '../palette/PlantPalette.tsx';
+import { PaletteDragGhost, PlantPalette } from '../palette/PlantPalette.tsx';
 import { PlotCanvasSection } from '../canvas/PlotCanvasSection.tsx';
 import { useCanvasDropHandler } from '../canvas/useCanvasDropHandler.ts';
 import { useCanvasWarnings } from '../warnings/useCanvasWarnings.ts';
@@ -204,8 +208,36 @@ export function PlotDefinitionPage() {
   const handleDragEnd = useCanvasDropHandler(region);
   const canvasWarnings = useCanvasWarnings(region);
 
+  /**
+   * What the drag ghost is currently drawing, or `null` when nothing is being
+   * dragged (UI redesign Phase 5).
+   *
+   * State rather than `useDndContext()`'s `active`, because the overlay has to
+   * be rendered by a component *outside* the context to sit outside the
+   * palette's clipping box — and because reading the drag data once, at
+   * `dragStart`, is what keeps the ghost drawing the crop the user picked up
+   * even if the filtered list re-ranks underneath them mid-drag.
+   */
+  const [dragging, setDragging] = useState<PaletteDragData | null>(null);
+
+  function handleDragStart(event: DragStartEvent): void {
+    setDragging((event.active.data.current as PaletteDragData | undefined) ?? null);
+  }
+
+  function handleDrop(event: DragEndEvent): void {
+    setDragging(null);
+    handleDragEnd(event);
+  }
+
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDrop}
+      // A cancelled drag (Esc, or a keyboard drag abandoned) never reaches
+      // `onDragEnd`, so without this the ghost would be left on screen for good.
+      onDragCancel={() => setDragging(null)}
+    >
       <SkipLinks />
       <div className={styles.workspace}>
         <section className={styles.plants} aria-label="Plants">
@@ -252,6 +284,22 @@ export function PlotDefinitionPage() {
           </Panel>
         </section>
       </div>
+
+      {/*
+       * The drag ghost. Rendered here, at the page level, rather than inside
+       * the palette: `<DragOverlay>` is `position: fixed`, but the point of it
+       * is to be nowhere near the crop list's scrollport, and a reader looking
+       * for "what follows the pointer" should find it beside the `DndContext`
+       * that owns the drag rather than three components down.
+       *
+       * `dropAnimation={null}` because the plant is already drawn on the canvas
+       * by the time this unmounts — dnd-kit's default is to fly the ghost back
+       * to the palette card it came from, which for a successful drop animates
+       * exactly backwards.
+       */}
+      <DragOverlay dropAnimation={null}>
+        {dragging !== null && <PaletteDragGhost plant={dragging.plant} band={dragging.band} />}
+      </DragOverlay>
     </DndContext>
   );
 }

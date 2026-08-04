@@ -1,6 +1,6 @@
 # 0030 — The app is a workspace, not a document
 
-- **Status:** Accepted
+- **Status:** Accepted, with a dated addendum at the foot of this file
 - **Date:** 2026-07-28
 - **Phase:** UI redesign Phase 1 — workspace layout
   ([`docs/ui-aesthetic-review.md`](../ui-aesthetic-review.md))
@@ -193,3 +193,25 @@ the cheaper trade.
   "Growing conditions" disclosure panel is now the labelled group that fieldset
   was, and keeping both would announce and draw the same name twice. The Soil
   and Location fieldsets inside it group things the panel doesn't, and stay.
+
+## Addendum, 2026-08-04 — the clipped drag card is fixed
+
+The last consequence above ends "the fix is a dnd-kit `DragOverlay`, which is
+what Phase 5's 'drag ghost slightly enlarged with shadow' is". UI redesign Phase
+5 built it (ADR
+[0034](./0034-designs-persistence-and-one-history-over-two-stores.md) §7), so
+this is recorded here rather than left for a reader to check.
+
+`palette/PlantPalette.tsx`'s `PaletteDragGhost` renders inside a `<DragOverlay>`
+at `plot/PlotDefinitionPage.tsx` — outside the crop list's clipping box
+entirely — and the source card stops carrying an inline transform, dimming in
+place instead. The clipping rule's note in
+`palette/PlantPalette.module.css` was rewritten to describe what happens now
+rather than what used to.
+
+The two things this ADR's phase was told to leave alone are still untouched: the
+`PointerSensor`'s 4px activation distance and `resolveDrop`'s pointer-first drop
+point. The overlay does not disturb either — dnd-kit computes
+`active.rect.current.translated` from the measured rect and the drag transform
+whether or not anything renders that transform, so the keyboard-drag path is
+unchanged.

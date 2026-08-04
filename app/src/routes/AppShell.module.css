@@ -31,8 +31,16 @@
   height: 100dvh;
 }
 
+/*
+ * One row, always (UI redesign Phase 5). `flex-wrap` stays at its `nowrap`
+ * default and both children are allowed to shrink, so the band keeps its 56px
+ * whatever the design is called — a second row here is height subtracted from
+ * the canvas region `e2e/workspace-layout.spec.ts` measures, at the narrow
+ * viewport where it is likeliest.
+ */
 .header {
   display: flex;
+  gap: var(--space-3);
   align-items: center;
   min-height: 56px;
   padding: 0 var(--space-4);
@@ -40,10 +48,26 @@
   background: var(--surface-card);
 }
 
+/* `min-width: 0` so the wordmark yields before the controls do: the app's name
+ * is recoverable from the page, an undo button that has been pushed off the
+ * edge is not. */
 .wordmark {
   margin: 0;
+  min-width: 0;
   font-size: var(--text-h1);
   letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* At phone widths the wordmark drops to the body scale: "Garden Planner 🌱" at
+ * `--text-h1` is over half a 390px band on its own. The text is unchanged —
+ * every spec and the walkthrough find the header by its accessible name. */
+@media (max-width: 599px) {
+  .wordmark {
+    overflow: hidden;
+    font-size: var(--text-h3);
+    text-overflow: ellipsis;
+  }
 }
 
 .wordmark a {

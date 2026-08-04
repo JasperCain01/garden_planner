@@ -60,9 +60,12 @@
 import { useRef, useState } from 'react';
 import type Konva from 'konva';
 import { resolvePlotConditions, type PlotConditions } from '@garden-planner/engine';
-import { ModalDialog } from '../ui/ModalDialog.tsx';
+import { buildExampleBed, EXAMPLE_BED_LABEL } from '../designs/example-bed.ts';
+import { applyDesign } from '../state/design.ts';
+import { recordAs } from '../state/design-history.ts';
 import { usePlotStore } from '../state/plot-store.ts';
 import { usePlacementsStore } from '../state/placements-store.ts';
+import { usePlantList } from '../state/use-plant-list.ts';
 import type { CanvasWarnings } from '../warnings/evaluate-canvas.ts';
 import { SeverityIcon } from '../warnings/SeverityIcon.tsx';
 import { exportPlotImage } from './export.ts';
@@ -94,10 +97,10 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
   const removePlacement = usePlacementsStore((state) => state.removePlacement);
   const selectPlacement = usePlacementsStore((state) => state.selectPlacement);
   const clearPlacements = usePlacementsStore((state) => state.clearPlacements);
+  const plants = usePlantList();
   const stageRef = useRef<Konva.Stage>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [isConfirmingClear, setIsConfirmingClear] = useState(false);
 
   // The region the *scene* is drawn from: the committed outline, or the draft
   // while an outline edit is mid-flight and invalid (`useOutlineEditing.ts`).
@@ -132,6 +135,19 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
           : placements.length - 1
         : (currentIndex + offset + placements.length) % placements.length;
     selectPlacement(placements[nextIndex].id);
+  }
+
+  /**
+   * Load the starter bed as **one** undo step, named.
+   *
+   * `recordAs` rather than three separate writes: it replaces the outline, the
+   * conditions and the planting at once, and a user who tried it and did not
+   * want it should get their empty plot back with one Ctrl+Z rather than three.
+   */
+  function handleExampleBed(): void {
+    const design = buildExampleBed(plants);
+    if (design === null) return;
+    recordAs(EXAMPLE_BED_LABEL, () => applyDesign(design));
   }
 
   async function handleExport(): Promise<void> {
@@ -257,9 +273,49 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
             )
           )}
 
+          {/*
+           * "Clear all" no longer asks first (UI redesign Phase 5, ADR 0034
+           * §5). It used to open a confirmation dialog, and the reason it gave
+           * was that clearing "throws away every placement and there is no undo
+           * until Phase 5" — so with undo, the dialog's entire justification is
+           * gone, and a confirmation for a reversible action is a click that
+           * buys nothing. The affordance that replaced it is the header's Undo
+           * button, whose accessible name says what it will bring back ("Undo
+           * clearing the plot"), which the dialog never did.
+           *
+           * The rule is *reversibility*, not destructiveness: deleting a saved
+           * design still confirms (`designs/DesignsDialog.tsx`), because the
+           * history is per-design and cannot reach it.
+           */}
           {placements.length > 0 && (
-            <button type="button" onClick={() => setIsConfirmingClear(true)}>
+            <button type="button" onClick={clearPlacements}>
               Clear all
+            </button>
+          )}
+          {/*
+           * The first-run offer, on the toolbar rather than in a modal — see
+           * `designs/example-bed.ts` for why not a dialog, and why this reappears
+           * whenever the plot is empty rather than only on the first visit. It
+           * occupies exactly the space "Clear all" and the selection arrows take
+           * once something is placed, so the toolbar's busiest state is unchanged.
+           */}
+          {placements.length === 0 && !outlineEditing.active && (
+            <button
+              type="button"
+              onClick={handleExampleBed}
+              // The offer in full is the accessible name and the tooltip; the
+              // visible label is the short form, and that is a measurement
+              // rather than a preference. The toolbar is one row at 1440×900
+              // with 788px to spend, and "Start with an example bed" spelled
+              // out took the actions row to 703px against the 698px left beside
+              // the "Your plot" heading — it wrapped, and a second toolbar row
+              // costs 35px of the canvas that `e2e/canvas-scale.spec.ts`
+              // measures. WCAG 2.5.3 holds: the visible text is contained in
+              // the accessible name.
+              aria-label="Start with an example bed"
+              title="Start with an example bed"
+            >
+              Example bed
             </button>
           )}
           <button type="button" onClick={handleExport} disabled={isExporting}>
@@ -331,40 +387,6 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
           activePlant={selected?.plant ?? null}
         />
       </div>
-
-      {/*
-       * "Clear all" confirms first, because it throws away every placement and
-       * there is no undo until Phase 5. It reuses `ui/ModalDialog.tsx` (Phase
-       * 1's `<dialog>` primitive) rather than `window.confirm`: same focus
-       * trap, Esc and focus-return the add-crop dialog gets from the browser,
-       * and it renders inside the app rather than as OS chrome the page can't
-       * style or a headless browser reliably drive.
-       */}
-      <ModalDialog
-        open={isConfirmingClear}
-        onClose={() => setIsConfirmingClear(false)}
-        title="Clear the whole plot?"
-      >
-        <p>
-          This removes all {placements.length}{' '}
-          {placements.length === 1 ? 'placed plant' : 'placed plants'}. It can&rsquo;t be undone.
-        </p>
-        <div className={styles.confirmActions}>
-          <button type="button" onClick={() => setIsConfirmingClear(false)}>
-            Keep them
-          </button>
-          <button
-            type="button"
-            data-variant="primary"
-            onClick={() => {
-              clearPlacements();
-              setIsConfirmingClear(false);
-            }}
-          >
-            Clear all plants
-          </button>
-        </div>
-      </ModalDialog>
     </div>
   );
 }

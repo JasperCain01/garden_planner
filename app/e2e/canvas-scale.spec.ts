@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { filterPaletteTo } from './drag.ts';
+import { startWithNoSavedDesigns } from './storage.ts';
 
 /**
  * The UI redesign Phase 2 acceptance criteria, as a test
@@ -26,6 +27,19 @@ import { filterPaletteTo } from './drag.ts';
  */
 
 test.use({ viewport: { width: 1440, height: 900 } });
+
+/**
+ * Every `goto` here means an empty plot (UI redesign Phase 5).
+ *
+ * `pixelsDrawnByExtraPlacements` below reloads the app between the two crops it
+ * compares, and the app saves the open design now — so without this the second
+ * measurement would start from a plot that still had the first crop's markers
+ * on it, and the difference being counted would be the wrong difference. See
+ * `storage.ts`.
+ */
+test.beforeEach(async ({ page }) => {
+  await startWithNoSavedDesigns(page);
+});
 
 /** How long to wait for the drop "pop" (150ms, `PlotCanvas.tsx`) to finish before measuring. */
 const SETTLE_MS = 400;

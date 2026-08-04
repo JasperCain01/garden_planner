@@ -13,15 +13,26 @@
  */
 
 import type { DragEndEvent } from '@dnd-kit/core';
-import type { Plant, PlotRegion } from '@garden-planner/engine';
+import type { Plant, PlotRegion, SuitabilityBand } from '@garden-planner/engine';
 import { clampToBounds, pxToCm, type CmPoint } from './geometry.ts';
 
 /** The id `PlotCanvas.tsx`'s droppable container registers under dnd-kit — the id a drag must land `over` for {@link resolveDrop} to accept it. */
 export const CANVAS_DROPPABLE_ID = 'plot-canvas';
 
-/** The drag data a palette entry's `useDraggable` attaches (`palette/PlantPalette.tsx`). */
+/**
+ * The drag data a palette entry's `useDraggable` attaches
+ * (`palette/PlantPalette.tsx`).
+ *
+ * `band` is carried purely so the drag ghost can draw the same card the user
+ * picked up (UI redesign Phase 5): the `<DragOverlay>` renders outside the
+ * palette, from the active drag's data alone, and a ghost missing the
+ * suitability chip would visibly not be the thing being dragged. Nothing in
+ * this module reads it — {@link resolveDrop} takes the plant and the position
+ * and no more.
+ */
 export interface PaletteDragData {
   readonly plant: Plant;
+  readonly band: SuitabilityBand;
 }
 
 /** What a successful drop resolves to: the plant that was dropped, and where, in the region's own centimetre frame. */
