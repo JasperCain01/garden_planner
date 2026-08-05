@@ -396,6 +396,28 @@ export function PlantPalette() {
  * interaction and no accessible name of its own — the element around it does,
  * and in the ghost's case there is deliberately nothing to announce at all.
  */
+/**
+ * The band chip's headline word ("Excellent") and the rest of
+ * `BAND_LABELS`' phrase ("Match") — post-review fix B1.
+ *
+ * `.head`'s width budget cannot fit "Excellent match" *and* the category
+ * word (see the CSS comment on `.head`): the review found the category word
+ * degrading past its own measured floor — "veget…" rather than the accepted
+ * "vegetab…" — on every excellent-match vegetable row at 1440×900, in a
+ * live Chromium session, worse than what was measured and accepted. Rather
+ * than re-tune a compromise that is platform-sensitive by nature, the chip's
+ * *visible* text drops to one word, freeing the space the category word
+ * needs. Nothing announced changes: the full two-word phrase still reaches
+ * assistive tech, split the same way `ShapePicker.tsx`'s `MetreField` splits
+ * a field's visible label from its accessible name for a unit suffix.
+ */
+function bandHeadline(band: SuitabilityBand): { readonly word: string; readonly rest: string } {
+  const full = BAND_LABELS[band];
+  const firstSpace = full.indexOf(' ');
+  if (firstSpace === -1) return { word: full, rest: '' };
+  return { word: full.slice(0, firstSpace), rest: full.slice(firstSpace) };
+}
+
 function PaletteCardFace({
   plant,
   band,
@@ -404,6 +426,7 @@ function PaletteCardFace({
   readonly band: SuitabilityBand;
 }) {
   const icon = resolveIcon(plant);
+  const { word: bandWord, rest: bandRest } = bandHeadline(band);
   return (
     <>
       <span className={styles.iconWrap} data-category={plant.category}>
@@ -413,7 +436,8 @@ function PaletteCardFace({
         <span className={styles.name}>{plant.commonName}</span>
         <span className={styles.meta}>
           <span className={styles.band} data-band={band}>
-            {BAND_LABELS[band]}
+            {bandWord}
+            {bandRest !== '' && <span className="visually-hidden">{bandRest}</span>}
           </span>
           {/*
            * The category, in words, next to the chip whose colour also says
