@@ -70,6 +70,23 @@ async function stagePixels(page: Page): Promise<number[]> {
   });
 }
 
+/**
+ * The Konva canvas's **backing store** size — `canvas.width`/`canvas.height`,
+ * not the CSS `clientWidth`/`clientHeight` {@link stageSize} reads. `stagePixels`
+ * indexes `getImageData` by the backing store, which is `clientWidth *
+ * devicePixelRatio`; a test that needs to address a *particular* pixel (rather
+ * than just count how many changed, as {@link changedPixels} does) has to use
+ * the same frame `stagePixels` did or it addresses the wrong ones whenever
+ * `devicePixelRatio !== 1`.
+ */
+async function stagePixelSize(page: Page): Promise<{ width: number; height: number }> {
+  return page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>('#plot-canvas canvas');
+    if (canvas === null) throw new Error('no Konva canvas inside #plot-canvas');
+    return { width: canvas.width, height: canvas.height };
+  });
+}
+
 /** How many pixels differ between two same-sized readings — i.e. how much of the scene a change actually drew. */
 function changedPixels(before: readonly number[], after: readonly number[]): number {
   expect(
@@ -178,6 +195,12 @@ test('a squash marker claims far more of the bed than a radish marker', async ({
   // differ by 10× in radius and ~100× in area. A generous factor is asserted
   // rather than the exact ratio, because the icon and name label are drawn at
   // a capped size and contribute a fixed amount to both counts.
+  //
+  // `test.slow()` (post-review fix C3): two full page loads, two production
+  // builds' worth of app boot, and settle waits either side of each — this
+  // spec's own timeout budget rather than a run flag the qa-checklist has to
+  // remember to pass.
+  test.slow();
   const radish = await pixelsDrawnByExtraPlacements(page, 'Radish', 1);
   const squash = await pixelsDrawnByExtraPlacements(page, 'Butternut Squash', 1);
 
@@ -197,6 +220,9 @@ test('three "Add to plot" clicks yield three visibly separate markers', async ({
   // changed no pixels at all — so the first assertion alone catches the bug,
   // and the second says the markers keep separating rather than filling one
   // shared clump.
+  //
+  // `test.slow()` (post-review fix C3) — see the squash-vs-radish spec above.
+  test.slow();
   const oneMore = await pixelsDrawnByExtraPlacements(page, 'Lettuce', 1);
   const threeMore = await pixelsDrawnByExtraPlacements(page, 'Lettuce', 3);
 
@@ -219,6 +245,78 @@ test('zoom controls scale the plot, and Fit puts it back', async ({ page }) => {
   await page.getByRole('button', { name: /fit the plot to the screen/i }).click();
   const refitted = await stageSize(page);
   expect(refitted.width).toBeCloseTo(fitted.width, 0);
+});
+
+test('an oversize canopy does not flood the soil surround (post-review fix A1)', async ({
+  page,
+}) => {
+  // The review's own repro: an Apple's 360×450 cm spacing dwarfs the default
+  // 3×2 m plot, so its canopy disc — drawn at true scale — is bigger than the
+  // plot. Before the fix that disc's *fill* painted straight through the plot
+  // edge onto the soil surround and the dimension labels; the fix clips the
+  // fill to the plot outline (`PlotCanvas.tsx`) so it cannot.
+  //
+  // This reads a **single** settled snapshot rather than diffing two, unlike
+  // this file's other pixel checks: the dock beneath the canvas grows a row
+  // the moment a crop's tally first appears (see `pixelsDrawnByExtraPlacements`
+  // for why that couples into the stage's own pixel dimensions), so a "before
+  // Apple / after Apple" pair can never be the same size to difference. What's
+  // asserted instead is that the padding band — known, from `geometry.ts`, to
+  // be nothing but the flat soil-coloured `Rect` this far from the plot edge
+  // or any canvas corner — is still exactly that colour with the Apple placed.
+  // Before the fix this probe point would have read back translucent red.
+  await page.goto('/');
+  const canvas = page.getByLabel(/plot canvas/i);
+  await expect(canvas).toBeVisible();
+
+  await filterPaletteTo(page, 'Apple');
+  await page.mouse.move(0, 0); // no stray hover tooltip in the reading
+  await page.getByRole('button', { name: /^Add Apple to the plot, without dragging$/i }).click();
+  await expect(page.getByText(/1 placed of/)).toBeVisible();
+  await page.waitForTimeout(SETTLE_MS);
+
+  const size = await stagePixelSize(page);
+
+  // The padded canvas is the plot's bounding box plus `CANVAS_PADDING_CM`
+  // (40 cm) on every side; the default plot is 300×200 cm, so the padding is
+  // 40/380 of the canvas's width and 40/280 of its height.
+  const paddingYPx = (size.height * 40) / 280;
+
+  // A probe rectangle in the **top** padding band — label-free (the width
+  // label lives in the bottom band, the height label in the left band; see
+  // `PlotCanvas.tsx`), centred horizontally so it is far from the extreme
+  // corners the canopy's honestly-unclipped *ring* is allowed to reach (its
+  // radius is just under the padded canvas's own half-diagonal for this
+  // crop/plot pairing — a small arc into the corners is the fix working as
+  // intended, not the flood it replaced), and kept clear of both the canvas's
+  // own top edge and the outline's drop-shadow bleed near the plot edge.
+  const probe = {
+    x: Math.round(size.width * 0.4),
+    y: Math.round(paddingYPx * 0.35),
+    width: Math.round(size.width * 0.2),
+    height: Math.max(1, Math.round(paddingYPx * 0.2)),
+  };
+  expect(probe.y, 'the padding band is too thin to probe safely at this viewport').toBeGreaterThan(
+    4,
+  );
+
+  const pixels = await page.evaluate((rect) => {
+    const canvasEl = document.querySelector<HTMLCanvasElement>('#plot-canvas canvas');
+    if (canvasEl === null) throw new Error('no Konva canvas inside #plot-canvas');
+    const context = canvasEl.getContext('2d');
+    if (context === null) throw new Error('no 2D context on the Konva canvas');
+    return Array.from(context.getImageData(rect.x, rect.y, rect.width, rect.height).data);
+  }, probe);
+
+  // `SCENE_COLORS['soil-100']`, the ground `Rect`'s flat fill — see `scene.ts`.
+  const SOIL_100_RGB = [0xef, 0xe6, 0xdc];
+  for (let i = 0; i < pixels.length; i += 4) {
+    expect(
+      [pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]],
+      `padding-band pixel at offset ${i / 4} was not plain soil — the canopy fill reached ` +
+        'outside the plot outline',
+    ).toEqual([...SOIL_100_RGB, 255]);
+  }
 });
 
 test('"Edit shape" reshapes the plot from the keyboard alone', async ({ page }) => {

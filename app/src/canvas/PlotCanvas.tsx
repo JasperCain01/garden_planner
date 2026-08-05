@@ -191,6 +191,22 @@ export interface PlotCanvasProps {
  * Plus a warning badge when the placement has one, a glow ring when it is
  * selected, and a name label once the canvas is zoomed in far enough for the
  * text to be shorter than the plant's own footprint.
+ *
+ * **The canopy's *fill* is not drawn here (post-review fix A1).** A
+ * tree-scale crop's footprint can exceed the plot itself — an Apple
+ * (360×450 cm spacing) on the default 3×2 m bed floods the entire canvas in
+ * translucent red, reading as an error overlay rather than one plant's
+ * footprint. `PlotCanvas`'s render draws every placement's fill together in
+ * one `<Group>` clipped to the plot outline (the same `clipFunc` the grid
+ * uses), *below* every marker, so the flood can never spill onto the soil
+ * surround or the dimension labels and never covers a neighbouring marker's
+ * core. This component still draws the canopy's **outline ring**, unclipped
+ * — the ring visibly exceeding the plot is the honest part of the picture,
+ * matching the engine's own "only 0 fit" feedback, and clipping only the
+ * fill is what keeps it that way. Clipping was measured sufficient for the
+ * Apple-on-3×2m case (every core renders after every fill, so cores are
+ * never obscured regardless of fill opacity); the optional alpha-easing this
+ * fix's writeup allowed for wasn't needed.
  */
 interface PlacementMarkerProps {
   readonly placement: PlacedPlant;
@@ -229,6 +245,15 @@ function PlacementMarker({
    * The drop "pop": a marker scales up from 60% to full over 150ms when it
    * first appears. Markers are keyed by placement id, so a mount *is* a drop —
    * there is no "which one is new" bookkeeping to get wrong.
+   *
+   * **Post-review fix A1 moved the canopy fill out of this Group** (it now
+   * draws in `PlotCanvas`'s own plot-clipped layer, below every marker, so a
+   * tree-scale crop's fill can't flood the canvas). The pop still animates
+   * this whole Group — glow, ring, core, icon, badge, label — the fill simply
+   * isn't a member of it any more and appears at its clipped size without
+   * popping. A ring popping in around an already-present fill reads fine;
+   * splitting the pop itself across two layers to keep the fill animated too
+   * would need a second, position-synced tween for one cosmetic 150ms beat.
    *
    * `node.to()` is a method on an already-constructed Konva node, never a
    * `new Konva.Tween()`, for the same reason `export.ts` only ever calls
@@ -281,14 +306,23 @@ function PlacementMarker({
           listening={false}
         />
       )}
-      {/* The canopy: how much ground this plant actually wants. */}
+      {/* The canopy's outline ring only — how much ground this plant actually
+          wants. Deliberately unclipped, unlike the fill (drawn separately, in
+          `PlotCanvas`'s own clipped layer, below every marker — see A1's note
+          on `PlacementMarker`'s doc comment): the ring visibly exceeding the
+          plot for a tree-scale crop is the honest part of the picture. Not
+          listening — the **core** below is the marker's hit target, so a
+          click anywhere in a huge canopy doesn't select it from arbitrary
+          distance. */}
       <Circle
         radius={canopyPx}
-        fill={withAlpha(categoryColor, 0.22)}
         stroke={withAlpha(categoryColor, 0.55)}
         strokeWidth={1}
+        listening={false}
       />
-      {/* The core, always visible for immediate category feedback. */}
+      {/* The core, always visible for immediate category feedback, and what
+          gets clicked (Konva bubbles a hit on this shape up to this Group's
+          onClick/onTap). */}
       <Circle
         radius={corePx}
         fill={categoryColor}
@@ -696,6 +730,47 @@ export function PlotCanvas({
             fill={SCENE_COLORS['soil-700']}
             listening={false}
           />
+
+          {/* Every placement's canopy **fill**, clipped to the outline —
+              post-review fix A1. A tree-scale crop's footprint can exceed the
+              plot itself (an Apple's 360×450 cm spacing dwarfs the default
+              3×2 m bed); drawn per-marker at true scale with no clip, that
+              fill floods the whole canvas — plot, soil surround, every other
+              marker — in translucent colour, reading as an error rather than
+              one plant's footprint. Clipping the *fill* to the same outline
+              polygon the grid clips to (`clipFunc`, above) contains the
+              flood; `PlacementMarker` still draws each canopy's *ring*
+              unclipped, so a marker whose footprint genuinely doesn't fit
+              still visibly says so at the plot's edge. Drawn as one shared,
+              non-listening group *before* the markers below, so every core is
+              always on top of every fill regardless of draw order or overlap
+              — clicking a marker never hits a neighbour's canopy fill
+              instead. */}
+          <Group
+            listening={false}
+            clipFunc={(ctx: Konva.Context) => {
+              ctx.beginPath();
+              region.vertices.forEach((vertex, index) => {
+                const px = toPx(vertex);
+                if (index === 0) ctx.moveTo(px.x, px.y);
+                else ctx.lineTo(px.x, px.y);
+              });
+              ctx.closePath();
+            }}
+          >
+            {placements.map((placement) => {
+              const centre = toPx(placement);
+              return (
+                <Circle
+                  key={placement.id}
+                  x={centre.x}
+                  y={centre.y}
+                  radius={canopyRadiusPx(placement.plant, pxPerCm)}
+                  fill={withAlpha(CATEGORY_COLORS[placement.plant.category], 0.22)}
+                />
+              );
+            })}
+          </Group>
 
           {placements.map((placement) => (
             <PlacementMarker
