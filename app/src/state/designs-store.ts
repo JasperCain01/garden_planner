@@ -114,6 +114,13 @@ export const useDesignsStore = create<DesignsState>((set, get) => ({
   restoreNotice: null,
 
   newDesign: () => {
+    // Post-review fix A3: an edit inside the 200ms debounce window is still
+    // only *scheduled*, not written — switching away without flushing first
+    // loses it from both the outgoing design (whose record stays stale) and
+    // the incoming one (whose autosave then reschedules against the new
+    // active id). See `flushPendingSave`'s doc for why this is safe to call
+    // unconditionally: a no-op when nothing is pending.
+    flushPendingSave();
     const design: Design = {
       region: DEFAULT_REGION,
       conditionsInput: DEFAULT_CONDITIONS_INPUT,
@@ -127,6 +134,8 @@ export const useDesignsStore = create<DesignsState>((set, get) => ({
   },
 
   loadDesign: (id) => {
+    // Post-review fix A3 — see `newDesign`.
+    flushPendingSave();
     const record = records.get(id);
     if (record === undefined || id === get().activeId) return;
     // Re-parsed rather than cached as a live `Design`: the record is the thing
@@ -148,6 +157,11 @@ export const useDesignsStore = create<DesignsState>((set, get) => ({
   },
 
   duplicateDesign: (id) => {
+    // Post-review fix A3 — flushed *before* reading `records.get(id)` (unlike
+    // the other three actions) so a duplicate of the currently-open design is
+    // made from the freshened record, not a stale one still missing an edit
+    // made inside the debounce window.
+    flushPendingSave();
     const record = records.get(id);
     if (record === undefined) return;
     const copy: StoredDesign = {
@@ -173,6 +187,8 @@ export const useDesignsStore = create<DesignsState>((set, get) => ({
   },
 
   deleteDesign: (id) => {
+    // Post-review fix A3 — see `newDesign`.
+    flushPendingSave();
     if (!records.delete(id)) return;
     const remaining = get().designs.filter((design) => design.id !== id);
     set({ designs: remaining });
