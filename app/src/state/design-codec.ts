@@ -10,8 +10,8 @@
  * a design saved by an older build can carry a shape this one has never seen.
  * The engine anticipated exactly this — `climate/schema.ts` names "a malformed
  * `lat`/`lng` from, say, a corrupted `localStorage`" as a reason its schema
- * exists — so this module never casts. Every value that comes back goes through
- * the engine's own boundary functions:
+ * exists — so nothing here is trusted un-gated. Every value that comes back
+ * goes through the engine's own boundary functions:
  *
  * | value               | gate                                    |
  * | ------------------- | --------------------------------------- |
@@ -24,6 +24,15 @@
  * rest of the library still loads and {@link parseLibrary} reports what went.
  * Silently mending a corrupt outline would put a shape on screen the user never
  * drew; throwing would lose every other design to one bad one.
+ *
+ * **This module isn't cast-free — post-review fix C1 softens a claim it used
+ * to make here that it was.** `parseDesign` carries two `as` casts,
+ * `raw as UserPlantInput` and `x as number`, each written *after* the value
+ * it casts has already passed a real gate (`safeCreateUserPlant` succeeding,
+ * and a `typeof`/`Number.isFinite` check, respectively) — so each cast is
+ * telling TypeScript what validation just established, not asserting past
+ * it. That is the trust boundary this module actually keeps, and the more
+ * accurate way to describe it than "never casts".
  *
  * ## What a placement stores, and why not the plant
  *
