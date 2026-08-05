@@ -117,6 +117,24 @@ describe('reading a library back', () => {
     expect(parsed.problems[0]).toContain('sea-buckthorn');
   });
 
+  it('keeps exactly one placement when two share an id (post-review fix A4)', () => {
+    // Corrupt-input-only — `parseDesign` validated each placement's shape but
+    // not uniqueness, and selection restore and undo bookkeeping both key
+    // placements by `id`.
+    const stored = toStoredDesign(META, designWith([{ id: 'p1', plant: ONION, x: 10, y: 20 }]));
+    const withDuplicate = {
+      ...stored,
+      placements: [...stored.placements, { id: 'p1', plantId: 'carrot', x: 40, y: 40 }],
+    };
+
+    const parsed = parseLibrary(libraryJson(withDuplicate), SHIPPED_BY_ID);
+
+    expect(parsed.designs[0].design.placements).toHaveLength(1);
+    expect(parsed.designs[0].design.placements[0].id).toBe('p1');
+    // The first occurrence of the id wins — the onion, not the carrot.
+    expect(parsed.designs[0].design.placements[0].plant.id).toBe('onion');
+  });
+
   it('refuses an outline that is not a valid polygon, keeping the other designs', () => {
     const good = toStoredDesign(META, designWith([]));
     const bad = {

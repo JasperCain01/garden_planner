@@ -256,11 +256,21 @@ function parseDesign(
 
   const placements: PlacedPlant[] = [];
   const missingPlantIds: string[] = [];
+  // Post-review fix A4: a duplicate `id` is corrupt input the same way a
+  // dangling `plantId` is — selection restore (`design-history.ts#restoreSelection`)
+  // and undo bookkeeping both key placements by `id`, so two placements
+  // sharing one would confuse both. Skipped silently, same precedent as the
+  // missing-plant path above: this earns no `missingPlantIds`-style report,
+  // since (unlike a deleted crop) there is nothing a user did to cause it and
+  // nothing actionable to tell them.
+  const seenIds = new Set<string>();
   for (const raw of Array.isArray(candidate.placements) ? candidate.placements : []) {
     if (!isRecord(raw)) continue;
     const { id, plantId, x, y } = raw;
     if (typeof id !== 'string' || typeof plantId !== 'string') continue;
     if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    if (seenIds.has(id)) continue;
+    seenIds.add(id);
     const plant = available.get(plantId);
     if (plant === undefined) {
       if (!missingPlantIds.includes(plantId)) missingPlantIds.push(plantId);
