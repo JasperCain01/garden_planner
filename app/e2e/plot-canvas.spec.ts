@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { canvasBoxOf, dragCropOntoCanvas } from './drag.ts';
+import { canvasBoxOf, dragCropOntoCanvas, filterPaletteTo } from './drag.ts';
 
 // The core-journey drag-drop test WORKPLAN.md §1.3 anticipates for Stage 3.4:
 // define a plot (the default one is already valid) → drag a plant from the
@@ -13,21 +13,20 @@ import { canvasBoxOf, dragCropOntoCanvas } from './drag.ts';
 // helper fires), and Konva renders to a `<canvas>` with no queryable DOM — so
 // this drives real mouse events against a real browser and Konva scene.
 //
-// A very tall viewport keeps the palette entry and the canvas on-screen at
-// once: `page.mouse` works in viewport coordinates and does not scroll (see
-// `drag.ts`). 4000 is deliberate headroom over the ~3700 a filtered palette
-// plus the canvas actually needs today — at 3500 the canvas sat just below
-// the fold and drags intermittently did nothing. `drag.ts` asserts both ends
-// are in view, so if this ever stops being enough the failure says so.
-// Filtering by search first keeps the page that short, and is realistic
-// besides — a gardener hunting for one crop searches first.
-test.use({ viewport: { width: 1024, height: 4000 } });
+// An ordinary laptop viewport. `page.mouse` works in viewport coordinates and
+// does not scroll (see `drag.ts`), so both ends of the drag have to be on
+// screen at once — which, since UI redesign Phase 1, is simply what the
+// workspace layout does: the palette is the left sidebar and the canvas is the
+// centre region, always side by side above 900px wide. These specs used to
+// declare a 4000px-tall viewport to force the stacked page's palette and
+// canvas into view together; that trick is gone with the stacked page.
+test.use({ viewport: { width: 1440, height: 900 } });
 
 test('dragging a plant from the palette onto the plot places it, with live count feedback', async ({
   page,
 }) => {
   await page.goto('/');
-  await page.getByLabel(/^search$/i).fill('Onion');
+  await filterPaletteTo(page, 'Onion');
 
   const canvas = page.getByLabel(/plot canvas/i);
   await expect(canvas).toBeVisible();
@@ -52,11 +51,13 @@ test('dragging a plant from the palette onto the plot places it, with live count
   // — which surfaces as a 30-second click timeout with no hint of the cause.
   const canvasBox = await canvasBoxOf(canvas);
   await page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
-  // Exact match: the outline editor's corner handles are also `role="button"`
-  // elements whose own label happens to contain the substring "remove"
-  // ("drag to move, double-click to remove" — Workplan Stage 6.2 gave them
-  // that role so `aria-label` is valid ARIA on them at all), so a loose
-  // `/remove/i` regex now matches five buttons, not one.
+  // Exact match, still. The outline editor's `role="button"` corner handles —
+  // whose labels contained the substring "remove" and used to make a loose
+  // `/remove/i` regex match five buttons — are gone with the editor itself
+  // (UI redesign Phase 2 merged it into this canvas, where the handles are
+  // Konva shapes with no DOM at all). But "Remove corner" now appears on the
+  // toolbar in edit-shape mode, so the exact match is still what distinguishes
+  // "remove the selected plant" from its neighbours.
   await page.getByRole('button', { name: 'Remove', exact: true }).click();
   await expect(page.getByText(/nothing placed yet/i)).toBeVisible();
 });
@@ -66,7 +67,7 @@ test('placed plants render their resolved icons or the generic fallback (Stage 4
 }) => {
   // Verify shipped crops render their icons, and user-defined crops render the fallback.
   await page.goto('/');
-  await page.getByLabel(/^search$/i).fill('Onion');
+  await filterPaletteTo(page, 'Onion');
 
   const canvas = page.getByLabel(/plot canvas/i);
   await expect(canvas).toBeVisible();

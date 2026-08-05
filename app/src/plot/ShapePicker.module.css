@@ -1,0 +1,191 @@
+/*
+ * Shape-picker layout (UI redesign Phase 4, ADR 0033 §3; Phase 0 laid the
+ * groundwork by stripping the fieldset's etched border in `global.css`).
+ *
+ * Three radios and a caption became three tiles that draw the outline the
+ * current dimensions describe. The mechanic underneath — a native radio,
+ * invisible but focusable, stretched over the tile — is shared with the
+ * palette's filter chips and the conditions form's segmented controls, and
+ * lives in `ui/choice.module.css`; only what a tile *looks* like is here.
+ */
+
+/*
+ * The tile row. `1fr` columns rather than `auto`, so all three tiles are the
+ * same width whatever their glyph's aspect: they are alternatives of equal
+ * standing, and a wide-rectangle tile twice the size of the circle would read
+ * as a recommendation.
+ */
+.presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  border: 0;
+}
+
+.tile {
+  composes: target from '../ui/choice.module.css';
+}
+
+.tileInput {
+  composes: control from '../ui/choice.module.css';
+}
+
+/* The tile a user actually sees, styled entirely from the hidden radio's own
+ * `:checked` / `:focus-visible` — the browser's job, not React's. */
+.tileBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: center;
+  padding: var(--space-2) var(--space-1);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease;
+}
+
+/*
+ * A fixed box for the glyph, so the row's height doesn't depend on the aspect
+ * inside it. The SVG is `preserveAspectRatio="xMidYMid meet"`, so a 5 × 0.5 m
+ * bed draws as a centred sliver in this box rather than stretching it — the
+ * shape changes, the layout doesn't.
+ */
+.tileGlyph {
+  display: flex;
+  width: 100%;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+}
+
+.tileSvg {
+  width: 100%;
+  height: 100%;
+}
+
+/* The outline itself: a tinted fill under a solid stroke, the same reading as
+ * the plot on the canvas. `vector-effect` keeps the stroke 1.5px however far
+ * the viewBox is scaled — without it a long thin plot's outline is scaled
+ * along with its geometry and the sliver becomes a smudge. */
+.tileSvg polygon {
+  fill: var(--green-100);
+  stroke: var(--green-700);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Shown while the dimensions don't build a shape (mid-typing). Same box, so
+ * nothing moves. */
+.tileGlyphEmpty {
+  width: 70%;
+  height: 60%;
+  border: 1px dashed var(--border-input);
+  border-radius: 2px;
+}
+
+.tile:hover .tileBody {
+  border-color: var(--green-700);
+}
+
+/* The one focus indicator `global.css` draws, moved onto the element that has
+ * painted pixels. */
+.tileInput:focus-visible + .tileBody {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/*
+ * Selected. Colour is never the only signal: these are real radios, so the
+ * state is in the accessibility tree, and the border doubles in weight as the
+ * fill changes — visible without hue. `--text-strong` on `--green-100` is
+ * 12.55:1 (`docs/accessibility.md` §9).
+ */
+.tileInput:checked + .tileBody {
+  border-color: var(--green-700);
+  border-width: 2px;
+  padding: calc(var(--space-2) - 1px) 0;
+  background: var(--green-100);
+  color: var(--text-strong);
+}
+
+/* -------------------------------------------------------- Dimension fields */
+
+/*
+ * As many per row as fit. The unit moved *inside* the field this phase, which
+ * is what makes two of these fit side by side in a 300px column where the
+ * old "Width (m)" labels forced one per row — the single largest saving in the
+ * panel (ADR 0033 §1).
+ */
+.dimensions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.field label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* The field and its unit suffix. The suffix is drawn *over* the input's own
+ * right padding rather than beside it, so the box a user clicks is the whole
+ * control — a unit sitting outside the border would look like a caption and
+ * would not focus the field. */
+.measure {
+  position: relative;
+  display: flex;
+}
+
+/*
+ * The native number spinner is hidden (`appearance: textfield`, plus the WebKit
+ * pseudo-elements it doesn't cover): at this width its arrows sit exactly where
+ * the unit goes. Nothing is lost — the value is still typeable, and Up/Down
+ * still step it, which is the keyboard path the arrows are a pointer shortcut
+ * for.
+ */
+.measureInput {
+  width: 100%;
+  padding-right: var(--space-6);
+  appearance: textfield;
+}
+
+.measureInput::-webkit-outer-spin-button,
+.measureInput::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.unit {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  pointer-events: none;
+}
+
+.error {
+  margin: 0 0 var(--space-3);
+  color: var(--danger);
+  font-size: var(--text-sm);
+}

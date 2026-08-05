@@ -1,61 +1,206 @@
 /**
  * The plot-definition page (Workplan Stage 3.2, extended in 3.3 and 3.4) —
- * `DESIGN.md` §1's whole "describe → discover → arrange" core loop.
- * Composes the plot-definition pieces against the plot store
- * (`state/plot-store.ts`): pick a preset shape, adjust its outline
- * free-form, describe the growing conditions, browse the ranked plant
- * palette (Stage 3.3), and — as of Stage 3.4 — drag plants from it onto the
- * plot canvas. This is what `routes/Home` renders as the app's index route
- * (Stage 3.1 left `Home` as a placeholder specifically for this to replace —
- * see that route's history in `docs/stage-3.1-brief.md`).
+ * `DESIGN.md` §1's whole "describe → discover → arrange → validate" core loop,
+ * and since UI redesign Phase 1 the app's **workspace**: three regions on
+ * screen at once rather than five sections stacked down a 640px column.
  *
- * **Why the palette (and now the canvas) live on this page rather than a
- * separate route:** see `docs/architecture.md`'s Stage 3.3 note. Short
- * version — `DESIGN.md`'s "describe → discover → arrange → validate" loop
- * reads as one continuous flow, not four separate pages, and the canvas
- * needs the palette visible *alongside* placement (drag a plant from the
- * palette onto the canvas) rather than navigated away from.
+ * ```
+ * ┌──────────────────────────────────────────────────────────────┐
+ * │ header (routes/AppShell.tsx)                                 │
+ * ├────────────┬─────────────────────────────┬───────────────────┤
+ * │ PLANTS     │        YOUR PLOT            │ PLOT & CHECKS     │
+ * │ 320px      │        the canvas, filling  │ 300px             │
+ * │ own scroll │        the space left over  │ shape · outline · │
+ * │ + add-crop │                             │ conditions ·      │
+ * │   dialog   │                             │ problems          │
+ * └────────────┴─────────────────────────────┴───────────────────┘
+ * ```
  *
- * **The `DndContext` boundary (Workplan Stage 3.4).** `PlantPalette`'s
- * entries are dnd-kit drag sources and `PlotCanvasSection`'s canvas is the
- * drop target (`canvas/drop.ts`'s `CANVAS_DROPPABLE_ID`) — both need a
- * shared `DndContext` ancestor, and this page is where they're both already
- * composed, so it owns that context and the drop handler
- * (`useCanvasDropHandler`) rather than either feature reaching for its own.
+ * **Why this is the shape of the app** (`docs/ui-aesthetic-review.md` §Part 1,
+ * ADR 0030). The advertised gesture is "drag a plant from the palette onto the
+ * plot", and until this phase the palette and the canvas were ~1,500px apart
+ * and never on screen together — a drag needed dnd-kit's autoscroll to crawl
+ * the page mid-gesture. Real use is a loop (tweak plot ↔ browse plants ↔
+ * arrange ↔ check warnings), and a vertical document made every iteration of
+ * that loop a scroll journey. Putting the palette beside the canvas, and the
+ * tweak-and-check controls on the canvas's other side, is what makes it free.
+ * Nothing about the *wiring* changed: same components, same stores, one
+ * `DndContext` as before.
  *
- * **Warnings (Workplan Stage 3.5).** `useCanvasWarnings` is called once,
- * here, and the result threaded down to both `PlotCanvasSection` (badges the
- * markers) and the new `WarningsSection` (the "4. Check for problems" list) —
- * the same "compute once at the composing page, thread down" reasoning this
- * page already applies to `handleDragEnd`, so evaluating the five warning
- * rules doesn't happen twice per render.
+ * **The numbered headings are gone.** "1. Define your plot" … "4. Check for
+ * problems" enforced a sequence over what is really a loop; the workspace *is*
+ * the loop, so each region says what it is instead. Every region is a labelled
+ * `region` landmark, so the structure a screen-reader user navigates by is at
+ * least as good as the one those headings gave (`docs/accessibility.md`).
  *
- * **User-defined crops (Workplan Stage 3.6).** `UserCropsSection` sits
- * between the palette and the canvas — `DESIGN.md` frames "add your own
- * crop" as a capability *beyond* the four-step core loop, so it gets its own
- * unnumbered section rather than a fifth numbered step, positioned so a
- * newly-added crop is visible in the palette immediately above before the
- * user scrolls down to place it.
+ * **The cost the layout does have, and what pays for it.** Reading order is
+ * now plants → plot → settings, which puts the shape-and-conditions form
+ * behind the whole 144-crop palette where it used to come first. `SkipLinks`
+ * answers that with a second skip link straight to the settings column,
+ * alongside Stage 6.2's existing one to the canvas — see that component's doc
+ * for why this rather than re-ordering the DOM against the visible columns.
  *
- * **Skip link (Workplan Stage 6.2).** `SkipToCanvasLink` is the one addition
- * this stage's keyboard-only walkthrough turned up as worth making: see that
- * component's own doc for the friction it closes.
+ * **The `DndContext` boundary (Workplan Stage 3.4).** `PlantPalette`'s entries
+ * are dnd-kit drag sources and `PlotCanvasSection`'s canvas is the drop target
+ * (`canvas/drop.ts`'s `CANVAS_DROPPABLE_ID`) — both need a shared `DndContext`
+ * ancestor, and this page is where they're both composed, so it owns that
+ * context and the drop handler (`useCanvasDropHandler`) rather than either
+ * feature reaching for its own — and, since UI redesign Phase 3, the sensors
+ * too (see `DRAG_ACTIVATION_DISTANCE_PX` below: the palette card is a
+ * disclosure as well as a drag source, and telling those two gestures apart is
+ * a sensor setting).
+ *
+ * **Warnings (Workplan Stage 3.5).** `useCanvasWarnings` is called once, here,
+ * and the result threaded down to both `PlotCanvasSection` (badges the
+ * markers) and `WarningsSection` (the problems panel) — the same "compute once
+ * at the composing page, thread down" reasoning this page already applies to
+ * `handleDragEnd`, so evaluating the five warning rules doesn't happen twice
+ * per render.
+ *
+ * **User-defined crops (Workplan Stage 3.6, relocated in Phase 1).** "Add your
+ * own crop" used to take ~800px of page between the palette and the canvas for
+ * a capability used rarely. It is a dialog off the foot of the plants sidebar
+ * now (`user-crops/AddCropDialog.tsx`); the form inside it is unchanged.
+ *
+ * **One picture of the plot (UI redesign Phase 2, ADR 0031).** The settings
+ * column used to carry a second plot drawing under the shape picker — the SVG
+ * outline editor, at its own scale, which a user had to reconcile with the
+ * Konva canvas beside it ("Two disconnected pictures of the same plot",
+ * `docs/ui-aesthetic-review.md`). Editing the outline is a mode *on the
+ * canvas* now, so this panel keeps only the shape picker and points at it.
+ *
+ * **The three disclosure panels.** The review asks for collapsible accordions
+ * in the right-hand column, and `<details>`/`<summary>` is what that is in
+ * HTML — keyboard-operable, announced as a disclosure, open and closed without
+ * a line of state. All three start open: the column scrolls internally, so
+ * "open" costs nothing but reach, and a first-run user should see that the
+ * controls exist before learning they collapse.
+ *
+ * **The third one is pinned now (UI redesign Phase 4, ADR 0033 §1).** The
+ * column was 1,434px of content in an 844px box — 590px of internal overflow,
+ * and 894px once the antagonist pair the E2E suite uses was placed, which put
+ * the "Problems & suggestions" panel's top edge 263px below the bottom of the
+ * screen. The engine's live feedback was off screen while you edited the form
+ * that changes it, which is the review's §2.6 finding surviving Phase 1's move
+ * intact.
+ *
+ * So the column stops being one scroll box of three panels: the two **form**
+ * panels scroll in a box of their own, and the warnings dock is a pinned
+ * sibling below them, capped at 45% and scrolling itself past that. The
+ * structure is `PlantPalette`'s (filters fixed, list scrolling) and
+ * `PlotCanvasSection`'s (toolbar, viewport, dock) applied a third time, and it
+ * is what makes the phase's acceptance criterion true *structurally* rather
+ * than by fitting: whatever you scroll to in the form, the warning it causes is
+ * on screen with it.
+ *
+ * **All three still start open**, which is the part ADR 0030 argued for and
+ * this phase had to re-answer rather than assume. Pinning the dock does not by
+ * itself buy the room — it just moves who runs out of it. What bought it was
+ * the two form panels getting smaller (ADR 0033 §3, §4): 440 + 635px of shape
+ * and conditions became small enough to fit above the dock with the panels
+ * open, so "a first-run user should see that the controls exist" survives
+ * unchanged. Had they not, the honest alternative would have been closing
+ * "Growing conditions" by default and saying so here.
  */
 
-import { DndContext } from '@dnd-kit/core';
+import { useState, type ReactNode } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardCode,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import type { PaletteDragData } from '../canvas/drop.ts';
 import { usePlotStore } from '../state/plot-store.ts';
-import { PlantPalette } from '../palette/PlantPalette.tsx';
+import { PaletteDragGhost, PlantPalette } from '../palette/PlantPalette.tsx';
 import { PlotCanvasSection } from '../canvas/PlotCanvasSection.tsx';
 import { useCanvasDropHandler } from '../canvas/useCanvasDropHandler.ts';
 import { useCanvasWarnings } from '../warnings/useCanvasWarnings.ts';
 import { WarningsSection } from '../warnings/WarningsSection.tsx';
-import { UserCropsSection } from '../user-crops/UserCropsSection.tsx';
+import { AddCropDialog } from '../user-crops/AddCropDialog.tsx';
 import { PlotConditionsForm } from './PlotConditionsForm.tsx';
-import { PlotOutlineEditor } from './PlotOutlineEditor.tsx';
 import { ShapePicker } from './ShapePicker.tsx';
-import { SkipToCanvasLink } from './SkipToCanvasLink.tsx';
+import { PLOT_SETTINGS_ID, SkipLinks } from './SkipLinks.tsx';
+import styles from './PlotDefinitionPage.module.css';
+
+/**
+ * One collapsible panel in the right-hand column. A plain `<details>`, with
+ * the heading *inside* the `<summary>` so the panel is both a disclosure
+ * control and a heading to navigate the document by — the two things the
+ * numbered `<h2>`s used to do separately.
+ *
+ * `className` exists for the one panel that behaves differently: the warnings
+ * dock is pinned to the foot of the column, capped, and scrolls itself, where
+ * the two form panels above it are ordinary blocks inside a scrolling box.
+ * Everything else about it — the disclosure, the heading inside the summary,
+ * starting open — is deliberately identical, because to a user it is the same
+ * kind of thing.
+ */
+function Panel({
+  title,
+  className,
+  children,
+}: {
+  readonly title: string;
+  readonly className?: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <details
+      className={className === undefined ? styles.panel : `${styles.panel} ${className}`}
+      open
+    >
+      <summary className={styles.panelSummary}>
+        <h2 className={styles.panelTitle}>{title}</h2>
+      </summary>
+      <div className={styles.panelBody}>{children}</div>
+    </details>
+  );
+}
+
+/**
+ * The drag sensors, spelled out rather than left to dnd-kit's defaults (UI
+ * redesign Phase 3, ADR 0032 §2). They are configured here because this is
+ * where the `DndContext` is, but both changes exist for `palette/PlantPalette`
+ * — read that component's `PaletteEntry` doc alongside this.
+ *
+ * **A press that never travels is a click.** Phase 3 makes the palette card a
+ * disclosure as well as a drag surface, and without an activation constraint
+ * those are the same `pointerdown`: a click that drifts a single pixel becomes
+ * a drag and swallows the click, so "one click to see the reasoning" would
+ * work only for a perfectly steady hand. 4px is the same slop
+ * `canvas/PlotCanvas.tsx` uses to tell a pan from a deselect, for the same
+ * reason and to the same feel.
+ *
+ * **Space starts a keyboard drag; Enter no longer does.** dnd-kit's default is
+ * either key, which would leave the card's disclosure with no keyboard path at
+ * all — a `role="button"` `<div>` never synthesises a click from Enter the way
+ * a real `<button>` does. Space is the key the sensor's own screen-reader
+ * instructions name ("press the space bar"), so nothing announced changes;
+ * Enter goes to the disclosure, which is the key every other disclosure in the
+ * app opens with. Ending a drag still accepts either, plus Tab, as before —
+ * once a drag is running the card isn't a disclosure.
+ */
+const DRAG_ACTIVATION_DISTANCE_PX = 4;
 
 export function PlotDefinitionPage() {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX },
+    }),
+    useSensor(KeyboardSensor, {
+      keyboardCodes: {
+        start: [KeyboardCode.Space],
+        cancel: [KeyboardCode.Esc],
+        end: [KeyboardCode.Space, KeyboardCode.Enter, KeyboardCode.Tab],
+      },
+    }),
+  );
   const region = usePlotStore((state) => state.region);
   const setRegion = usePlotStore((state) => state.setRegion);
   const conditionsInput = usePlotStore((state) => state.conditionsInput);
@@ -63,23 +208,103 @@ export function PlotDefinitionPage() {
   const handleDragEnd = useCanvasDropHandler(region);
   const canvasWarnings = useCanvasWarnings(region);
 
+  /**
+   * What the drag ghost is currently drawing, or `null` when nothing is being
+   * dragged (UI redesign Phase 5).
+   *
+   * State rather than `useDndContext()`'s `active`, because the overlay has to
+   * be rendered by a component *outside* the context to sit outside the
+   * palette's clipping box — and because reading the drag data once, at
+   * `dragStart`, is what keeps the ghost drawing the crop the user picked up
+   * even if the filtered list re-ranks underneath them mid-drag.
+   */
+  const [dragging, setDragging] = useState<PaletteDragData | null>(null);
+
+  function handleDragStart(event: DragStartEvent): void {
+    setDragging((event.active.data.current as PaletteDragData | undefined) ?? null);
+  }
+
+  function handleDrop(event: DragEndEvent): void {
+    setDragging(null);
+    handleDragEnd(event);
+  }
+
   return (
-    <DndContext onDragEnd={handleDragEnd}>
-      <SkipToCanvasLink />
-      <section>
-        <h2>1. Define your plot</h2>
-        <p>
-          Start from a preset shape, then drag, add or remove corners until the outline matches your
-          real plot.
-        </p>
-        <ShapePicker onApply={setRegion} />
-        <PlotOutlineEditor region={region} onChange={setRegion} />
-        <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
-      </section>
-      <PlantPalette />
-      <UserCropsSection />
-      <PlotCanvasSection canvasWarnings={canvasWarnings} />
-      <WarningsSection canvasWarnings={canvasWarnings} />
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDrop}
+      // A cancelled drag (Esc, or a keyboard drag abandoned) never reaches
+      // `onDragEnd`, so without this the ghost would be left on screen for good.
+      onDragCancel={() => setDragging(null)}
+    >
+      <SkipLinks />
+      <div className={styles.workspace}>
+        <section className={styles.plants} aria-label="Plants">
+          <PlantPalette />
+          <AddCropDialog />
+        </section>
+
+        <section className={styles.canvas} aria-label="Your plot">
+          <PlotCanvasSection canvasWarnings={canvasWarnings} />
+        </section>
+
+        <section
+          className={styles.checks}
+          aria-label="Plot settings and checks"
+          // Anchor target for the "Skip to plot settings" link, with
+          // `tabIndex={-1}` so the jump actually lands focus here rather than
+          // only scrolling — see `SkipLinks.tsx` for why this column needs a
+          // skip link of its own now.
+          id={PLOT_SETTINGS_ID}
+          tabIndex={-1}
+        >
+          {/* The two form panels, in the one part of the column that scrolls. */}
+          <div className={styles.settings}>
+            {/* The one panel that carries a class of its own, and only so the
+                print stylesheet can leave it off the sheet — see
+                `PlotDefinitionPage.module.css`'s `@media print` block for why
+                the shape *controls* are not part of a plan. It changes nothing
+                on screen. */}
+            <Panel title="Plot shape & size" className={styles.shapePanel}>
+              {/* The panel's one pointer at the canvas, kept short. Phase 2
+                  moved outline editing onto the plot itself, so this is the
+                  only thing telling a user in this panel where non-preset
+                  shapes come from — and it is three lines of a column whose
+                  budget is the whole subject of ADR 0033 §1. */}
+              <p className={styles.panelIntro}>
+                Fine-tune the outline with &ldquo;Edit shape&rdquo; on the plot.
+              </p>
+              <ShapePicker onApply={setRegion} />
+            </Panel>
+
+            <Panel title="Growing conditions">
+              <PlotConditionsForm value={conditionsInput} onChange={setConditionsInput} />
+            </Panel>
+          </div>
+
+          {/* Pinned below them — see the module doc, and ADR 0033 §1. */}
+          <Panel title="Problems & suggestions" className={styles.dockPanel}>
+            <WarningsSection canvasWarnings={canvasWarnings} />
+          </Panel>
+        </section>
+      </div>
+
+      {/*
+       * The drag ghost. Rendered here, at the page level, rather than inside
+       * the palette: `<DragOverlay>` is `position: fixed`, but the point of it
+       * is to be nowhere near the crop list's scrollport, and a reader looking
+       * for "what follows the pointer" should find it beside the `DndContext`
+       * that owns the drag rather than three components down.
+       *
+       * `dropAnimation={null}` because the plant is already drawn on the canvas
+       * by the time this unmounts — dnd-kit's default is to fly the ghost back
+       * to the palette card it came from, which for a successful drop animates
+       * exactly backwards.
+       */}
+      <DragOverlay dropAnimation={null}>
+        {dragging !== null && <PaletteDragGhost plant={dragging.plant} band={dragging.band} />}
+      </DragOverlay>
     </DndContext>
   );
 }

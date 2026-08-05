@@ -1,5 +1,5 @@
 /**
- * "4. Check for problems" — `DESIGN.md` §1 step 4, "validate continuously",
+ * "Check for problems" — `DESIGN.md` §1 step 4, "validate continuously",
  * turned into UI. Ordinary DOM/JSX (no Konva), so — like
  * `canvas/PlacementFeedbackPanel.tsx` and unlike `canvas/PlotCanvas.tsx` — this
  * is component-tested directly with `@testing-library/react`
@@ -16,17 +16,53 @@
  * verbatim: the engine's docs are explicit that these are deliverable
  * sentences, not debug aids, so this component never re-derives or
  * paraphrases one.
+ *
+ * ## The dock (UI redesign Phase 4, ADR 0033 §1 and §5)
+ *
+ * This list is the highest-value live feedback the app produces, and until this
+ * phase it was the *last* thing in a column that overflowed by 590px — with two
+ * crops placed, its top edge sat 263px below the bottom of the screen. Phase 1
+ * moved it beside the canvas and that was not enough; Phase 4 **pins** it. The
+ * settings column's two form panels scroll above it and this stays put, which
+ * is what makes "change the thing, see the warning change" a single glance
+ * rather than a scroll (`PlotDefinitionPage.module.css`).
+ *
+ * Three consequences visible in the markup here:
+ *
+ * - **A count badge per severity, most urgent first** (`severity.ts`'s
+ *   `severityCounts`). A pinned dock is capped, so a plot with a dozen problems
+ *   scrolls inside it; "2 ×, 1 !" on the heading's own line is the summary that
+ *   survives being scrolled, and one a heading alone wasn't giving.
+ * - **The severity word became `SeverityIcon`** — same glyph the canvas badges
+ *   a marker with, same word in its accessible name. See that component.
+ * - **The two `<h3>`s stayed**, deliberately, and now carry their sections'
+ *   counts. Phase 3 retired 144 per-item headings and recorded why (ADR 0032
+ *   §3); neither of its two reasons applies here. These are not inside a
+ *   `role="button"` subtree that ARIA makes presentational, and two headings
+ *   are not 144 — they are the only way to jump between the two lists inside a
+ *   dock that scrolls, which is exactly what document structure is for.
  */
 
 import type { CompanionSuggestion, Plant, Warning } from '@garden-planner/engine';
-import { severityColor } from './severity.ts';
+import { SeverityIcon } from './SeverityIcon.tsx';
+import { severityCounts } from './severity.ts';
+import styles from './WarningsPanel.module.css';
 
 export interface WarningsPanelProps {
   readonly warnings: readonly Warning[];
   readonly suggestions: readonly CompanionSuggestion[];
   /** The current runtime plant list (`usePlantList()`), used only to resolve a suggestion's bare `suggestedPlantId` to a display name. */
   readonly plants: readonly Plant[];
-  /** Called with a placement id when the user asks to be shown which marker a warning or suggestion concerns (e.g. selects it on the canvas). */
+  /**
+   * How many placements a reshape has left outside the plot outline
+   * (post-review fix B3, `canvas/stranded.ts`) — not one of the engine's
+   * `Warning`s (it's a canvas-geometry fact, not a growing-conditions rule),
+   * so it is its own count rather than folded into `warnings`.
+   */
+  readonly strandedCount: number;
+  /** Which stranded placement "Show me" on the summary card targets — the first one, or `null` when `strandedCount` is 0. */
+  readonly firstStrandedPlacementId: string | null;
+  /** Called with a placement id when the user asks to be shown which marker a warning or suggestion concerns — selects it *and* scrolls it into view (`WarningsSection.tsx`). */
   readonly onFocusPlacement: (placementId: string) => void;
 }
 
@@ -39,31 +75,77 @@ export function WarningsPanel({
   warnings,
   suggestions,
   plants,
+  strandedCount,
+  firstStrandedPlacementId,
   onFocusPlacement,
 }: WarningsPanelProps) {
+  const counts = severityCounts(warnings);
+
   return (
-    <div>
-      <h3>Warnings</h3>
+    <div className={styles.dock}>
+      <div className={styles.sectionHead}>
+        <h3 className={styles.sectionTitle}>Warnings</h3>
+        {counts.length > 0 && (
+          <p className={styles.badges}>
+            {counts.map(({ severity, count }) => (
+              // One badge per severity present. The count and the icon are one
+              // labelled unit ("2 severe") rather than a number next to an
+              // unlabelled mark, so it reads the same aloud as on screen.
+              <span
+                key={severity}
+                className={styles.badge}
+                data-severity={severity}
+                aria-label={`${count} ${severity}`}
+              >
+                <span aria-hidden="true">{count}</span>
+                <SeverityIcon severity={severity} />
+              </span>
+            ))}
+          </p>
+        )}
+      </div>
+
+      {/*
+       * Stranded placements (post-review fix B3) — a reshape leaving a plant
+       * outside the plot outline with nothing on screen saying so. Not an
+       * engine `Warning` (see the prop doc), so it is its own card rather
+       * than a list item styled to look like one — but it reuses `.item`'s
+       * card look, which is what makes it read as "a problem" without
+       * borrowing a severity colour that isn't really its own.
+       */}
+      {strandedCount > 0 && (
+        <p className={`${styles.item} ${styles.strandedCard}`}>
+          <span className={styles.reason}>
+            {strandedCount} {strandedCount === 1 ? 'plant is' : 'plants are'} outside the plot
+            outline.
+          </span>
+          <button
+            type="button"
+            className={styles.showMe}
+            onClick={() => {
+              if (firstStrandedPlacementId !== null) onFocusPlacement(firstStrandedPlacementId);
+            }}
+          >
+            Show me
+          </button>
+        </p>
+      )}
+
       {warnings.length === 0 ? (
-        <p>No problems detected with what&rsquo;s currently placed.</p>
+        <p className={styles.empty}>No problems &mdash; looking good 🌿</p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+        <ul className={styles.list}>
           {warnings.map((warning) => (
             <li
               key={warningKey(warning)}
-              style={{
-                border: '1px solid #ccc',
-                borderRadius: '0.5rem',
-                padding: '0.5rem',
-                marginBottom: '0.5rem',
-              }}
+              className={`${styles.item} ${styles.warningItem}`}
+              data-severity={warning.severity}
             >
-              <strong style={{ color: severityColor(warning.severity) }}>
-                {warning.severity.toUpperCase()}
-              </strong>{' '}
-              {warning.reason}{' '}
+              <SeverityIcon severity={warning.severity} />
+              <span className={styles.reason}>{warning.reason}</span>
               <button
                 type="button"
+                className={styles.showMe}
                 onClick={() => onFocusPlacement(warning.subjects[0].placementId)}
               >
                 Show me
@@ -73,29 +155,38 @@ export function WarningsPanel({
         </ul>
       )}
 
-      <h3>Companion suggestions</h3>
+      <div className={styles.sectionHead}>
+        <h3 className={styles.sectionTitle}>Companion suggestions</h3>
+        {suggestions.length > 0 && (
+          <p className={styles.badges}>
+            <span className={styles.countBadge}>{suggestions.length}</span>
+          </p>
+        )}
+      </div>
+
       {suggestions.length === 0 ? (
-        <p>No companion suggestions for what&rsquo;s currently placed.</p>
+        <p className={styles.empty}>No companion suggestions for what&rsquo;s currently placed.</p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+        <ul className={styles.list}>
           {suggestions.map((suggestion) => {
             const suggested = plants.find((plant) => plant.id === suggestion.suggestedPlantId);
             return (
               <li
                 key={`${suggestion.forPlacementId}:${suggestion.suggestedPlantId}`}
-                style={{
-                  border: '1px solid #ccc',
-                  borderRadius: '0.5rem',
-                  padding: '0.5rem',
-                  marginBottom: '0.5rem',
-                }}
+                className={styles.item}
               >
-                <strong>{suggested?.commonName ?? suggestion.suggestedPlantId}</strong>{' '}
-                <span style={{ fontStyle: 'italic' }}>
+                <strong className={styles.suggested}>
+                  {suggested?.commonName ?? suggestion.suggestedPlantId}
+                </strong>
+                <span className={styles.evidence}>
                   {suggestion.evidence === 'well-supported' ? 'Well-supported' : 'Traditional'}
-                </span>{' '}
-                {suggestion.reason}{' '}
-                <button type="button" onClick={() => onFocusPlacement(suggestion.forPlacementId)}>
+                </span>
+                <span className={styles.reason}>{suggestion.reason}</span>
+                <button
+                  type="button"
+                  className={styles.showMe}
+                  onClick={() => onFocusPlacement(suggestion.forPlacementId)}
+                >
                   Show me
                 </button>
               </li>

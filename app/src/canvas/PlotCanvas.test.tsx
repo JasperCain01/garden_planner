@@ -2,7 +2,18 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { rectangleRegion, type Plant } from '@garden-planner/engine';
 import { usePlacementsStore } from '../state/placements-store.ts';
+import { FALLBACK_PX_PER_CM } from './geometry.ts';
 import { PlotCanvas } from './PlotCanvas.tsx';
+
+/**
+ * The scale these tests draw at. UI redesign Phase 2 made `pxPerCm` a required
+ * prop — the canvas is fitted to its measured viewport now, and jsdom has no
+ * layout to measure — so a component test has to name one. `FALLBACK_PX_PER_CM`
+ * is what the app itself falls back to when nothing has been measured, which
+ * makes it the honest choice here rather than an invented number: these tests
+ * render the canvas exactly as an unmeasured one renders.
+ */
+const TEST_PX_PER_CM = FALLBACK_PX_PER_CM;
 
 /**
  * A shipped crop with an icon that resolves (e.g. onion).
@@ -63,12 +74,17 @@ describe('PlotCanvas icon rendering (Stage 4.2)', () => {
 
     // Render should not throw; the icon is loaded async via useIconImage hook.
     const { container } = render(
-      <PlotCanvas region={rectangleRegion(300, 300)} severityByPlacementId={new Map()} />,
+      <PlotCanvas
+        region={rectangleRegion(300, 300)}
+        pxPerCm={TEST_PX_PER_CM}
+        severityByPlacementId={new Map()}
+      />,
     );
 
-    // Stage div should be present (react-konva renders a div wrapper).
-    const stageDiv = container.querySelector('div[style*="border"]');
-    expect(stageDiv).toBeTruthy();
+    // The drop-target container (which wraps react-konva's own div) should be
+    // present. Queried by its id rather than its styling: since UI redesign
+    // Phase 0 the border lives in `PlotCanvas.module.css`, not an inline style.
+    expect(container.querySelector('#plot-canvas')).toBeTruthy();
   });
 
   it('renders when a placed user-defined crop with generic fallback icon is present', () => {
@@ -85,11 +101,14 @@ describe('PlotCanvas icon rendering (Stage 4.2)', () => {
 
     // Should render without error even for a user crop with no shipped icon.
     const { container } = render(
-      <PlotCanvas region={rectangleRegion(300, 300)} severityByPlacementId={new Map()} />,
+      <PlotCanvas
+        region={rectangleRegion(300, 300)}
+        pxPerCm={TEST_PX_PER_CM}
+        severityByPlacementId={new Map()}
+      />,
     );
 
-    const stageDiv = container.querySelector('div[style*="border"]');
-    expect(stageDiv).toBeTruthy();
+    expect(container.querySelector('#plot-canvas')).toBeTruthy();
   });
 });
 
@@ -107,7 +126,13 @@ describe('PlotCanvas keyboard nudge (Workplan Stage 6.2)', () => {
   }
 
   it('nudges the selected placement by 10cm per arrow-key press', () => {
-    render(<PlotCanvas region={rectangleRegion(300, 300)} severityByPlacementId={new Map()} />);
+    render(
+      <PlotCanvas
+        region={rectangleRegion(300, 300)}
+        pxPerCm={TEST_PX_PER_CM}
+        severityByPlacementId={new Map()}
+      />,
+    );
 
     pressKey('ArrowRight');
     expect(usePlacementsStore.getState().placements[0]).toMatchObject({ x: 110, y: 100 });
@@ -117,7 +142,13 @@ describe('PlotCanvas keyboard nudge (Workplan Stage 6.2)', () => {
   });
 
   it('nudges by 50cm when Shift is held, for crossing a large plot without dozens of presses', () => {
-    render(<PlotCanvas region={rectangleRegion(300, 300)} severityByPlacementId={new Map()} />);
+    render(
+      <PlotCanvas
+        region={rectangleRegion(300, 300)}
+        pxPerCm={TEST_PX_PER_CM}
+        severityByPlacementId={new Map()}
+      />,
+    );
 
     pressKey('ArrowRight', { shiftKey: true });
     expect(usePlacementsStore.getState().placements[0]).toMatchObject({ x: 150, y: 100 });
@@ -128,7 +159,13 @@ describe('PlotCanvas keyboard nudge (Workplan Stage 6.2)', () => {
       placements: [{ id: 'placement-1', plant: ONION, x: 295, y: 100 }],
       selectedId: 'placement-1',
     });
-    render(<PlotCanvas region={rectangleRegion(300, 300)} severityByPlacementId={new Map()} />);
+    render(
+      <PlotCanvas
+        region={rectangleRegion(300, 300)}
+        pxPerCm={TEST_PX_PER_CM}
+        severityByPlacementId={new Map()}
+      />,
+    );
 
     pressKey('ArrowRight');
     expect(usePlacementsStore.getState().placements[0]).toMatchObject({ x: 300, y: 100 });
@@ -139,7 +176,13 @@ describe('PlotCanvas keyboard nudge (Workplan Stage 6.2)', () => {
       placements: [{ id: 'placement-1', plant: ONION, x: 100, y: 100 }],
       selectedId: null,
     });
-    render(<PlotCanvas region={rectangleRegion(300, 300)} severityByPlacementId={new Map()} />);
+    render(
+      <PlotCanvas
+        region={rectangleRegion(300, 300)}
+        pxPerCm={TEST_PX_PER_CM}
+        severityByPlacementId={new Map()}
+      />,
+    );
 
     pressKey('ArrowRight');
     expect(usePlacementsStore.getState().placements[0]).toMatchObject({ x: 100, y: 100 });

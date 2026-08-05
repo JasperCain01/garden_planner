@@ -20,8 +20,15 @@ describe('PlotDefinitionPage', () => {
   // rank (the "Add to plot" button, alongside the existing draggable
   // region) for keyboard-operable placement — genuinely more DOM per row,
   // and jsdom mounting + re-rendering that repeatedly (once per form edit
-  // below) now measures ~18-19s. Timeout raised with real headroom over
-  // that; not a regression to chase, just a bigger, still-correct tree.
+  // below) measured ~18-19s.
+  //
+  // **It is ~6s again as of UI redesign Phase 3**, which compacted every
+  // palette row from the engine's full reasoning (a summary, a confidence
+  // line and a four-bullet list, per crop) to an icon, a name and two chips.
+  // Roughly three times faster, from the same number of rows — a fair proxy
+  // for how much DOM that phase stopped building. The 30s timeout stays as
+  // headroom rather than being re-tuned to the new figure: it is insurance
+  // against a slow machine, and this test's cost has now moved twice.
   it('produces a region and conditions the engine actually accepts, driven end to end through the DOM', () => {
     render(<PlotDefinitionPage />);
 
@@ -31,11 +38,15 @@ describe('PlotDefinitionPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /use this shape/i }));
 
     // Fill in growing conditions: partial shade, clay soil, a named region.
-    fireEvent.change(screen.getByLabelText(/light level/i), {
-      target: { value: 'partial-shade' },
-    });
+    // Light is a segmented control since UI redesign Phase 4, so this is a
+    // click on the option rather than a change on a `<select>`.
+    fireEvent.click(screen.getByLabelText(/^partial shade$/i));
+    // Soil sits behind a disclosure now, and `getByLabelText` would happily
+    // drive it shut — which would leave this test green while the control was
+    // unreachable in a browser. Open it the way a user has to.
+    fireEvent.click(screen.getByText(/describe your soil/i));
     fireEvent.change(screen.getByLabelText(/soil texture/i), { target: { value: 'clay' } });
-    fireEvent.click(screen.getByLabelText(/pick a region/i));
+    // Location is one select now: the UK default is an option, not a mode.
     fireEvent.change(screen.getByLabelText(/^region$/i), {
       target: { value: 'south-west-england' },
     });

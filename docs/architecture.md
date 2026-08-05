@@ -695,51 +695,607 @@ stray `test.only` from turning the gate into a no-op that still reports green.
 **Deployment stayed manual** — now by choice rather than by rule (ADR
 [0028](./adr/0028-deploy-on-merge-not-automated.md)).
 
+## UI redesign Phase 0 — the design system foundation
+
+Everything above was built without a stylesheet. `docs/ui-aesthetic-review.md`
+says so plainly — "the app has **no visual design at all**", not one CSS file
+under `app/`, only inline `style` props on browser defaults — and lays out six
+phases to fix it. Phase 0 is the prerequisite: put the infrastructure in, move
+what exists onto it, change no layout. Reasoning in ADR
+[0029](./adr/0029-design-tokens-css-modules-and-self-hosted-font.md).
+
+**Tokens, then primitives, then modules.** `app/src/styles/tokens.css` holds
+every colour, space, radius, shadow and type value as a CSS custom property;
+`global.css` restyles the HTML primitives — buttons, inputs, selects,
+fieldsets, focus rings — in terms of those tokens; each component's own layout
+lives in a `*.module.css` beside it. That boundary is the whole design: an
+element looks right everywhere because of `global.css`, a component is laid out
+because of its own module, and `global.css` holds exactly three utility classes
+so it can't quietly become a framework. No Tailwind, no component library — see
+the ADR for why both were considered and declined.
+
+**Two colour maps live in TypeScript, and are checked against the CSS.** Konva
+paints a `<canvas>` and can't read a custom property, so `CATEGORY_COLORS`
+(`canvas/PlotCanvas.tsx`) and `SEVERITY_COLORS` (`warnings/severity.ts`) stay
+literal strings — while the DOM side of the same ideas reads `--category-*` and
+`--severity-*`. `app/src/styles/tokens.test.ts` reads the stylesheet off disk
+and fails if the two copies ever disagree, so the duplication is enforced
+rather than trusted.
+
+**Contrast was re-measured, not carried over.** Turning the suitability band
+into a chip puts its text on a tint instead of white, which is a different sum:
+three of the five values still cleared 4.5:1, two could not on any usable tint
+and were darkened one hue-step (`docs/accessibility.md` §2). The Stage 6.2
+posture — measure it, record the number — is the part that carried over.
+
+**The one webfont is self-hosted and hand-declared.** Fraunces for headings,
+system stack for body. `styles/fonts.css` writes the latin `@font-face` out
+rather than importing the package's three-subset stylesheet (36 kB instead of
+~110 kB), and `vite.config.ts`'s Workbox `globPatterns` gained `woff2` so an
+offline launch doesn't have to fetch it. No CDN, per ADR 0022's offline goal.
+
+**What this phase deliberately did not do:** the 640px centred column, the
+stacked "1./2./3./4." sections, the postage-stamp canvas and the always-expanded
+palette rows are all still there. They are Phases 1–4, and each component's doc
+comment now names which phase owns its next change.
+
+## UI redesign Phase 1 — the workspace layout
+
+The review's first three findings are one finding in three costumes: a 640px
+centred column on a 1920px screen, the signature canvas as a postage stamp
+two-thirds of the way down it, and the app's advertised gesture — drag a plant
+onto the plot — broken by the palette and the canvas being ~1,500px apart and
+never on screen together. Phase 1 replaces the document with a workspace.
+Reasoning in ADR
+[0030](./adr/0030-workspace-layout-not-a-document.md).
+
+**The frame and the columns are split at the router's seam.**
+`routes/AppShell.tsx` is now a two-row grid pinned to the viewport — a header
+band, and a content row of exactly the leftover height — and
+`plot/PlotDefinitionPage.tsx` fills that row with three columns: a 320px plants
+sidebar, the canvas taking everything left, and a 300px settings-and-checks
+column. The review drew it as one grid; the seam is here because those columns
+_are_ route content and `NotFound` shares the same shell. `minmax(0, 1fr)`
+appears in both files and is load-bearing in both: a bare `1fr` refuses to be
+shorter than its content, which is how 144 palette rows would put the page
+scrollbar back.
+
+**Landmarks replaced the numbered headings.** "1. Define your plot" … "4. Check
+for problems" enforced a sequence over what `DESIGN.md` calls a loop, so each
+region is a labelled `region` landmark with its own `<h2>`, and the settings
+column's three panels are `<details>`/`<summary>` with the heading inside the
+summary — a disclosure control and a heading at once, with no state to write.
+
+**One breakpoint, and below it the old layout.** Under 900px the shell stops
+pinning to the viewport, the grid becomes a flex column of cards, and the
+palette's crop list gets its `min(65vh, 40rem)` cap back — Stage 6.2's measured
+phone reasoning (`docs/accessibility.md` §3) is still right, and three
+internally-scrolling regions on a 640px-tall viewport would be worse than one
+long page. Above it, the cap is gone: the list just fills the sidebar.
+
+**"Add your own crop" is a modal now.** It used to take ~800px of page between
+the palette and the canvas — every pixel of which was also distance between
+them — for a capability used rarely. `ui/ModalDialog.tsx` (the app's first
+shared UI primitive) is a real `<dialog>` with `showModal()`, so the focus trap,
+Esc, focus-return and backdrop are the browser's rather than ours; jsdom has no
+`HTMLDialogElement`, so the component falls back to the `open` attribute in
+tests and never in a browser.
+
+**The layout has one accessibility cost, and it is paid.** Reading order runs
+plants → plot → settings, which puts the shape-and-conditions form behind the
+whole palette where it used to come first. `plot/SkipLinks.tsx` (Stage 6.2's
+`SkipToCanvasLink`, renamed) adds a second skip link straight to the settings
+column, rather than ordering the DOM against the visible columns and breaking
+focus order to fix a tab count. Net, the keyboard journey got shorter: 15 tab
+presses from the search field to the canvas where it was 35, mostly because the
+add-crop form's ~25 stops left the page (`docs/accessibility.md` §6).
+
+**Measured, not asserted.** `e2e/workspace-layout.spec.ts` holds the phase's
+acceptance criteria: the canvas region is 53% of the viewport at 1440×900 and
+64% at 1920×1080, the page doesn't scroll at either, a palette→canvas drag
+completes from the unfiltered default state, and the narrow breakpoint still
+stacks. Every drag-driven spec dropped its 4,000px-tall viewport trick along
+the way, and `e2e/drag.ts` swapped a hand-computed press point for
+`locator.hover()` — a palette row can be taller than the list box it lives in,
+so its box centre can be off-screen while the row is perfectly draggable.
+
+**What this phase deliberately did not do:** the canvas has the space but
+doesn't use it — the Konva stage is still fixed-scale, so the default 3×2m plot
+is a small rectangle centred in a large region. Scale-to-fit, zoom, a grid and
+footprint-true markers are Phase 2's entire brief. The palette rows are still
+fully expanded (Phase 3), the shape picker is still radios (Phase 4), and a
+dragged palette card is still clipped at the sidebar edge — the fix for that is
+a dnd-kit `DragOverlay`, which is Phase 5's "drag ghost".
+
+## UI redesign Phase 2 — the canvas as hero
+
+Phase 1 gave the canvas the middle of the workspace and stopped there. Phase 2
+is the canvas using it: the stage is **732×539** at 1440×900 (57% of its region,
+against 5.5% for the 228×168px rectangle it was) and **1033×761** at 1920×1080.
+Reasoning in ADR
+[0031](./adr/0031-canvas-as-hero-live-scale-and-one-plot-picture.md).
+
+**The scale is live, and required.** `canvas/useCanvasScale.ts` observes the
+canvas viewport with a `ResizeObserver` and fits the plot's padded bounding box
+to it; `state/canvas-view-store.ts` holds the measurement and a zoom factor
+_over_ that fit, so resizing the window re-fits and keeps the user's zoom
+intent. `canvas/geometry.ts` lost its `PX_PER_CM` constant and made `pxPerCm` a
+**required** parameter throughout — deliberately, because the two callers most
+likely to be forgotten (`drop.ts` converting a drop point, `export.ts`
+rasterising the stage) fail silently on a wrong scale, and a required parameter
+turns that into a compile error. The scale lives in a store rather than in
+component state for one reason: `useCanvasDropHandler` is called by
+`PlotDefinitionPage`, which owns the `DndContext` and sits above the canvas
+region, so it cannot see a size measured two components below it.
+
+**An export still comes out the same size.** `export.ts#exportPixelRatio`
+scales Konva's rasterisation back to a fixed 0.6 px/cm — the constant this phase
+removed — so the exported PNG's dimensions don't follow the window.
+
+**Markers are the crop's real footprint.** `canvas/footprint.ts` reuses the
+square `warnings/placement-derivation.ts` already models a placement's personal
+space as (`max(inRowCm, betweenRowCm)` via `resolveLatticeSpacing`), so what a
+user sees crowding is what the engine agrees is crowding. A marker is a
+translucent canopy at that footprint, a solid core capped at a legible size
+(what the old 16px circle was, and still what you click), and the icon on it.
+Measured: an extra radish draws 791 stage pixels, an extra butternut squash
+42,919.
+
+**"Add to plot" no longer stacks.** `geometry.ts#firstFreePosition` walks square
+rings outward from the plot's centre, nearest-first, and takes the first spot
+the crop's own footprint fits in. When the plot is genuinely full the centre
+comes back — the honest answer, with the count feedback already saying so.
+
+**One picture of the plot.** `plot/PlotOutlineEditor.tsx` — the second, SVG,
+differently-scaled drawing under the shape picker — is deleted. Editing the
+outline is an "Edit shape" mode on the canvas itself
+(`canvas/useOutlineEditing.ts`, `canvas/outline-edit.ts`), with the validation
+rule and `plot/outline-ops.ts` carried across intact. That reverses ADR 0016's
+choice of SVG over Konva, so that ADR carries a dated addendum saying what
+changed about its premise rather than being silently contradicted.
+
+**The corner handles are keyboard-operable now**, closing the gap
+`docs/accessibility.md` §5 had recorded since Stage 6.2. A corner has a
+selection, the toolbar's ◀/▶ move it, and the canvas's arrow keys act on it —
+ADR 0026's pattern for placements, applied to the same constraint (Konva shapes
+cannot be focused). Zoom, "Edit shape" and "Clear all" are all real buttons for
+the same reason; the pan gesture and ctrl-free zoom are additions on top, never
+the only way.
+
+**The scene is grounded.** A soil surround painted into the stage (so an export
+shows the same scene the app does), a 50cm/1m grid clipped to the outline and
+anchored to absolute coordinates so it stays put while a dragged corner moves
+the plot across it, dimension labels in the padding band, the drag-over tint on
+the plot's _interior_ rather than the container's border, a selection glow, a
+150ms drop pop (skipped under `prefers-reduced-motion`, read in JS because CSS
+can't reach inside a canvas), and a hover tooltip naming the crop and its
+spacing. Every colour is a `styles/tokens.css` token spelled as a literal in
+`canvas/scene.ts`, and `styles/tokens.test.ts` fails if the two disagree.
+
+**Measured, not asserted.** `e2e/canvas-scale.spec.ts` holds the phase's
+acceptance criteria, reading Konva's own `getImageData` back to count what was
+drawn — a measurement, not a screenshot comparison, so there is no golden file.
+Making the scale live also exposed a pre-existing drop-accuracy bug: dnd-kit's
+`delta` includes a scroll adjustment, and the palette's list auto-scrolls
+during the drag, which put a drop aimed at the plot's centre 12cm high.
+`useCanvasDropHandler` tracks the real pointer instead.
+
+**What this phase deliberately did not do:** an exit fade when a placement is
+deleted (the store forgets it synchronously; animating that needs history
+state, which Phase 5 builds properly). The palette rows are still fully
+expanded (Phase 3) and the shape picker is still radios (Phase 4).
+
+## UI redesign Phase 3 — the palette redesign
+
+Phases 1 and 2 both ended by saying the palette rows were still fully expanded.
+They were: every one of 144 crops rendered the engine's whole answer — icon,
+name, band, category, summary, confidence and a four-bullet reasoning list —
+which in a 320px sidebar measured a **median 631px per row** in a **394px**
+list box. The number of crops you could see without scrolling was **zero**.
+Reasoning in ADR
+[0032](./adr/0032-palette-compact-cards-and-details-on-demand.md).
+
+**The row is a compact card, and the reasoning is a press away.** 62px, uniform
+— a 40px icon on a category-tinted disc, the name, the band chip, the category
+word — with the summary, confidence and per-dimension reasoning opening in
+place beneath it, at most one at a time. Nothing was cut; it was re-altituded.
+The list is **9,508px** where it was ~93,900.
+
+**The sidebar's chrome shrank with it, which the review didn't ask for and the
+criterion needed.** Eight cards want ~530px of an 836px sidebar, so the count
+moved onto the heading's line, the filters became chips, and the intro
+paragraph became a closed disclosure directly above the list — kept, not
+deleted, because "read the confidence and per-plant reasoning, not just the
+band" is exactly the sentence a phase that hides the reasoning must not drop.
+Chrome went from 442px to **249px**.
+
+**The card is a drag surface and a disclosure, and telling those apart is a
+sensor setting.** dnd-kit had no activation constraint, so a click that drifted
+a pixel became a drag and swallowed the click; `PlotDefinitionPage` now gives
+the `PointerSensor` a 4px `activationConstraint` — the same slop `PlotCanvas`
+uses to tell a pan from a deselect — and narrows the `KeyboardSensor` to start
+on **Space alone**, freeing Enter for the disclosure (a `role="button"` `<div>`
+never synthesises a click from Enter). The card's accessible name says both
+jobs now, and `palette/labels.ts` is where both of the palette's aria-labels
+live, imported by `e2e/drag.ts` instead of restated as regex source there.
+
+**Two focusable controls per row, still, and no `<h3>`s.** 144 crops is 288 tab
+stops; a third control per row would be 432, so the card itself is the
+disclosure rather than gaining a "why?" button beside it, and
+`PlantPalette.test.tsx` asserts the count. The per-crop `<h3>` is gone: ARIA
+makes a `role="button"` element's subtree presentational, so those headings were
+never reliably headings, while they did put 144 entries in the outline ahead of
+the six that structure the app.
+
+**Filters are chips, and the category chips are the legend.** Native radios
+(one tab stop, arrow keys inside) styled through their labels, plus a "Great
+fits" band filter that lives in `palette/filters.ts` as a pure predicate beside
+`matchesSearch`/`matchesCategory`. A chip carrying a category's own canvas
+colour and its name _is_ the colour legend the review asked for separately.
+
+**Muting measured rather than assumed.** The review's `opacity: 0.6` for
+unsuitable crops takes the crop's name to 4.08:1, the category word to 2.49:1
+and the band chip's own hand-tuned text to 2.24:1 — three WCAG 1.4.3 failures.
+The muting is a greyscale icon on a neutral disc and a name one step down to
+`--text-muted` (5.58:1) instead (`docs/accessibility.md` §8).
+
+**Measured, not asserted.** `e2e/palette.spec.ts` holds the phase's acceptance
+criteria: **8 crops** visible without scrolling at 1440×900 (11 at 1920×1080),
+counted against the scrollport's own client box; the reasoning open in one real
+click; a drag that still places and does _not_ expand; and Enter reaching the
+disclosure with the `＋` button's contractual name intact. axe covers a sixth
+state, and the keyboard walkthrough gained step 2b with its tab counts
+unchanged.
+
+**What this phase deliberately did not do:** the shape picker is still radios
+and the conditions form still nests fieldsets (Phase 4), and a dragged card is
+still clipped at the sidebar's edge — that fix is a dnd-kit `DragOverlay`, which
+is Phase 5's "drag ghost".
+
+## UI redesign Phase 4 — the plot & conditions panel
+
+Every phase so far ended by saying the shape picker was still radios and the
+conditions form still nested fieldsets. It also left a number nobody had looked
+at: the settings column held **1,434px of content in an 844px box**, and with
+two crops placed the "Problems & suggestions" panel's top edge sat **263px below
+the bottom of the screen**. The app's live feedback was off screen while you
+edited the form that changes it — the review's §2.6 finding, surviving Phase 1's
+move intact. Reasoning in ADR
+[0033](./adr/0033-warnings-dock-shape-tiles-and-segmented-conditions.md).
+
+**The acceptance criterion was restated before it was tested.** The review asks
+for "zero vertical page scroll at 1440×900", and since Phase 1 the _page_ has
+never scrolled at all — `e2e/workspace-layout.spec.ts` asserts it — so as
+written it was already true and meant nothing. What is measured instead is the
+column's own internal overflow, and whether a warning is visible at the same time
+as the control that causes it. **590px → 0**, and 894px → 0 with a warning
+present; the dock's top edge is 381px _above_ the column's bottom where the old
+panel's was 263px below it.
+
+**The warnings list is a dock, and the column stops scrolling as a whole.** The
+two form panels scroll in a box of their own and the dock is a fixed sibling
+below them, capped at 45% and scrolling itself past that — the construction
+`PlantPalette` and `PlotCanvasSection` already use, applied a third time. That
+makes the criterion true _structurally_: whatever you scroll to in the form, the
+warning it causes is beside it. The cap is on the `<details>` rather than on the
+list inside it because a flex chain through a disclosure passes through Chrome's
+`::details-content` and silently stops shrinking — measured, 37px of overflow
+that ignored its own cap.
+
+**Pinning did not buy the room; shrinking the forms did.** Shape went 440px →
+292px and conditions 635px → 302px, which is what let all three panels **stay
+open by default** — the thing ADR 0030 argued for explicitly and this phase had
+to re-answer rather than assume.
+
+**The shape picker's tiles are drawn by the factory the button applies.**
+`plot/shape-glyph.ts` calls `rectangleRegion`/`lShapeRegion`/`circleRegion` with
+the picker's own metres and draws the polygon that comes back, so a tile is the
+outline you will get rather than an illustration of one, and the L's notch moves
+as you retype it. It reads the picker's state and never `plot-store`'s region,
+because `spacing/region.ts` is explicit that "nothing remembers it was a
+preset". `buildRegion` returns a result rather than throwing — it runs on every
+keystroke — and carries the factory's own message, which the picker shows inline
+under the fields with `aria-describedby` pointing at it.
+
+**Three `<select>`s became segmented controls, and the fieldsets were re-cut
+rather than deleted.** `ui/SegmentedControl.tsx` shows all of a ≤4-option
+vocabulary at once over the same native-radio mechanic Phase 3 built for the
+palette's chips — now shared as `ui/choice.module.css`, which the palette
+composes back. Each fieldset was decided against one test, _is the group's name
+recoverable from its own members' labels?_: Soil's is and Location collapsed to
+one control, so both go; Shape's is not, so it stays with a hidden legend; and
+the three segmented controls are new flat fieldsets whose visible legends are
+the fields' labels. Three nested became four flat.
+
+**The severity word became an icon in both places at once.**
+`warnings/SeverityIcon.tsx` draws `severity.ts`'s existing `severityGlyph`
+(`i`/`!`/`×`) — the one Stage 6.2 added so the canvas badge carried severity in
+shape and not only colour — with the word moved into its `aria-label`, and it
+replaced the uppercase text in the dock _and_ in the canvas's
+selected-placement readout, so one severity never reads two ways on one screen.
+`severityCounts` supplies the dock's "2 ×, 1 !" badge row, ordered most urgent
+first, because this module is the one place that knows severities have an order.
+
+**"Show me" pans, by asking rather than by holding a DOM node.** ADR 0031 §7
+made panning the canvas viewport's native scroll deliberately, so
+`canvas-view-store` carries a _request_ (a placement id and a nonce) and
+`canvas/useRevealPlacement.ts` — called where the viewport ref lives — performs
+it. It does not zoom, and that is recorded rather than skipped: every warning
+today is a relationship between two placements, so zooming in on one is the
+likeliest way to push the other off screen.
+
+**Measured, not asserted.** `e2e/plot-settings.spec.ts` holds the phase's
+acceptance criteria: the column's overflow in both states, the warning card and
+"Use this shape" inside the column's box at the same time, the severity count
+badge, that soil is genuinely unreachable until its disclosure is opened, and
+that "Show me" scrolls a zoomed-in plot. Tab stops in the column went **13 → 11**
+(14 with soil open), counted by walking Tab in the browser; axe covers eight
+states; the keyboard walkthrough gained step 5b with its friction figures
+unchanged.
+
+**What this phase deliberately did not do:** undo/redo, persistence, the drag
+ghost and the micro-polish sweep are Phase 5's whole brief, and a dragged palette
+card is still clipped at the sidebar's edge for want of a dnd-kit `DragOverlay`.
+
+## UI redesign Phase 5 — play, persistence, delight
+
+The review's §2.7 lists what makes the app hard to play with: no undo/redo, and
+"no localStorage persistence of the arrangement (refresh loses the design)".
+This phase fixes both, adds a named-designs switcher and a starter bed, and
+closes out the micro-polish list. Reasoning in ADR
+[0034](./adr/0034-designs-persistence-and-one-history-over-two-stores.md).
+
+**It had no acceptance criterion, so the first thing it owed was one.** Phases
+0–4 each carry a testable line in the review; Phase 5 is five bullets and a
+polish sweep. The criterion stated before anything was built: _at 1440×900, a
+design built in the browser survives a full round trip — place → undo → redo →
+**reload** → the same design — with every restored value passing the engine's own
+validators rather than a cast._ The number it exists to change, in the way Phase
+4's was 590px of overflow → 0: **placements surviving a reload, 0 → all of
+them.** `e2e/persistence.spec.ts` holds both.
+
+**A design is the plot, the conditions and the planting — and stored by
+reference.** `state/design.ts` defines it as `plot-store`'s region and conditions
+plus `placements-store`'s placements, as a derived view rather than a fifth
+store. `canvas-view-store` is deliberately not in it (scrolling the plot is not
+an edit), and a stored placement is `{ id, plantId, x, y }` — **104 bytes**
+against the **3,223** a serialised potato record costs, so a twenty-placement
+design is 2,050 bytes rather than 73,610 and a ~5 MiB quota holds ~2,557 designs
+rather than ~71. The in-memory store still holds whole `Plant`s, for the reasons
+it always did; `state/design-codec.ts` owns the translation.
+
+**A user crop travels with the design; a deleted shipped crop is dropped by
+name.** ADR 0025 removed 24 crops from the dataset on purpose and the dataset is
+a build artifact, so a `plantId` can dangle — and a `user-` one dangles the
+moment the tab closes, because those crops are session-scoped by explicit design
+in three places. A design therefore carries the `UserPlantInput`s its placements
+reference, restored through `createUserPlant` — the same trust boundary the
+add-crop form uses — which leaves `user-plants-store` session-scoped and writing
+nothing. A shipped crop that is gone has its placement dropped and named in a
+restore notice; a tombstone would be a marker the canvas cannot draw honestly,
+since a marker's size _is_ the crop's footprint.
+
+**One undo history over the two stores a design spans.**
+`state/design-history.ts` holds a stack of whole designs, noticed by subscription
+rather than by call site, so no store action has to remember to record. Per-store
+history is the option that cannot work: a real edit loop crosses both stores, so
+per-store stacks give a Ctrl+Z whose meaning depends on which store was touched
+last. Change detection is three identity comparisons — exact, and it ignores
+`selectPlacement`, which is not an edit. A gesture is one step: consecutive
+changes merge only within 600ms **and** at the same structure **and** when the
+previous step was itself a movement, which is what keeps "place a crop, then
+nudge it" as two steps.
+
+**"Clear all" stopped asking, and Delete still does.** The dialog's own reason
+was that clearing "throws away every placement and there is no undo until Phase
+5"; the rule is reversibility rather than destructiveness, so clearing is now one
+Ctrl+Z away and deleting a saved design — which the per-design history cannot
+reach — confirms inline in the switcher. What replaced the dialog is a better
+affordance: the header's Undo button is named for what it will undo ("Undo
+clearing the plot"), derived from a diff of the two designs.
+
+**Restore is a trust boundary, and an offline one.** `main.tsx` calls
+`restoreDesigns()` before the first render, so a saved garden is the first paint
+rather than a replacement for it, and everything it needs is local — no network,
+which matters because the service worker means a reload frequently has none.
+Nothing is cast: `safeValidatePlotRegion`, `PlotConditionsInputSchema`,
+`createUserPlant`, and resolution against the live plant list. A design that
+fails a gate is skipped and reported, never repaired and never fatal. There is no
+"Save" button, because the open design autosaves (debounced 200ms, flushed on
+`pagehide`/`visibilitychange`) and a save command only earns its place when
+unsaved work can exist.
+
+**The header stopped being one tab stop, and costs what it earns.** Undo, redo
+and one switcher button — not the review's four controls, because the header is
+the app's first tab stop and sits before the skip links. Measured: **one** extra
+stop at rest, **two** with something to undo, **three** with a redo available,
+because a `disabled` button is not in the tab order. The chrome renders itself
+away on `NotFound`, which shares the shell.
+
+**The sweep was audited rather than redone.** Transitions, reduced motion and
+focus rings were already done in Phases 0–2; what was outstanding was the **drag
+ghost** (a dnd-kit `<DragOverlay>`, deferred here by three ADRs — the crop list
+scrolls, so a card following the pointer in place was clipped at the sidebar's
+edge) and the **favicon** (`index.html` declared none at all; it is now the
+manifest's own `pwa-icon.svg`). The exit fade ADR 0031 also deferred here is
+recorded as **not done**, with the premise re-derived rather than repeated: the
+history is a stack of design snapshots, not a per-placement lifecycle, so undo
+was never the thing that unblocked it — and an undo can now put a placement back
+while its ghost is still fading.
+
+**Measured, not asserted.** `e2e/persistence.spec.ts` holds the round trip, the
+storage cost, the retired confirmation, Ctrl+Z standing down inside a text field,
+the starter bed, the designs switcher, the un-clipped ghost and the header's
+tab-stop count. `npm test` 244 → **304**, `npm run e2e` 27 → **35**, axe **0
+violations across eight states** (the clear-all confirmation's scan replaced by
+the switcher's), and the keyboard walkthrough gained step 2c. Two traps this
+phase had to disarm rather than discover late, both consequences of a reload
+meaning something new: `canvas-scale.spec.ts` reloads inside one test and would
+have measured through a plot that still had crops on it (`e2e/storage.ts`), and
+`keyboard-walkthrough.mjs` reloads three times for "a clean run" and would have
+gone on counting tab stops without failing.
+
+## UI redesign Phase 6 — nice-to-have (defer freely)
+
+The last phase, and the only one the review marks optional. Its four bullets are
+ideas rather than findings, and **three of them rest on premises the code and
+the data contradict** — so the phase's deliverable is each bullet investigated,
+built if it survives contact, and recorded with its reasoning if it does not.
+One was built and three were declined. All of it is in ADR
+[0035](./adr/0035-print-the-plan-and-three-declined-nice-to-haves.md), which is
+mostly the three, because a bullet declined without a reason is
+indistinguishable from a bullet forgotten.
+
+**It had no acceptance criterion either**, and it gets one the way Phase 5 did —
+stated first, enforced in a spec (`e2e/print.spec.ts`): _at 1440×900, printing
+the open plan produces a **document** — every placed crop, every warning and
+every companion suggestion reaching the paper in full, nothing clipped by a box
+that only scrolls on a screen, the plot picture inside the page width, and
+neither the 144-crop palette nor a single control printing._ The number it exists
+to change: **sheets of A4, 9 → 2.**
+
+**No sun-direction indicator: the app has no direction to point in.** There is
+no notion of compass direction anywhere in `app/src` or `packages/engine/src`,
+and light level is not a direction — it is one `full-sun | partial-shade |
+full-shade` for the whole plot, deliberately the same enum a plant's requirement
+uses. Inventing an orientation input would be a **design** field, so a stored
+format change and a `DESIGNS_STORAGE_VERSION` bump, plus a control in the column
+ADR 0033 §1 fought for the height of, plus engine work this phase may not do —
+for a nice-to-have. Drawing the light level on the stage instead was declined as
+redundant: it is already permanently on screen 300px away. The one place it was
+genuinely missing is the printed plan, and it is there now.
+
+**No seasonal tint: 8 of 144 crops (5.6%) carry a `seasons` block, and 0 of the
+5 in the starter bed do.** `plantingMonth` is optional and absent from
+`DEFAULT_CONDITIONS_INPUT`, so the feature's input is unset until the user picks
+one; and the honest version needs three states, not two, because 136 crops have
+no sow window to be in or out of. The app already visualises the planting month
+where there is room for words — the palette re-ranks on it and `scoreSeason`
+returns a sentence. **This bullet's output is a data finding**: `WORKPLAN.md`
+Stage 1.2 is still ⚠️ partial, and the sow windows are its missing half.
+
+**No companion lines: the engine emits no pair to draw one between.**
+`warnings/companions.ts` skips a candidate already among the placements —
+"there's nothing to suggest about a crop the user has already put in the
+ground" — so one end of a `CompanionSuggestion` is a marker and the other is
+guaranteed not to be. Verified on the starter bed: carrot and onion (the
+dataset's one `well-supported` pair) are both planted, and the dock suggests
+Lettuce and Watermelon Radish. Positive feedback for a pair already planted is a
+real gap but a different feature, and one the engine excludes on purpose; and
+hover is pointer-only, which ADR 0026 makes contractual.
+
+**A print stylesheet for the app, not a better PNG.** There was no `@media
+print` anywhere in `app/src`, so printing the workspace printed the workspace:
+**9 sheets of A4** at 1440×900 with the example bed placed, five of them the
+palette, 159 controls on them, and the warnings dock still capped at 45% of a
+column that does not exist on paper — 114px of it, one of its two items, below
+the fold of a box nobody can scroll. The exported PNG was left alone because it
+is not broken: ADR 0020's limits are all recorded "a snapshot, not a save file"
+choices. Three rules shape the sheet, written out at the top of
+`styles/global.css`'s print block with the per-component halves pointing back at
+it: **no print-only DOM** (so no tab stop moves and nothing exists that axe
+cannot see), **a pane that scrolls on screen must not be a box that clips on
+paper**, and **a control is an affordance and paper has none** — one exception,
+the header's designs button, which is the only place the open design's name is
+written.
+
+**The print layout and the canvas's `ResizeObserver` are a loop.** On paper the
+canvas viewport becomes as tall as its contents, and its contents are the plot
+whose size that observer decides: measured, the stage went **582 → 487 → 387px**
+on successive frames. A PDF rasterisation never sees it (that snapshot is
+synchronous) — a user holding **print preview** open does.
+`useMeasuredViewport` therefore stands down while `matchMedia('print').matches`,
+the second place in `app/src` that reads a media query in JavaScript; the
+stylesheet scales the picture to the page instead, in the only place this
+codebase overrides an inline style with `!important`.
+
+**Measured, not asserted.** `e2e/print.spec.ts`: 9 sheets → **2**, 159 printed
+controls → **1**, 144 palette rows → **0**, 114px of clipped dock → **0** (1 of
+2 items reaching the paper → 2 of 2), and a regression guard for the observer
+loop that fails at 349×257px without it. Every rule this phase added is inside
+`@media print`, so nothing on screen moved: `npm test` **304** unchanged,
+`npm run e2e` 35 → **39**, axe **0 violations across eight states**, keyboard
+walkthrough unchanged.
+
 ## Where to look next
 
-| Topic                                                             | File                                                                                               |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Concept, data-source assessment, licensing rationale              | [`DESIGN.md`](../DESIGN.md)                                                                        |
-| Staged build plan, per-stage models, verification                 | [`WORKPLAN.md`](../WORKPLAN.md)                                                                    |
-| Specific decisions and their alternatives                         | [`adr/`](./adr/)                                                                                   |
-| The plant-record schema (types + validation)                      | `packages/engine/src/schema/`                                                                      |
-| User-crop input schema and its upcast to a `Plant`                | `packages/engine/src/schema/user-plant.ts`                                                         |
-| Location/climate static data and `resolveClimate`                 | `packages/engine/src/climate/`                                                                     |
-| Suitability scoring, its reasoning, and `rankPlants`              | `packages/engine/src/suitability/`                                                                 |
-| The plot-region polygon, packing geometry, `fitPlant`             | `packages/engine/src/spacing/`                                                                     |
-| Warnings, companion suggestions, `evaluatePlot`                   | `packages/engine/src/warnings/`                                                                    |
-| App shell, routing, GitHub Pages basename                         | `app/src/routes/`                                                                                  |
-| Dataset-loading layer (loads + validates the shipped list)        | `app/src/dataset/shipped-plants.ts`                                                                |
-| The user-plant overlay store and merged `usePlantList`            | `app/src/state/`                                                                                   |
-| The plot-definition page, shape picker, outline editor            | `app/src/plot/`                                                                                    |
-| The plot store (current region + conditions input)                | `app/src/state/plot-store.ts`                                                                      |
-| The ranked/searchable/filterable plant palette                    | `app/src/palette/`                                                                                 |
-| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)     | `app/src/canvas/`                                                                                  |
-| The placements store (what's placed on the canvas)                | `app/src/state/placements-store.ts`                                                                |
-| The drag-and-drop E2E journey                                     | `app/e2e/plot-canvas.spec.ts`                                                                      |
-| The warnings overlay, companion suggestions, placement derivation | `app/src/warnings/`                                                                                |
-| The warnings-overlay E2E journey                                  | `app/e2e/warnings-overlay.spec.ts`                                                                 |
-| The add-crop form, id-collision check, edit/remove                | `app/src/user-crops/`                                                                              |
-| The add-custom-crop E2E journey                                   | `app/e2e/add-custom-crop.spec.ts`                                                                  |
-| The icon set, `resolveIcon`, and its style guide                  | `app/src/icons/`, [`docs/icon-style-guide.md`](./icon-style-guide.md)                              |
-| The icon generator (developer tool, not shipped)                  | `tools/icons/`                                                                                     |
-| The plot-image export pipeline and legend builder                 | `app/src/canvas/export.ts`                                                                         |
-| The plot-export E2E journey                                       | `app/e2e/plot-export.spec.ts`                                                                      |
-| The ETL pipeline shell, GBIF resolver, adding a source            | `packages/etl/README.md`                                                                           |
-| The hand-verified spacing table (curation, not ingest)            | `packages/etl/src/spacing/`                                                                        |
-| Evidence-tagged companion/antagonist data                         | `packages/etl/src/companions/`                                                                     |
-| Maintainer-curated full-plant input                               | `packages/etl/src/curated/`                                                                        |
-| The UK-outdoor exclusion list (which crops are pruned, and why)   | `packages/etl/src/exclusions/`                                                                     |
-| The Stage 1.5 merge, validation gate, and artifact                | `packages/etl/src/merge/`                                                                          |
-| The committed dataset artifact and its caveats                    | `data/README.md`                                                                                   |
-| Service worker + manifest config (`VitePWA`)                      | `app/vite.config.ts`                                                                               |
-| Manifest icons (`any` + maskable)                                 | `app/public/pwa-icon.svg`, `app/public/maskable-icon.svg`                                          |
-| The offline E2E journey                                           | `app/e2e/offline.spec.ts`                                                                          |
-| Lighthouse PWA audit command and today's recorded score           | root `README.md`                                                                                   |
-| Accessibility writeup, contrast/ARIA findings, responsive fix     | [`docs/accessibility.md`](./accessibility.md)                                                      |
-| The axe check (locally-runnable, today's result recorded)         | `app/e2e/a11y.spec.ts`, root `README.md`                                                           |
-| The keyboard-only walkthrough script and its recorded findings    | `app/keyboard-walkthrough.mjs`, [`docs/accessibility.md`](./accessibility.md)                      |
-| The "Skip to plot canvas" link                                    | `app/src/plot/SkipToCanvasLink.tsx`                                                                |
-| The CI checks workflow and what each job gates                    | `.github/workflows/checks.yml`, [`adr/0027`](./adr/0027-ci-checks-workflow-and-blocking-policy.md) |
-| Why there is no deploy-on-merge, and the recipe if you want one   | [`adr/0028`](./adr/0028-deploy-on-merge-not-automated.md)                                          |
-| The closing security review (npm audit triage, XSS check)         | [`docs/security-review.md`](./security-review.md)                                                  |
+| Topic                                                                 | File                                                                                                   |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Concept, data-source assessment, licensing rationale                  | [`DESIGN.md`](../DESIGN.md)                                                                            |
+| Staged build plan, per-stage models, verification                     | [`WORKPLAN.md`](../WORKPLAN.md)                                                                        |
+| Specific decisions and their alternatives                             | [`adr/`](./adr/)                                                                                       |
+| The plant-record schema (types + validation)                          | `packages/engine/src/schema/`                                                                          |
+| User-crop input schema and its upcast to a `Plant`                    | `packages/engine/src/schema/user-plant.ts`                                                             |
+| Location/climate static data and `resolveClimate`                     | `packages/engine/src/climate/`                                                                         |
+| Suitability scoring, its reasoning, and `rankPlants`                  | `packages/engine/src/suitability/`                                                                     |
+| The plot-region polygon, packing geometry, `fitPlant`                 | `packages/engine/src/spacing/`                                                                         |
+| Warnings, companion suggestions, `evaluatePlot`                       | `packages/engine/src/warnings/`                                                                        |
+| App shell, routing, GitHub Pages basename                             | `app/src/routes/`                                                                                      |
+| Design tokens (colour, space, type) and the global primitives         | `app/src/styles/tokens.css`, `app/src/styles/global.css`                                               |
+| The self-hosted heading font and why it's declared by hand            | `app/src/styles/fonts.css`, [`adr/0029`](./adr/0029-design-tokens-css-modules-and-self-hosted-font.md) |
+| The CSS↔TypeScript colour-mirror guard                                | `app/src/styles/tokens.test.ts`                                                                        |
+| The UI redesign plan and which phase owns what                        | [`docs/ui-aesthetic-review.md`](./ui-aesthetic-review.md)                                              |
+| The workspace layout: shell frame, three-column grid, breakpoint      | `app/src/routes/AppShell.module.css`, `app/src/plot/PlotDefinitionPage.module.css`                     |
+| Why the app is a workspace and not a document                         | [`adr/0030`](./adr/0030-workspace-layout-not-a-document.md)                                            |
+| The modal-dialog primitive (and its jsdom fallback)                   | `app/src/ui/ModalDialog.tsx`                                                                           |
+| The canvas's live scale: fit, zoom, and where it is stored            | `app/src/canvas/useCanvasScale.ts`, `app/src/state/canvas-view-store.ts`                               |
+| Pixel⟷centimetre maths, and the first-free-position search            | `app/src/canvas/geometry.ts`                                                                           |
+| How big a crop's marker is, and why that figure                       | `app/src/canvas/footprint.ts`                                                                          |
+| Editing the plot outline on the canvas (pointer and keyboard)         | `app/src/canvas/useOutlineEditing.ts`, `app/src/canvas/outline-edit.ts`                                |
+| Why the canvas is the hero, and what it cost ADR 0016                 | [`adr/0031`](./adr/0031-canvas-as-hero-live-scale-and-one-plot-picture.md)                             |
+| The add-crop dialog off the plants sidebar                            | `app/src/user-crops/AddCropDialog.tsx`                                                                 |
+| The workspace layout acceptance criteria, as a test                   | `app/e2e/workspace-layout.spec.ts`                                                                     |
+| Dataset-loading layer (loads + validates the shipped list)            | `app/src/dataset/shipped-plants.ts`                                                                    |
+| The user-plant overlay store and merged `usePlantList`                | `app/src/state/`                                                                                       |
+| The plot-definition page, shape picker, outline editor                | `app/src/plot/`                                                                                        |
+| The plot store (current region + conditions input)                    | `app/src/state/plot-store.ts`                                                                          |
+| The ranked/searchable/filterable plant palette                        | `app/src/palette/`                                                                                     |
+| The palette's two aria-labels, shared with the E2E suite              | `app/src/palette/labels.ts`                                                                            |
+| Why the palette is compact cards with the reasoning on demand         | [`adr/0032`](./adr/0032-palette-compact-cards-and-details-on-demand.md)                                |
+| The palette acceptance criteria (crops visible, one click), as a test | `app/e2e/palette.spec.ts`                                                                              |
+| The warnings dock, severity icon and count badges                     | `app/src/warnings/WarningsPanel.tsx`, `app/src/warnings/SeverityIcon.tsx`                              |
+| The shared visually-hidden choice-control mechanic                    | `app/src/ui/choice.module.css`, `app/src/ui/SegmentedControl.tsx`                                      |
+| How a shape tile is drawn, and why from the picker's own state        | `app/src/plot/shape-glyph.ts`                                                                          |
+| Scrolling a warned-about placement into view                          | `app/src/canvas/useRevealPlacement.ts`                                                                 |
+| Why the settings column has a pinned dock                             | [`adr/0033`](./adr/0033-warnings-dock-shape-tiles-and-segmented-conditions.md)                         |
+| The settings-column acceptance criteria, as a test                    | `app/e2e/plot-settings.spec.ts`                                                                        |
+| What a design is, and how it is read from / written to the stores     | `app/src/state/design.ts`                                                                              |
+| The stored format, its validators, and the missing-crop rule          | `app/src/state/design-codec.ts`                                                                        |
+| Undo/redo: one history over two stores, and what it won't touch       | `app/src/state/design-history.ts`                                                                      |
+| The designs library, autosave, and the restore that runs before paint | `app/src/state/designs-store.ts`, `app/src/main.tsx`                                                   |
+| The header's undo/redo buttons and the designs switcher               | `app/src/designs/`                                                                                     |
+| The starter bed, and why it is a toolbar button and not a modal       | `app/src/designs/example-bed.ts`                                                                       |
+| Why designs persist, and why one history spans two stores             | [`adr/0034`](./adr/0034-designs-persistence-and-one-history-over-two-stores.md)                        |
+| What the plan looks like on paper, and the three rules that shape it  | `app/src/styles/global.css` (`@media print`), `app/e2e/print.spec.ts`                                  |
+| Why there is no sun indicator, seasonal tint or companion line        | [`adr/0035`](./adr/0035-print-the-plan-and-three-declined-nice-to-haves.md)                            |
+| The persistence acceptance criteria (the round trip), as a test       | `app/e2e/persistence.spec.ts`                                                                          |
+| Keeping a spec's second page load from restoring its own earlier work | `app/e2e/storage.ts`                                                                                   |
+| The drag-and-drop plot canvas (Konva scene + dnd-kit handoff)         | `app/src/canvas/`                                                                                      |
+| The placements store (what's placed on the canvas)                    | `app/src/state/placements-store.ts`                                                                    |
+| The drag-and-drop E2E journey                                         | `app/e2e/plot-canvas.spec.ts`                                                                          |
+| The warnings overlay, companion suggestions, placement derivation     | `app/src/warnings/`                                                                                    |
+| The warnings-overlay E2E journey                                      | `app/e2e/warnings-overlay.spec.ts`                                                                     |
+| The add-crop form, id-collision check, edit/remove                    | `app/src/user-crops/`                                                                                  |
+| The add-custom-crop E2E journey                                       | `app/e2e/add-custom-crop.spec.ts`                                                                      |
+| The icon set, `resolveIcon`, and its style guide                      | `app/src/icons/`, [`docs/icon-style-guide.md`](./icon-style-guide.md)                                  |
+| The icon generator (developer tool, not shipped)                      | `tools/icons/`                                                                                         |
+| The plot-image export pipeline and legend builder                     | `app/src/canvas/export.ts`                                                                             |
+| The plot-export E2E journey                                           | `app/e2e/plot-export.spec.ts`                                                                          |
+| The ETL pipeline shell, GBIF resolver, adding a source                | `packages/etl/README.md`                                                                               |
+| The hand-verified spacing table (curation, not ingest)                | `packages/etl/src/spacing/`                                                                            |
+| Evidence-tagged companion/antagonist data                             | `packages/etl/src/companions/`                                                                         |
+| Maintainer-curated full-plant input                                   | `packages/etl/src/curated/`                                                                            |
+| The UK-outdoor exclusion list (which crops are pruned, and why)       | `packages/etl/src/exclusions/`                                                                         |
+| The Stage 1.5 merge, validation gate, and artifact                    | `packages/etl/src/merge/`                                                                              |
+| The committed dataset artifact and its caveats                        | `data/README.md`                                                                                       |
+| Service worker + manifest config (`VitePWA`)                          | `app/vite.config.ts`                                                                                   |
+| Manifest icons (`any` + maskable)                                     | `app/public/pwa-icon.svg`, `app/public/maskable-icon.svg`                                              |
+| The offline E2E journey                                               | `app/e2e/offline.spec.ts`                                                                              |
+| Lighthouse PWA audit command and today's recorded score               | root `README.md`                                                                                       |
+| Accessibility writeup, contrast/ARIA findings, responsive fix         | [`docs/accessibility.md`](./accessibility.md)                                                          |
+| The axe check (locally-runnable, today's result recorded)             | `app/e2e/a11y.spec.ts`, root `README.md`                                                               |
+| The keyboard-only walkthrough script and its recorded findings        | `app/keyboard-walkthrough.mjs`, [`docs/accessibility.md`](./accessibility.md)                          |
+| The two skip links (canvas, plot settings)                            | `app/src/plot/SkipLinks.tsx`                                                                           |
+| The CI checks workflow and what each job gates                        | `.github/workflows/checks.yml`, [`adr/0027`](./adr/0027-ci-checks-workflow-and-blocking-policy.md)     |
+| Why there is no deploy-on-merge, and the recipe if you want one       | [`adr/0028`](./adr/0028-deploy-on-merge-not-automated.md)                                              |
+| The closing security review (npm audit triage, XSS check)             | [`docs/security-review.md`](./security-review.md)                                                      |

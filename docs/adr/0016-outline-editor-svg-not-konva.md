@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted (Stage 3.2).
+Accepted (Stage 3.2). **Superseded in part** by ADR
+[0031](./0031-canvas-as-hero-live-scale-and-one-plot-picture.md) (2026-08-03) —
+see the dated addendum at the foot of this file. The decision below was right
+for what it decided and is left intact; what changed is the premise it decided
+under.
 
 ## Context
 
@@ -118,3 +122,57 @@ the gesture.
 - The outline editor and the future plot canvas are two independent
   components against the same `PlotRegion` data; there is no shared
   rendering code between them today, by choice, not oversight.
+
+---
+
+## Addendum, 2026-08-03 — the premise changed, and the editor moved to Konva
+
+UI redesign Phase 2 (ADR
+[0031](./0031-canvas-as-hero-live-scale-and-one-plot-picture.md)) deletes
+`app/src/plot/PlotOutlineEditor.tsx` and rebuilds outline editing as a mode of
+the Konva plot canvas. That is the opposite of what this ADR chose, so it is
+recorded here rather than left as a silent contradiction for the next reader to
+discover.
+
+**What this ADR got right, and what changed.** The reasoning above turns on one
+sentence: "this stage's interaction is a handful of draggable points on a static
+background, not a canvas scene." That was true and is still true _of a
+standalone editor_. What changed is that the editor is no longer standalone.
+`docs/ui-aesthetic-review.md` found the real cost of the split — the app drew
+the plot **twice, at two different scales, in two different columns**, and
+"users must mentally reconcile them" — and Phase 2's brief is one picture of the
+plot. The question stopped being "does a polygon editor need Konva?" (it
+doesn't) and became "should a scene that already exists in Konva have a second
+renderer bolted beside it?" (it shouldn't). Nothing here was wrong; the
+alternatives simply aren't the same two any more.
+
+**The reasoning that survived the move.** Three of the things this ADR settled
+were about the _rule_, not the renderer, and they moved across unchanged:
+
+- Re-validating through `safeValidatePlotRegion` after **every single edit**,
+  and never handing an invalid outline to the store, is now
+  `app/src/canvas/outline-edit.ts` — pure, and unit-tested where it used to be
+  covered through a component.
+- The vertex operations (`app/src/plot/outline-ops.ts`) are untouched, still
+  shared, still with their own tests. They never had a rendering opinion, which
+  is why.
+- "`PlotRegion` has no rendering opinion baked in", so a different renderer can
+  read the same `region.vertices` — the last consequence above, and the thing
+  that made this move cheap.
+
+**The one piece that did not survive, and didn't need to.** The "drag math, and
+why it needs no DOM measurement" section is obsolete for this component. It
+existed because `getScreenCTM` isn't implemented under jsdom and
+`getBoundingClientRect` returns zeroes there, so the editor tracked
+`pointermove` deltas and divided by a fixed `PX_PER_CM`. A Konva node reports
+its position in stage coordinates directly, and `canvas/geometry.ts#pxToCm`
+converts it with the same arithmetic every other thing on that canvas uses.
+The jsdom constraint is unchanged — it is simply answered by ADR 0017's
+existing rule (the Konva scene is covered by Playwright, the pure logic by unit
+tests) rather than by hand-rolled delta tracking.
+
+**And the hard-coded `PX_PER_CM` this ADR's first consequence flagged** — "a
+future stage wanting a zoomable/pannable editor (not asked for here) would need
+to generalise this rather than reuse it as-is" — is exactly what Phase 2 did,
+for both the editor and the canvas at once. `canvas/geometry.ts` takes a live,
+required `pxPerCm`; the constant is gone.

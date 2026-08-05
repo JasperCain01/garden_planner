@@ -1,0 +1,320 @@
+/*
+ * The workspace grid (UI redesign Phase 1 — the big one; ADR 0030).
+ *
+ * Phase 0 left this a flex column of stacked cards and said so: "It is still a
+ * vertical document — a single column of stacked sections that enforces a
+ * false 1→2→3→4 sequence over what is really a loop." This is that loop, laid
+ * out: plants on the left, the plot in the middle, the controls that change it
+ * on the right, all on screen at once.
+ *
+ * `routes/AppShell.module.css` supplies the frame this fills — a content row
+ * of exactly the leftover viewport height.
+ */
+
+/*
+ * Three columns, from `styles/tokens.css`: two fixed sidebars and a centre
+ * that takes everything else. `minmax(0, 1fr)` (not a bare `1fr`) for the
+ * centre so a wide Konva stage scrolls inside its own region instead of
+ * widening the column and pushing the right-hand panel off-screen.
+ *
+ * No gap and no page padding, deliberately: every pixel spent between the
+ * columns is a pixel taken from the canvas, and each column pads its own
+ * contents anyway. At 1440×900 the centre column measures ~820×836 — 53% of
+ * the viewport, which is the acceptance bar this phase was set.
+ */
+.workspace {
+  display: grid;
+  grid-template-columns: var(--workspace-plants) minmax(0, 1fr) var(--workspace-checks);
+  min-height: 0;
+  height: 100%;
+}
+
+/* Both sidebars: white surfaces flanking the cream centre, each a flex column
+ * that owns its own scrolling. `min-height: 0` is what lets them scroll rather
+ * than stretch the grid row (the same reason the shell's content row takes a
+ * `0` minimum). */
+.plants,
+.checks {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-4);
+  background: var(--surface-card);
+}
+
+/* The plants column doesn't scroll as a whole — `PlantPalette` scrolls its own
+ * crop list, which keeps the filters and the add-crop button in place while
+ * 144 crops move past them. */
+.plants {
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+}
+
+/*
+ * The checks column, split in two by UI redesign Phase 4 (ADR 0033 §1).
+ *
+ * It used to scroll as a whole — "its three panels are ordinary content of
+ * varying length, with nothing in them worth pinning". Measured, that was
+ * 1,434px of content in an 844px box: 590px of internal overflow, and the panel
+ * worth pinning turned out to be the third one. With two crops placed, the
+ * "Problems & suggestions" panel's top edge sat **263px below the bottom of the
+ * column** — the app's live feedback off screen while you edited the form that
+ * changes it.
+ *
+ * So the column itself no longer scrolls: `.settings` (the two form panels)
+ * does, and the warnings dock is a fixed sibling under it. Same construction as
+ * the plants column, one step further in.
+ */
+.checks {
+  gap: var(--space-2);
+  overflow: hidden;
+  border-left: 1px solid var(--border);
+}
+
+/* The scrolling half. `min-height: 0` is what lets it shrink below its content
+ * rather than stretching the column and pushing the dock off the bottom — the
+ * same rule every scrolling flex child in this app depends on. */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/*
+ * The pinned half. It takes the height its contents want, up to a cap: past
+ * that it scrolls itself. Without the cap a plot with a dozen problems would
+ * push the form it is complaining about out of the column, which is the bug
+ * this phase exists to fix, arriving from the other direction.
+ *
+ * 45% is the largest share that still leaves the whole shape panel and the top
+ * of the conditions form reachable at 1440×900 with the dock at its cap —
+ * measured against `e2e/plot-settings.spec.ts`, not picked for looks.
+ *
+ * **The scroll is on the `<details>` itself, not on the list inside it**, and
+ * that is deliberate rather than lazy. A flex chain from here down to the list
+ * would have to pass *through* the disclosure's content box, which Chrome
+ * exposes as a `::details-content` pseudo-element and other engines don't: the
+ * body ends up a grandchild of the flex container and silently refuses to
+ * shrink, so the panel overflows its own cap. Measured, that was 37px of column
+ * overflow with two crops placed. Scrolling the panel needs no flex at all and
+ * behaves the same in every engine.
+ */
+.dockPanel {
+  flex-shrink: 0;
+  max-height: 45%;
+  overflow-y: auto;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+/* Which leaves the panel's own heading free to scroll away with the cards, so
+ * it is pinned to the top of its scrollport instead — the dock has to keep
+ * saying what it is. */
+.dockPanel .panelSummary {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-card);
+}
+
+.canvas {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* -------------------------------------------------------- Disclosure panels */
+
+.panel {
+  flex-shrink: 0;
+}
+
+.panel + .panel {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+/*
+ * `list-style: none` *and* the WebKit pseudo-element are both needed to drop
+ * the native disclosure triangle — Safari still uses
+ * `::-webkit-details-marker`, everything else uses the list marker. The
+ * replacement chevron is drawn on `::before` so it can rotate with the state.
+ */
+.panelSummary {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-radius: var(--radius);
+  list-style: none;
+  cursor: pointer;
+}
+
+.panelSummary::-webkit-details-marker {
+  display: none;
+}
+
+.panelSummary::before {
+  content: '▾';
+  display: inline-block;
+  color: var(--green-700);
+  font-size: var(--text-sm);
+  transition: transform var(--motion-fast) ease;
+}
+
+.panel:not([open]) .panelSummary::before {
+  transform: rotate(-90deg);
+}
+
+.panelSummary:hover .panelTitle {
+  color: var(--green-700);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: var(--text-h2);
+}
+
+/* No bottom padding: a panel is already separated from the next by a gap and a
+ * hairline rule, so this was decoration paid for twice — and paid for out of
+ * the budget ADR 0033 §1 is about. */
+.panelBody {
+  padding-bottom: 0;
+}
+
+.panelIntro {
+  margin: 0 0 var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/*
+ * The stacked fallback below `--layout-narrow` (`styles/tokens.css`).
+ *
+ * Workplan Stage 6.2's responsive reasoning still stands and is why this
+ * exists: on a phone the app reads as one page of sections, not as three
+ * cramped scrollports on a 640px-tall viewport. The regions become ordinary
+ * cards again — which is exactly what they were before this phase.
+ */
+@media (max-width: 899px) {
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    height: auto;
+    padding: var(--space-4);
+  }
+
+  .plants,
+  .checks,
+  .canvas {
+    overflow: visible;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  /*
+   * The warnings dock degrades to what it was before Phase 4: an ordinary
+   * stacked card at the end of the column. A dock only means anything against a
+   * pinned column, and there isn't one here — this breakpoint deliberately
+   * gives up the three scrollports for one scrolling page (ADR 0030), so a
+   * capped, internally-scrolling panel would be a second scrollport inside a
+   * page that already scrolls.
+   */
+  .settings {
+    display: block;
+    overflow: visible;
+  }
+
+  .dockPanel {
+    max-height: none;
+    overflow: visible;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  /* Sticky against the *page* scrollport is not the same offer at all — it
+   * would park the heading over the content as the page scrolls. */
+  .dockPanel .panelSummary {
+    position: static;
+  }
+}
+
+/*
+ * Print (UI redesign Phase 6, ADR 0035 — `styles/global.css`'s print block has
+ * the whole story; this file owns the part of it that is a *layout*).
+ *
+ * The workspace becomes a plan sheet: one column, in reading order, with the
+ * three scrollports and the dock's cap released. Structurally this is the
+ * narrow breakpoint above with two differences, and both are about what a plan
+ * is rather than about width.
+ *
+ * **The plants column does not print.** It is the single biggest thing on the
+ * sheet — 144 crops, measured at 5 of the 9 A4 pages the app produced before
+ * this phase — and it is a *catalogue of what you could plant*, which is the
+ * one thing a finished plan is not about. Everything it contributes to the plan
+ * proper is already elsewhere on the sheet: what is actually planted is drawn
+ * on the plot and listed in the crop key under it.
+ *
+ * **Neither does the shape panel** (`.shapePanel`, the one `Panel` that carries
+ * a class for this). Its three tiles, two number fields and Apply button are
+ * how you *change* the plot; what they say is already on the picture, where
+ * Phase 2 put the dimension labels precisely so the plot would stop being an
+ * unlabelled rectangle. Its one line of prose — "Fine-tune the outline with
+ * Edit shape on the plot" — is an instruction for a control that isn't there.
+ * "Growing conditions" is kept for the opposite reason: it is the only place on
+ * the sheet that says what kind of plot this is a plan *for*.
+ */
+@media print {
+  .workspace {
+    display: block;
+    height: auto;
+    padding: 0;
+  }
+
+  .plants,
+  .shapePanel {
+    display: none;
+  }
+
+  .checks,
+  .canvas {
+    overflow: visible;
+    padding: 0;
+    border: 0;
+  }
+
+  .settings {
+    display: block;
+    overflow: visible;
+  }
+
+  /* Rule 2 of the print block: a pane that scrolls on screen must not be a box
+   * that clips on paper. This is the cap that hid 114px of the dock — one of
+   * its two items — on the sheet the app printed before this phase. */
+  .dockPanel {
+    max-height: none;
+    overflow: visible;
+    border-top: 1px solid var(--border);
+  }
+
+  .dockPanel .panelSummary {
+    position: static;
+  }
+
+  /* The chevron is the disclosure's affordance and nothing else — it says "this
+   * opens and closes", which is the one promise a sheet of paper cannot keep.
+   * The heading it sits beside says everything it was there to say.
+   * `PlotConditionsForm.module.css` drops the soil disclosure's for the same
+   * reason. */
+  .panelSummary::before {
+    display: none;
+  }
+}

@@ -30,7 +30,11 @@ under test — it's the actual build users get, service worker included.
       location.
 - [ ] **Discover suitable plants.** Confirm the palette re-ranks when you
       change the plot's light/soil/location — a shady plot should demote
-      full-sun crops and promote shade-tolerant ones.
+      full-sun crops and promote shade-tolerant ones. Press a crop's card and
+      confirm its summary, confidence and per-dimension reasoning open beneath
+      it (UI redesign Phase 3 moved that content behind one press); confirm the
+      chip filters narrow the list and that unsuitable crops stay visible but
+      muted rather than vanishing.
 - [ ] **Plan the layout.** Drag a plant from the palette onto the canvas.
       Confirm a live count/density figure appears and updates as you place
       more of the same crop.
@@ -60,11 +64,25 @@ about looking at it, not re-proving the assertions.
       export size, icons render (not blank — this is the
       `document.fonts.ready` / icon-preload gotcha ADR 0020 names), and the
       legend lists the placed crops plus the plot's soil/climate settings.
+- [ ] **Print the plan** (UI redesign Phase 6, ADR
+      [0035](./adr/0035-print-the-plan-and-three-declined-nice-to-haves.md)).
+      With crops placed, press Ctrl/⌘+P. Confirm the preview is a **document**,
+      not the app: a title block naming the open design, the plot picture, the
+      crop key, the growing conditions, and the problems & suggestions — with no
+      palette, no toolbars and no buttons on it. Two things a script cannot
+      assert and a human can: that the **selected light level is still visibly
+      selected** (its filled segment is the one thing on the sheet where colour
+      is the only signal, so it is forced to print — check it on a mono printer
+      or a greyscale preview too), and that **the plot picture does not shrink
+      while the preview is open** — leave the dialog up for a few seconds and
+      watch it. That last one is a real bug that was found and fixed in this
+      phase, and the only path that reproduces it is this one.
 
-Covered by script in `app/e2e/add-custom-crop.spec.ts` and
-`app/e2e/plot-export.spec.ts`; this pass confirms the artifact actually looks
-right, which a script can only partially assert (a non-blank PNG is not the
-same as a legible one).
+Covered by script in `app/e2e/add-custom-crop.spec.ts`,
+`app/e2e/plot-export.spec.ts` and `app/e2e/print.spec.ts`; this pass confirms
+the artifact actually looks right, which a script can only partially assert (a
+non-blank PNG is not the same as a legible one, and a page count is not a
+readable plan).
 
 ## 3. Offline behaviour
 
@@ -91,12 +109,12 @@ Lighthouse score slips or a keyboard step regresses, so re-run them, compare to
 the last-recorded result, and treat a material change as a note in `README.md`/
 `docs/accessibility.md` rather than a shrug.
 
-| Check                | Command                                                                                                 | Last recorded result                                                                                                                                                                                                                                                                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full E2E regression  | `PW_EXECUTABLE_PATH=/path/to/chromium npm run e2e`                                                      | 7/7 passing (Stage 6.3, and again in CI at Stage 6.4). **Blocking in CI.** `plot-export.spec.ts`'s known flake is now handled by `retries: 1` under `CI` rather than by re-running by hand.                                                                                                                                                          |
-| Accessibility (axe)  | `npm run a11y -w app` (needs the preview server running)                                                | 0 violations, both scanned states (unchanged since Stage 6.2; re-confirmed by CI at Stage 6.4). **Blocking in CI.**                                                                                                                                                                                                                                  |
-| Keyboard walkthrough | `PW_EXECUTABLE_PATH=/path/to/chromium npm run keyboard-walkthrough -w app`                              | All steps pass, 35 tab presses to the canvas — identical in CI at Stage 6.4. Same friction/gap findings as Stage 6.2 (see §5). **Informational in CI.**                                                                                                                                                                                              |
-| Lighthouse PWA audit | `npx lighthouse@11 http://localhost:4173/ --only-categories=pwa --chrome-flags="--headless=new" --view` | **0.88 / 1.00** — unchanged since Stage 5.1, and measured at exactly 0.88 again by CI at Stage 6.4. Same single failing audit (custom splash screen needs a PNG ≥512px icon; this project ships SVG icons only, an accepted gap — see `README.md`). **Informational in CI**, and this figure is the baseline its run-summary reporter warns against. |
+| Check                | Command                                                                                                 | Last recorded result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Full E2E regression  | `PW_EXECUTABLE_PATH=/path/to/chromium npm run e2e`                                                      | 39/39 passing (UI redesign Phase 6 — was 7/7 through Stage 6.4, 13/13 after Phase 1's `workspace-layout.spec.ts`, 18/18 after Phase 2's `canvas-scale.spec.ts`, 22/22 after Phase 3's `palette.spec.ts`, 27/27 after Phase 4's `plot-settings.spec.ts`, 35/35 after Phase 5's `persistence.spec.ts`; `print.spec.ts` adds four, holding Phase 6's acceptance criterion). **Blocking in CI.** `plot-export.spec.ts`'s long-standing flake was diagnosed and fixed in Phase 1 — see §5. Note that `canvas-scale.spec.ts`'s two pixel-differencing specs take 33s and 39s against a 30s default timeout on a slow machine; they are not flaky, they are slow, and `--timeout=90000` is the honest way to run them there. (Phase 5's container ran them in 21.6s each and Phase 6's in 24.6s and 23.0s, i.e. inside the default — the note is for the slower machine, and 24s against a 30s budget is why it stays.) **Phase 5 also changed what a second `page.goto` means**: the app saves the open design now, and a context is fresh per _test_, not per navigation, so a spec that loads the app twice sees its own earlier work — `e2e/storage.ts`'s `startWithNoSavedDesigns` is how `canvas-scale.spec.ts` opts out, and `print.spec.ts` with it. **`print.spec.ts` rasterises a real PDF** (`page.pdf()`), which is headless-Chromium-only — the mode this suite runs in, and worth knowing before anyone adds `headless: false`. |
+| Accessibility (axe)  | `npm run a11y -w app` (needs the preview server running)                                                | 0 violations, all eight scanned states (unchanged since Stage 6.2; each state arrived with the surface it scans — the add-crop modal in UI redesign Phase 1, edit-shape mode and the clear-all confirmation in Phase 2, an expanded palette card in Phase 3, the warnings dock with a warning in it and the soil disclosure open in Phase 4, and the designs switcher in Phase 5, which took the retired clear-all confirmation's place). Phase 6 added none: the printed sheet is not a state of the application, and axe evaluates the screen medium, which that phase deliberately did not touch. **Blocking in CI.**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Keyboard walkthrough | `PW_EXECUTABLE_PATH=/path/to/chromium npm run keyboard-walkthrough -w app`                              | All steps pass, 20 tab presses to the canvas (35 before UI redesign Phase 1 moved the add-crop form's ~25 stops behind a dialog, then 15, then 20 once Phase 2's canvas toolbar joined the path) — unchanged by Phases 3, 4 and 5. Reaching the palette search field is **5** presses where it was 4, which is the one stop Phase 5's header gained. Two skip links, and a step each for the dialog, zoom, edit-shape, Phase 3's card disclosure, Phase 4's warnings-dock "Show me" and Phase 5's undo/redo; see `docs/accessibility.md` §6–§10. **Informational in CI.** Note that the script clears the saved design on every navigation (Phase 5): it reloads three times for "a clean run", and without that it would silently start counting tab stops through a canvas that still had crops on it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Lighthouse PWA audit | `npx lighthouse@11 http://localhost:4173/ --only-categories=pwa --chrome-flags="--headless=new" --view` | **0.88 / 1.00** — unchanged since Stage 5.1, and measured at exactly 0.88 again by CI at Stage 6.4. Same single failing audit (custom splash screen needs a PNG ≥512px icon; this project ships SVG icons only, an accepted gap — see `README.md`). **Informational in CI**, and this figure is the baseline its run-summary reporter warns against.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ## 5. Known gaps — don't re-discover these, don't silently fix them
 
@@ -107,18 +125,31 @@ into a QA pass — and since Stage 6.4 each one has an explicit disposition and
 its unblocker named in [`WORKPLAN.md`](../WORKPLAN.md) §5.2's post-v1 backlog,
 alongside the rest of what v1 deliberately leaves out.
 
-- **The free-form plot-outline corner editor is pointer-only.**
-  (`app/src/plot/PlotOutlineEditor.tsx`) — dragging a corner to reshape an
-  outline has no keyboard equivalent. The corner handles are valid
-  `role="button"` elements (for axe's `aria-prohibited-attr` rule) but
-  deliberately have no `tabIndex` yet — see ADR 0026.
-- **Reaching the canvas after placing a crop takes ~35 tab presses** in a
+- **Closed, not a gap any more: the free-form plot-outline corner editor was
+  pointer-only.** UI redesign Phase 2 merged that editor into the plot canvas
+  and gave its corners the keyboard treatment placements already had — a
+  selection, ◀/▶ to move it, arrow keys to act (ADR 0031 §6,
+  `docs/accessibility.md` §7). `app/src/plot/PlotOutlineEditor.tsx` is deleted.
+- **Reaching the canvas after placing a crop takes ~20 tab presses** in a
   filtered search match with several results — real friction, not a dead
-  end. The "Skip to plot canvas" link helps before placing something, not
-  immediately after.
+  end (it was ~35 before UI redesign Phase 1 moved the add-crop form into a
+  dialog, and ~15 until Phase 2's canvas toolbar joined the path). The "Skip to
+  plot canvas" link helps before placing something, not immediately after.
+  Phase 3's compact palette rows did _not_ change this: it kept two tab stops
+  per crop row, which is the budget `docs/accessibility.md` §8 records.
 - **No real screen-reader testing has been done** (NVDA/VoiceOver/JAWS). The
   scripted keyboard walkthrough proves reachability and operability, not that
   a screen reader announces state changes usefully.
+- **Closed, not a gap any more: `plot-export.spec.ts`'s intermittent failure.**
+  Every session that met it re-ran the suite and moved on. UI redesign Phase 1
+  instrumented a failing run instead, and the cause was the one the specs' own
+  comments had guessed at: `fill()` on the palette search box fires one `input`
+  event, and a React render already in flight with the old state can commit
+  afterwards and write the previous term straight back onto the input — so the
+  crop being searched for never renders, and no amount of waiting helps.
+  `e2e/drag.ts`'s `filterPaletteTo` re-types instead of waiting harder, and ten
+  consecutive full-suite runs came back clean. `retries: 1` under CI stays as
+  insurance against an unknown; it is no longer covering for this.
 - **Hardiness/season data covers 8 of 144 shipped crops.** Not an app bug —
   a dataset-coverage gap that needs a new, freely-licensed source with
   cultivar-level data, not more curation. Stage 1.2's PFAF/Permapeople adapters

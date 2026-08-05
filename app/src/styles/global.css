@@ -1,0 +1,443 @@
+/*
+ * Global element styling — the "restyle the primitives once" half of UI
+ * redesign Phase 0 (`docs/ui-aesthetic-review.md`; ADR 0029).
+ *
+ * Everything here is an *element* selector plus three documented utility
+ * classes. Component-specific layout does not belong in this file: it lives in
+ * that component's own `*.module.css` (CSS Modules, so class names are locally
+ * scoped and can't collide). The split is the whole point — a button looks
+ * right everywhere because of this file, and a form is laid out because of its
+ * own module.
+ *
+ * Loaded once, from `main.tsx`. Every value it spends comes from
+ * `tokens.css`; no raw colours or pixel gaps below.
+ */
+
+/* Border-box everywhere: a padded input inside a grid column should be as wide
+ * as the column, not the column plus its own padding. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Anchors (the "Skip to plot canvas" link's `#plot-canvas` target) should
+   * land smoothly, but never for someone who asked for less motion. */
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ------------------------------------------------------------------ Type */
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+  color: var(--text-strong);
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: var(--text-h1);
+}
+
+h2 {
+  font-size: var(--text-h2);
+}
+
+h3 {
+  font-size: var(--text-h3);
+}
+
+p {
+  margin: 0 0 var(--space-3);
+}
+
+ul,
+ol {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-6);
+}
+
+li {
+  margin-bottom: var(--space-1);
+}
+
+small {
+  font-size: var(--text-sm);
+}
+
+a {
+  color: var(--sky-600);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--green-900);
+}
+
+/* --------------------------------------------------------------- Focus */
+
+/* One visible focus indicator for every interactive element in the app. Drawn
+ * with an offset so it stays legible against a filled button (the ring itself
+ * only manages 1.18:1 against `--green-700`, but 5.40:1 against the surface
+ * the offset exposes). */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* ------------------------------------------------------------- Buttons
+ *
+ * Two variants, both driven off the element itself so a component never has to
+ * import a stylesheet just to render an ordinary button:
+ *
+ *   <button type="button">…</button>                  → secondary (outline)
+ *   <button type="button" data-variant="primary">…</button> → primary (filled)
+ *
+ * `data-variant` rather than a class because it can't be accidentally
+ * overwritten by a component's own `className`, and it reads as what it is:
+ * a variant of the same control, not a different one.
+ */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--green-700);
+  color: var(--green-900);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button[data-variant='primary'] {
+  border-color: transparent;
+  background: var(--green-700);
+  color: var(--text-on-dark);
+}
+
+button[data-variant='primary']:hover:not(:disabled) {
+  background: var(--green-900);
+  border-color: transparent;
+  color: var(--text-on-dark);
+}
+
+/* ------------------------------------------------------- Inputs & selects */
+
+input,
+select,
+textarea {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  transition:
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+input:hover:not(:disabled),
+select:hover:not(:disabled),
+textarea:hover:not(:disabled) {
+  border-color: var(--green-700);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--focus-ring);
+}
+
+/* A `<select>`'s native drop-down arrow is the most obviously browser-default
+ * chrome left on the page, and it can't be styled — so the control is reset
+ * and given its own chevron. The chevron is an inline `data:` SVG, not a file:
+ * it must not become a second network request in an offline-first app, and at
+ * this size a URI-encoded SVG is smaller than the request would cost. */
+select {
+  appearance: none;
+  padding-right: var(--space-8);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%232b3a33' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  cursor: pointer;
+}
+
+/* Checkboxes and radios keep their native behaviour (and their native
+ * keyboard semantics) — only their accent colour changes, which is all that
+ * read as browser-default about them. */
+input[type='checkbox'],
+input[type='radio'] {
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  accent-color: var(--green-700);
+  cursor: pointer;
+}
+
+label {
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+/* ---------------------------------------------------------- Fieldsets
+ *
+ * Phase 0 retires the etched-box look entirely: a `<fieldset>` keeps its
+ * grouping semantics (which screen readers announce, and which the conditions
+ * and add-crop forms rely on) but loses its border and inset padding, and its
+ * `<legend>` becomes a small bold group label. Visual grouping is a card's
+ * job now — see `.card` below.
+ */
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+/* `float: left` takes the legend out of the fieldset's border cut-out, so a
+ * group whose card draws a rule along its top edge doesn't render that rule
+ * *through* the label. `width: 100%` keeps it a full-width heading despite the
+ * float, and the sibling rule clears it. */
+legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: var(--space-2);
+  color: var(--text-strong);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+legend + * {
+  clear: both;
+}
+
+/* --------------------------------------------------------- Utilities
+ *
+ * Three, and no more: anything else belongs in a component's own module.
+ */
+
+/* A raised white surface — the replacement for the fieldset border, and the
+ * background every section of the app sits on. */
+.card {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* Secondary text: captions, counts, hints. 5.03:1 on the page, 5.58:1 on a
+ * card — comfortably past 4.5:1, because "muted" must never mean "unreadable". */
+.muted {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* The standard "available to a screen reader, invisible on screen" pattern. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------------- Print
+ *
+ * The plan on paper (UI redesign Phase 6, ADR 0035).
+ *
+ * **The review asks for "a print stylesheet for the exported plan", and there
+ * were two different features hiding in that phrase.** The exported plan is a
+ * PNG — `canvas/export.ts` rasterises the Konva stage and composites a
+ * plain-text legend beside it (ADR 0020) — so there is no page to style. And
+ * the *app* had no print handling at all: before this block, `@media print`
+ * appeared nowhere in `app/src`, so printing the workspace printed the
+ * workspace. Measured at 1440×900 with the example bed on the plot, that was
+ * **9 sheets of A4**: 144 palette rows, 159 controls, and the warnings dock
+ * still capped at 45% of a column that no longer exists on paper, with 114px
+ * of it — one of its two items — below the fold of a box nobody can scroll.
+ *
+ * What this block does is the other reading: make the app printable, so the
+ * plan can leave the screen as a document rather than as a screenshot. ADR
+ * 0035 §4 records why that reading rather than improving the PNG.
+ *
+ * **Three rules shape all of it**, and the per-component halves in
+ * `routes/AppShell.module.css`, `plot/PlotDefinitionPage.module.css`,
+ * `canvas/PlotCanvasSection.module.css`, `warnings/WarningsPanel.module.css`,
+ * `designs/DesignChrome.module.css` and `ui/SegmentedControl.module.css`
+ * follow them too:
+ *
+ * 1. **No print-only DOM.** Everything on the sheet is content the screen
+ *    already shows. That is what makes this change provably free of a11y
+ *    cost: nothing is added to the accessibility tree, no tab stop moves
+ *    (`docs/accessibility.md` §10's header count is untouched), and there is
+ *    no invisible-on-screen text that axe cannot see and a screen reader can.
+ * 2. **A pane that scrolls on screen must not be a box that clips on paper.**
+ *    Every viewport-height frame, cap and scrollport in the workspace is
+ *    released here; paper is infinitely tall and pages itself.
+ * 3. **A control is an affordance, and paper has none.** Buttons go; the
+ *    values inside form controls stay, because those are the user's answers.
+ *
+ * The one thing print styles are *not* allowed to do is change the screen, so
+ * every rule in every one of those files lives inside `@media print` and the
+ * suites that measure the on-screen layout (`e2e/workspace-layout.spec.ts`,
+ * `e2e/canvas-scale.spec.ts`, `e2e/plot-settings.spec.ts`) are untouched by
+ * this phase. `e2e/print.spec.ts` is what measures this block.
+ */
+@media print {
+  @page {
+    /* A margin, and deliberately not a `size`. Forcing `A4` would mis-scale
+     * every US-Letter printer, and the plan has no fixed geometry that needs a
+     * particular sheet — it reflows. 12mm is inside the unprintable edge of
+     * every common desktop printer. */
+    margin: 12mm;
+  }
+
+  body {
+    /* The page cream is the workspace's "ground outside the plot"; on paper it
+     * is either ink spent on nothing or (more often) silently dropped, leaving
+     * the layout depending on a colour that isn't there. White is the honest
+     * base. */
+    background: var(--surface-card);
+  }
+
+  /* Rule 3. The one exception is the header's designs button, which is the
+   * only place the open design's *name* appears — `designs/DesignChrome.module.css`
+   * re-enables it as plain text, with its reasoning. */
+  button {
+    display: none;
+  }
+
+  /* A `<select>`'s chevron means "you can change this", which is a promise
+   * paper cannot keep; the value it is next to stays. */
+  select {
+    padding-right: var(--space-3);
+    background-image: none;
+  }
+
+  /*
+   * The plot picture, and the only place in this codebase that overrides
+   * inline styles with `!important`.
+   *
+   * The stage is three nested boxes and Konva writes the inline width/height on
+   * two of them (its own `.konvajs-content` wrapper and the `<canvas>`), sized
+   * from the *screen* viewport that `useCanvasScale.ts` measured — and
+   * deliberately still sized from it here, because that hook stops measuring
+   * under print media on purpose (see its `isPrintLayout`, and ADR 0035 §5: the
+   * two of them are otherwise a feedback loop that shrinks the plot to
+   * nothing). So on a wide window the stage arrives at the printer wider than
+   * the sheet, and the right of the plot is simply cut off unless it is scaled
+   * here, in CSS. A stylesheet cannot out-specify an inline style any other
+   * way, which is the textbook case for `!important` and the same one
+   * `prefers-reduced-motion` below uses.
+   *
+   * `position: static` on the canvas is what makes the shrink work rather than
+   * just look right: Konva absolutely-positions it, so its ancestors' `height:
+   * auto` would collapse to nothing and the crop key would print on top of the
+   * plot. In flow, `max-width` + `height: auto` scales it by its own intrinsic
+   * ratio and the boxes around it follow. `display: block` for the last four
+   * pixels of that: an inline replaced element sits on a text baseline and
+   * leaves room for a descender under it, which is a hairline of the soil
+   * surround escaping below the stage.
+   */
+  #plot-canvas,
+  #plot-canvas > div {
+    max-width: 100%;
+    height: auto !important;
+  }
+
+  #plot-canvas canvas {
+    display: block;
+    position: static !important;
+    max-width: 100%;
+    height: auto !important;
+  }
+
+  /* The plot is one picture and must not be dealt across two sheets; a heading
+   * stranded at the foot of a page is the same defect one size down. */
+  #plot-canvas {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  li {
+    break-inside: avoid;
+  }
+}
+
+/* ---------------------------------------------------------------- Motion */
+
+/* Honour an explicit request for less motion: hover lifts, transitions and
+ * the smooth anchor scroll all collapse to instant. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  button:hover:not(:disabled) {
+    transform: none;
+  }
+}

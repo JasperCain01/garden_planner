@@ -32,6 +32,12 @@
  * with a message rather than silently overwriting the earlier crop, and the
  * user resolves it either by renaming or by filling in the "custom id"
  * escape hatch `UserPlantInputSchema.id` documents.
+ *
+ * **Styling (UI redesign Phase 0).** Seven nested fieldsets used to render as
+ * a maze of etched boxes with every label flush against its control. The
+ * fieldsets stay (grouping semantics), the boxes don't (`styles/global.css`),
+ * and `AddCropForm.module.css` supplies the rhythm. Moving the whole form into
+ * a modal off the palette is Phase 1's job (`docs/ui-aesthetic-review.md`).
  */
 
 import { useMemo, useState, type FormEvent } from 'react';
@@ -53,6 +59,7 @@ import {
   type SoilTexture,
   type UserPlantInput,
 } from '@garden-planner/engine';
+import styles from './AddCropForm.module.css';
 
 const CATEGORY_OPTIONS = EdibleCategorySchema.options;
 const LIGHT_OPTIONS = LightRequirementSchema.options;
@@ -270,8 +277,12 @@ export function AddCropForm({ existingIds, onSubmit, initialInput, onCancel }: A
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label={isEditing ? 'edit crop' : 'add a crop'}>
-      <div>
+    <form
+      onSubmit={handleSubmit}
+      aria-label={isEditing ? 'edit crop' : 'add a crop'}
+      className={styles.form}
+    >
+      <div className={styles.field}>
         <label htmlFor="crop-common-name">Name (from the packet)</label>
         <input
           id="crop-common-name"
@@ -279,15 +290,17 @@ export function AddCropForm({ existingIds, onSubmit, initialInput, onCancel }: A
           value={draft.commonName}
           onChange={(event) => update('commonName', event.target.value)}
         />
-        {preview !== '' && <p>This will be added as &ldquo;{preview}&rdquo;.</p>}
+        {preview !== '' && (
+          <p className={styles.hint}>This will be added as &ldquo;{preview}&rdquo;.</p>
+        )}
         {errors.commonName?.map((message) => (
-          <p role="alert" key={message}>
+          <p role="alert" className={styles.error} key={message}>
             {message}
           </p>
         ))}
       </div>
 
-      <div>
+      <div className={styles.field}>
         <label htmlFor="crop-category">Category</label>
         <select
           id="crop-category"
@@ -302,13 +315,13 @@ export function AddCropForm({ existingIds, onSubmit, initialInput, onCancel }: A
           ))}
         </select>
         {errors.category?.map((message) => (
-          <p role="alert" key={message}>
+          <p role="alert" className={styles.error} key={message}>
             {message}
           </p>
         ))}
       </div>
 
-      <div>
+      <div className={styles.field}>
         <label htmlFor="crop-light">Light requirement</label>
         <select
           id="crop-light"
@@ -323,199 +336,227 @@ export function AddCropForm({ existingIds, onSubmit, initialInput, onCancel }: A
           ))}
         </select>
         {errors.light?.map((message) => (
-          <p role="alert" key={message}>
+          <p role="alert" className={styles.error} key={message}>
             {message}
           </p>
         ))}
       </div>
 
-      <fieldset>
+      <fieldset className={styles.group}>
         <legend>Spacing</legend>
-        <label>
-          <input
-            type="radio"
-            name="crop-spacing-method"
-            value="row"
-            checked={draft.spacingMethod === 'row'}
-            onChange={() => update('spacingMethod', 'row')}
-          />
-          Row growing
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="crop-spacing-method"
-            value="intensive"
-            checked={draft.spacingMethod === 'intensive'}
-            onChange={() => update('spacingMethod', 'intensive')}
-          />
-          Intensive / square-foot bed
-        </label>
+        <div className={styles.choices}>
+          <label>
+            <input
+              type="radio"
+              name="crop-spacing-method"
+              value="row"
+              checked={draft.spacingMethod === 'row'}
+              onChange={() => update('spacingMethod', 'row')}
+            />
+            Row growing
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="crop-spacing-method"
+              value="intensive"
+              checked={draft.spacingMethod === 'intensive'}
+              onChange={() => update('spacingMethod', 'intensive')}
+            />
+            Intensive / square-foot bed
+          </label>
+        </div>
 
         {draft.spacingMethod === 'row' ? (
-          <div>
-            <label htmlFor="crop-in-row-cm">In-row spacing (cm)</label>
-            <input
-              id="crop-in-row-cm"
-              type="number"
-              min="0"
-              value={draft.inRowCm}
-              onChange={(event) => update('inRowCm', event.target.value)}
-            />
-            <label htmlFor="crop-between-row-cm">Between-row spacing (cm)</label>
-            <input
-              id="crop-between-row-cm"
-              type="number"
-              min="0"
-              value={draft.betweenRowCm}
-              onChange={(event) => update('betweenRowCm', event.target.value)}
-            />
+          <div className={styles.fields}>
+            <div className={styles.field}>
+              <label htmlFor="crop-in-row-cm">In-row spacing (cm)</label>
+              <input
+                id="crop-in-row-cm"
+                type="number"
+                min="0"
+                value={draft.inRowCm}
+                onChange={(event) => update('inRowCm', event.target.value)}
+              />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="crop-between-row-cm">Between-row spacing (cm)</label>
+              <input
+                id="crop-between-row-cm"
+                type="number"
+                min="0"
+                value={draft.betweenRowCm}
+                onChange={(event) => update('betweenRowCm', event.target.value)}
+              />
+            </div>
           </div>
         ) : (
-          <div>
-            <label htmlFor="crop-per-square-metre">Plants per m²</label>
-            <input
-              id="crop-per-square-metre"
-              type="number"
-              min="0"
-              value={draft.perSquareMetre}
-              onChange={(event) => update('perSquareMetre', event.target.value)}
-            />
-            <label htmlFor="crop-plants-per-square">Plants per square-foot square</label>
-            <input
-              id="crop-plants-per-square"
-              type="number"
-              min="0"
-              value={draft.plantsPerSquare}
-              onChange={(event) => update('plantsPerSquare', event.target.value)}
-            />
+          <div className={styles.fields}>
+            <div className={styles.field}>
+              <label htmlFor="crop-per-square-metre">Plants per m²</label>
+              <input
+                id="crop-per-square-metre"
+                type="number"
+                min="0"
+                value={draft.perSquareMetre}
+                onChange={(event) => update('perSquareMetre', event.target.value)}
+              />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="crop-plants-per-square">Plants per square-foot square</label>
+              <input
+                id="crop-plants-per-square"
+                type="number"
+                min="0"
+                value={draft.plantsPerSquare}
+                onChange={(event) => update('plantsPerSquare', event.target.value)}
+              />
+            </div>
           </div>
         )}
         {errors.spacing?.map((message) => (
-          <p role="alert" key={message}>
+          <p role="alert" className={styles.error} key={message}>
             {message}
           </p>
         ))}
       </fieldset>
 
-      <fieldset>
+      <fieldset className={styles.group}>
         <legend>Hardiness (optional)</legend>
-        <label htmlFor="crop-hardiness">RHS rating</label>
-        <select
-          id="crop-hardiness"
-          value={draft.hardinessRating}
-          onChange={(event) =>
-            update('hardinessRating', event.target.value as RhsHardinessRating | '')
-          }
-        >
-          <option value="">Not sure</option>
-          {HARDINESS_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+        <div className={styles.field}>
+          <label htmlFor="crop-hardiness">RHS rating</label>
+          <select
+            id="crop-hardiness"
+            value={draft.hardinessRating}
+            onChange={(event) =>
+              update('hardinessRating', event.target.value as RhsHardinessRating | '')
+            }
+          >
+            <option value="">Not sure</option>
+            {HARDINESS_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
         {errors.hardiness?.map((message) => (
-          <p role="alert" key={message}>
+          <p role="alert" className={styles.error} key={message}>
             {message}
           </p>
         ))}
       </fieldset>
 
-      <fieldset>
+      <fieldset className={styles.group}>
         <legend>Soil (optional)</legend>
-        <fieldset>
+        <fieldset className={styles.checkboxGroup}>
           <legend>Texture</legend>
-          {SOIL_TEXTURE_OPTIONS.map((option) => (
-            <label key={option}>
-              <input
-                type="checkbox"
-                checked={draft.soilTextures.includes(option)}
-                onChange={() => update('soilTextures', toggleMulti(draft.soilTextures, option))}
-              />
-              {option}
-            </label>
-          ))}
+          <div className={styles.checkboxOptions}>
+            {SOIL_TEXTURE_OPTIONS.map((option) => (
+              <label key={option}>
+                <input
+                  type="checkbox"
+                  checked={draft.soilTextures.includes(option)}
+                  onChange={() => update('soilTextures', toggleMulti(draft.soilTextures, option))}
+                />
+                {option}
+              </label>
+            ))}
+          </div>
         </fieldset>
-        <fieldset>
+        <fieldset className={styles.checkboxGroup}>
           <legend>pH</legend>
-          {SOIL_PH_OPTIONS.map((option) => (
-            <label key={option}>
-              <input
-                type="checkbox"
-                checked={draft.soilPh.includes(option)}
-                onChange={() => update('soilPh', toggleMulti(draft.soilPh, option))}
-              />
-              {option}
-            </label>
-          ))}
+          <div className={styles.checkboxOptions}>
+            {SOIL_PH_OPTIONS.map((option) => (
+              <label key={option}>
+                <input
+                  type="checkbox"
+                  checked={draft.soilPh.includes(option)}
+                  onChange={() => update('soilPh', toggleMulti(draft.soilPh, option))}
+                />
+                {option}
+              </label>
+            ))}
+          </div>
         </fieldset>
-        <fieldset>
+        <fieldset className={styles.checkboxGroup}>
           <legend>Moisture</legend>
-          {SOIL_MOISTURE_OPTIONS.map((option) => (
-            <label key={option}>
-              <input
-                type="checkbox"
-                checked={draft.soilMoisture.includes(option)}
-                onChange={() => update('soilMoisture', toggleMulti(draft.soilMoisture, option))}
-              />
-              {option}
-            </label>
-          ))}
+          <div className={styles.checkboxOptions}>
+            {SOIL_MOISTURE_OPTIONS.map((option) => (
+              <label key={option}>
+                <input
+                  type="checkbox"
+                  checked={draft.soilMoisture.includes(option)}
+                  onChange={() => update('soilMoisture', toggleMulti(draft.soilMoisture, option))}
+                />
+                {option}
+              </label>
+            ))}
+          </div>
         </fieldset>
         {errors.soil?.map((message) => (
-          <p role="alert" key={message}>
+          <p role="alert" className={styles.error} key={message}>
             {message}
           </p>
         ))}
       </fieldset>
 
-      <fieldset>
+      <fieldset className={styles.group}>
         <legend>Seasons (optional, months 1–12)</legend>
-        <label htmlFor="crop-sow-start">Sow start month</label>
-        <input
-          id="crop-sow-start"
-          type="number"
-          min="1"
-          max="12"
-          value={draft.sowStart}
-          onChange={(event) => update('sowStart', event.target.value)}
-        />
-        <label htmlFor="crop-sow-end">Sow end month</label>
-        <input
-          id="crop-sow-end"
-          type="number"
-          min="1"
-          max="12"
-          value={draft.sowEnd}
-          onChange={(event) => update('sowEnd', event.target.value)}
-        />
-        <label htmlFor="crop-harvest-start">Harvest start month</label>
-        <input
-          id="crop-harvest-start"
-          type="number"
-          min="1"
-          max="12"
-          value={draft.harvestStart}
-          onChange={(event) => update('harvestStart', event.target.value)}
-        />
-        <label htmlFor="crop-harvest-end">Harvest end month</label>
-        <input
-          id="crop-harvest-end"
-          type="number"
-          min="1"
-          max="12"
-          value={draft.harvestEnd}
-          onChange={(event) => update('harvestEnd', event.target.value)}
-        />
+        <div className={styles.fields}>
+          <div className={styles.field}>
+            <label htmlFor="crop-sow-start">Sow start month</label>
+            <input
+              id="crop-sow-start"
+              type="number"
+              min="1"
+              max="12"
+              value={draft.sowStart}
+              onChange={(event) => update('sowStart', event.target.value)}
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="crop-sow-end">Sow end month</label>
+            <input
+              id="crop-sow-end"
+              type="number"
+              min="1"
+              max="12"
+              value={draft.sowEnd}
+              onChange={(event) => update('sowEnd', event.target.value)}
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="crop-harvest-start">Harvest start month</label>
+            <input
+              id="crop-harvest-start"
+              type="number"
+              min="1"
+              max="12"
+              value={draft.harvestStart}
+              onChange={(event) => update('harvestStart', event.target.value)}
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="crop-harvest-end">Harvest end month</label>
+            <input
+              id="crop-harvest-end"
+              type="number"
+              min="1"
+              max="12"
+              value={draft.harvestEnd}
+              onChange={(event) => update('harvestEnd', event.target.value)}
+            />
+          </div>
+        </div>
         {errors.seasons?.map((message) => (
-          <p role="alert" key={message}>
+          <p role="alert" className={styles.error} key={message}>
             {message}
           </p>
         ))}
       </fieldset>
 
-      <div>
+      <div className={styles.field}>
         <label htmlFor="crop-id-override">Custom id (only if the name above conflicts)</label>
         <input
           id="crop-id-override"
@@ -525,25 +566,33 @@ export function AddCropForm({ existingIds, onSubmit, initialInput, onCancel }: A
           onChange={(event) => update('idOverride', event.target.value)}
         />
         {errors.id?.map((message) => (
-          <p role="alert" key={message}>
+          <p role="alert" className={styles.error} key={message}>
             {message}
           </p>
         ))}
       </div>
 
-      {collisionMessage && <p role="alert">{collisionMessage}</p>}
+      {collisionMessage && (
+        <p role="alert" className={styles.error}>
+          {collisionMessage}
+        </p>
+      )}
       {errors.form?.map((message) => (
-        <p role="alert" key={message}>
+        <p role="alert" className={styles.error} key={message}>
           {message}
         </p>
       ))}
 
-      <button type="submit">{isEditing ? 'Save changes' : 'Add crop'}</button>
-      {isEditing && onCancel && (
-        <button type="button" onClick={onCancel}>
-          Cancel
+      <div className={styles.actions}>
+        <button type="submit" data-variant="primary">
+          {isEditing ? 'Save changes' : 'Add crop'}
         </button>
-      )}
+        {isEditing && onCancel && (
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

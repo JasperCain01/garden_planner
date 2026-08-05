@@ -1,0 +1,560 @@
+/*
+ * Plant-palette styling.
+ *
+ * Phase 0 restyled the row into a card with a band chip; Phase 1 made the
+ * whole thing the workspace's left sidebar, filling the height it is given and
+ * scrolling its list internally. **Phase 3 is about what fits in that
+ * height.** Measured at 1440×900 before it: a median row of 631px in a 394px
+ * list box, i.e. no crop visible without scrolling, and ~93,900px of list.
+ *
+ * The row is a fixed-height compact card now (~62px), and the sidebar's own
+ * chrome — heading, intro, filters, count — was cut to match, because eight
+ * cards need ~530px of a sidebar that is only ~836px tall. Both halves of that
+ * are load-bearing: shrinking the rows alone would still have shown six crops,
+ * not eight (`docs/ui-aesthetic-review.md` §"Phase 3", ADR 0032 §1).
+ *
+ * Nothing here is `position: sticky`, deliberately. The review asks for the
+ * filters to be sticky at the top of the sidebar, and Phase 1 already made
+ * that true structurally: `.palette` is a flex column in which only `.list`
+ * scrolls, so everything above it stays put without a stacking context or a
+ * scroll offset to keep right.
+ */
+
+/*
+ * The sidebar column: heading, filters and status at their natural height, the
+ * crop list taking everything left over. `min-height: 0` is what allows that
+ * last part — without it a flex child refuses to shrink below its content, and
+ * a 144-row list would push the column past the sidebar instead of scrolling
+ * inside it.
+ */
+.palette {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* The heading and the crop count on one line — see the component's comment for
+ * why the count doesn't get a row of its own. */
+.header {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  justify-content: space-between;
+  flex-shrink: 0;
+  margin-bottom: var(--space-2);
+}
+
+.heading {
+  margin: 0;
+}
+
+.count {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ Filters */
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  margin-bottom: var(--space-2);
+}
+
+.search {
+  width: 100%;
+}
+
+/*
+ * A row of chips. Used for the category radio group (a real `<fieldset>`, its
+ * `<legend>` visually hidden) and for the two independent toggles beside it,
+ * which is why this is a class and not an element selector.
+ *
+ * The three rules below are Phase 3's, moved to `ui/choice.module.css` in
+ * Phase 4 and composed back here — the shape tiles and the segmented
+ * conditions controls are the same mechanic wearing different clothes, and a
+ * second and third copy of it is what that file exists to prevent (ADR 0033
+ * §2). What a chip *looks* like is still entirely below.
+ */
+.chipGroup {
+  composes: group from '../ui/choice.module.css';
+}
+
+.chip {
+  composes: target from '../ui/choice.module.css';
+}
+
+.chipInput {
+  composes: control from '../ui/choice.module.css';
+}
+
+/* The chip a user actually sees. Styled from the hidden input's own state, so
+ * `:checked` and `:focus-visible` stay the browser's job rather than React's. */
+.chipBody {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  padding: 3px var(--space-2);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease;
+}
+
+.chip:hover .chipBody {
+  border-color: var(--green-700);
+}
+
+/* The one focus indicator `global.css` draws, moved onto the element that is
+ * visible — the input itself is a 1px box in the corner. */
+.chipInput:focus-visible + .chipBody {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/*
+ * Selected. Colour is never the only signal: the control is a real radio or
+ * checkbox, so its state is in the accessibility tree, and the border weight
+ * and fill change together for anyone who can't tell the hues apart.
+ */
+.chipInput:checked + .chipBody {
+  border-color: var(--green-700);
+  background: var(--green-100);
+  color: var(--text-strong);
+}
+
+/*
+ * The category swatch — and the legend. A chip that carries a category's own
+ * canvas colour *and* its name is the mapping a separate legend line would
+ * have restated; see the component's doc. Each dot clears WCAG 1.4.11's 3:1
+ * against both the white chip and its own tint (`styles/tokens.css` records
+ * the sums), and the chip's word is what actually carries the meaning.
+ */
+.chipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+.chip[data-category='vegetable'] .chipDot {
+  background: var(--category-vegetable);
+}
+
+.chip[data-category='herb'] .chipDot {
+  background: var(--category-herb);
+}
+
+.chip[data-category='fruit'] .chipDot {
+  background: var(--category-fruit);
+}
+
+.chip[data-category='vegetable'] .chipInput:checked + .chipBody {
+  border-color: var(--category-vegetable);
+  background: var(--category-vegetable-bg);
+}
+
+.chip[data-category='herb'] .chipInput:checked + .chipBody {
+  border-color: var(--category-herb);
+  background: var(--category-herb-bg);
+}
+
+.chip[data-category='fruit'] .chipInput:checked + .chipBody {
+  border-color: var(--category-fruit);
+  background: var(--category-fruit-bg);
+}
+
+/* -------------------------------------------------------------- The note */
+
+.about {
+  flex-shrink: 0;
+  margin-bottom: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.about summary {
+  color: var(--sky-600);
+  cursor: pointer;
+}
+
+.about p {
+  margin: var(--space-1) 0 0;
+}
+
+/* --------------------------------------------------------------- Crop list */
+
+/*
+ * **Bounded height, not the page (Workplan Stage 6.2 responsive fix).** Every
+ * matching crop used to render in full, unbounded — with all 144 shipped crops
+ * visible at once (the common case: no search, no category filter) that pushed
+ * everything below the palette, including the plot canvas, arbitrarily far
+ * down the page. `docs/review-pre-deployment.md` §2 measured the canvas at
+ * y ≈ 3500px because of exactly this, and the figure only grows as the dataset
+ * does.
+ *
+ * **Phase 1 made that cap the narrow-viewport rule only.** In the workspace
+ * layout the sidebar has a known height, so the list simply takes whatever is
+ * left of it (`flex: 1` + `min-height: 0`) and scrolls. The stacked fallback
+ * below `--layout-narrow` still needs the cap, for the reason above, so it is
+ * restored there.
+ *
+ * The `--space-1` gap and padding are Phase 3's: at ~62px a row, every 4px
+ * between rows is ~6% of a crop, and the acceptance criterion is counted in
+ * whole crops.
+ */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: var(--space-1);
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-sunken);
+}
+
+/* The card is the *row*, not the drag surface inside it: the "Add to plot"
+ * button has to be a sibling of the draggable element (see the component's
+ * `nested-interactive` note), and a card drawn around only the drag surface
+ * would leave that button floating outside it. */
+.row {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  transition:
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+.row:hover {
+  border-color: var(--green-500);
+  box-shadow: var(--shadow-card);
+}
+
+/* The compact card itself: the drag surface, and the `＋` button beside it.
+ * Height comes from the icon disc (44px) plus the padding, so every row is the
+ * same height whatever its name wraps to — which is what makes "how many crops
+ * fit" a number rather than a distribution. */
+.head {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  /* Tighter on the sides than top and bottom.
+   *
+   * **Post-review fix B1 amends the record below.** The second line used to
+   * hold the band chip at its full two-word phrase ("Excellent match") next
+   * to the category word, measured to fit a 287px sidebar with 4 of 144 rows
+   * (every excellent-match vegetable) accepted as an ellipsised "vegetab…".
+   * That compromise turned out to be platform-sensitive: a live Chromium
+   * session at the same viewport rendered "veget…" instead — worse than the
+   * measured floor — because the category word is the palette's WCAG 1.4.1
+   * answer for colour-blind users (`docs/accessibility.md` §8), and a
+   * measurement that degrades further on a different font stack isn't one to
+   * re-tune, it's one to stop needing. `PlantPalette.tsx`'s `bandHeadline`
+   * now draws only the chip's headline word ("Excellent") — the full phrase
+   * still reaches assistive tech via a hidden suffix — which is ~40px
+   * narrower at this font and comfortably refunds what the category word
+   * needs. No row in the shipped dataset ellipsises its category word any
+   * more (`e2e/palette.spec.ts` pins this: `scrollWidth <= clientWidth` on
+   * every rendered row's category element). These 8px of side padding are
+   * unchanged from before this fix; they were never the load-bearing part. */
+  padding: var(--space-2) var(--space-1);
+}
+
+/*
+ * The drag surface: transparent, because the card around it is `.row`.
+ *
+ * **The clipping this rule used to warn about is fixed** (UI redesign Phase 5).
+ * `.list` scrolls, which makes it a clipping box on *both* axes (CSS Overflow
+ * 3: a `visible` or `clip` value beside a scrolling one computes to
+ * `auto`/`hidden`), so a card that followed the pointer via an inline transform
+ * *in place* was cut off the moment the drag left the sidebar. What follows the
+ * pointer now is a dnd-kit `<DragOverlay>` ghost rendered outside that box
+ * entirely (`.ghost` below, `plot/PlotDefinitionPage.tsx`), so this element
+ * stays where it is and only dims. Three ADRs deferred that fix to this phase;
+ * ADR 0034 §7 records it landing.
+ */
+.entry {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--radius);
+  cursor: grab;
+  touch-action: none;
+}
+
+/* While dragging, this card stays in the list and the ghost does the moving —
+ * so the original fades to read as the space the crop has been lifted out of.
+ * No shadow here any more: the lift belongs to the thing that is lifted. */
+.entry[data-dragging='true'] {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+/*
+ * The drag ghost (UI redesign Phase 5) — the review's "slightly enlarged with
+ * shadow".
+ *
+ * **4% and not 15%.** dnd-kit positions the overlay on the dragged element's
+ * own measured rect, so the scale is about the *centre*: at 1.04 a ~290px card
+ * grows about 12px, which reads as a lift without moving the card's edges far
+ * enough from the pointer to make aiming worse. The transform origin is the
+ * centre for the same reason.
+ *
+ * Not transitioned: this element appears mid-gesture already at its final size,
+ * so there is nothing to animate — and `global.css`'s reduced-motion block
+ * switches transitions off anyway, which a scale that only ever applies once
+ * has no need of.
+ */
+.ghost {
+  transform: scale(1.04);
+  border-color: var(--green-500);
+  box-shadow: var(--shadow-overlay);
+  cursor: grabbing;
+  /* The list's own width, so the ghost is the card and not a card-shaped thing:
+   * `<DragOverlay>` sizes itself from the dragged element's rect, and the row
+   * inside it should fill that. */
+  width: 100%;
+}
+
+/*
+ * The icon on a category-tinted disc. The tint is a token, not a colour mixed
+ * here: `--category-*-bg` mirrors `CATEGORY_COLORS`' hues at a measured
+ * lightness (`styles/tokens.css`), so the disc behind a crop is the same idea
+ * as the canopy under its marker on the canvas.
+ */
+.iconWrap {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+}
+
+.iconWrap[data-category='vegetable'] {
+  background: var(--category-vegetable-bg);
+}
+
+.iconWrap[data-category='herb'] {
+  background: var(--category-herb-bg);
+}
+
+.iconWrap[data-category='fruit'] {
+  background: var(--category-fruit-bg);
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* One line, always: a wrapped name would make the row height depend on the
+ * crop, and "≥8 crops visible" is a claim about every crop, not the shortest
+ * eight. The full name is in the card's accessible name either way. */
+.name {
+  overflow: hidden;
+  color: var(--text-strong);
+  font-weight: 600;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  min-width: 0;
+}
+
+/*
+ * The suitability band, as a chip. Colour is supplementary — the chip's
+ * visible text is `BAND_LABELS`' own headline word ("Excellent"; the full
+ * "Excellent match" still reaches assistive tech, see `.head`'s comment and
+ * `PlantPalette.tsx`'s `bandHeadline`, post-review fix B1), so nothing here
+ * depends on distinguishing hues (WCAG 1.4.1). Each pairing clears 4.5:1; the
+ * measurements, and why two of the five values moved, are recorded on the
+ * `--band-*` tokens in `styles/tokens.css`.
+ */
+.band {
+  /*
+   * A positioned containing block for `PlantPalette.tsx`'s hidden
+   * accessible-name suffix (post-review fix B1's own regression, caught by
+   * `e2e/workspace-layout.spec.ts`). `.visually-hidden` is `position:
+   * absolute`; with no positioned ancestor its containing block is the
+   * *initial* containing block, not this small chip — and with 144 of them,
+   * one per row, each one's "static position" lands at its row's *unclipped*
+   * document offset, which for a row far down the list is thousands of
+   * pixels down. `.list`'s own `overflow: auto` clips its own descendants
+   * correctly, but an absolutely-positioned box whose containing block is
+   * the document root is not, for layout purposes, contained by a box that
+   * never established a containing block for it — so it still inflated the
+   * *page's* scrollable area even though the list itself looked fine.
+   * `position: relative` here gives each hidden suffix a containing block the
+   * size of the chip it sits in, which is where its static position already
+   * puts it.
+   */
+  position: relative;
+  padding: 1px var(--space-1);
+  border-radius: var(--radius-pill);
+  /* Never shrinks: it is the row's headline fact, and a band chip reading
+   * "Excelle…" would be worse than the category beside it losing its last
+   * two letters (see `.category`). */
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.band[data-band='excellent'] {
+  color: var(--band-excellent);
+  background: var(--band-excellent-bg);
+}
+
+.band[data-band='good'] {
+  color: var(--band-good);
+  background: var(--band-good-bg);
+}
+
+.band[data-band='fair'] {
+  color: var(--band-fair);
+  background: var(--band-fair-bg);
+}
+
+.band[data-band='poor'] {
+  color: var(--band-poor);
+  background: var(--band-poor-bg);
+}
+
+.band[data-band='unsuitable'] {
+  color: var(--band-unsuitable);
+  background: var(--band-unsuitable-bg);
+}
+
+.category {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Unsuitable crops stay visible but muted — honest and tidy (the toggle above
+ * hides them outright for anyone who'd rather not see them at all).
+ *
+ * **The muting is not `opacity: 0.6` on the row, which is what it was**, and
+ * the reason is a measurement rather than taste. Composited over a white card,
+ * 0.6 opacity takes the crop's name from 14.83:1 to **4.08:1**, the category
+ * word from 5.58:1 to **2.49:1**, and the band chip's own text — hand-tuned
+ * for 4.64:1 in Phase 0 — to **2.24:1**. Three WCAG 1.4.3 failures to say
+ * "this one is a long shot". The greyscale icon the review asks for carries
+ * that on its own (it is decorative, so there is no ratio to lose), and the
+ * name steps down to `--text-muted`, which is 5.58:1 and still passes.
+ */
+.row[data-band='unsuitable'] .icon {
+  filter: grayscale(1);
+  opacity: 0.7;
+}
+
+.row[data-band='unsuitable'] .iconWrap[data-category] {
+  background: var(--surface-sunken);
+}
+
+.row[data-band='unsuitable'] .name {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/*
+ * "Add to plot", as the review's small `＋` icon-button. Compact in its
+ * drawing only — its `aria-label` is the full sentence it always was
+ * (`labels.ts`), because an icon button with an icon-sized name is a button
+ * nobody can find.
+ */
+.addButton {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-base);
+  line-height: 1;
+}
+
+/* ---------------------------------------------------------------- Details */
+
+/*
+ * The reasoning, on demand: exactly the content that used to be inlined on
+ * every row. In flow beneath the card rather than in a floating popover —
+ * inside a scrolling list a popover has to be positioned against a scrollport
+ * that moves under it, and the content is a paragraph and four bullets, which
+ * is a thing to read rather than a thing to point at.
+ */
+.details {
+  padding: 0 var(--space-2) var(--space-2);
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+}
+
+.summary {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.confidence {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.reasons {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+/*
+ * The stacked fallback below `--layout-narrow` (`styles/tokens.css`). There is
+ * no sidebar to fill here — the palette is one section of a scrolling page
+ * again — so the column stops stretching and the list goes back to the
+ * bounded-height scrollbox Workplan Stage 6.2 added for phones.
+ */
+@media (max-width: 899px) {
+  .list {
+    flex: none;
+    max-height: min(65vh, 40rem);
+  }
+}

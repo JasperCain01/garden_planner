@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-import { dragCropOntoCanvas } from './drag.ts';
+import { atPlotCm, dragCropOntoCanvas, filterPaletteTo } from './drag.ts';
 
 // The export journey WORKPLAN.md §1.3 names for Stage 3.7: build a small
 // plot, place a few crops, click Export, and confirm a real PNG downloads.
@@ -13,13 +13,14 @@ import { dragCropOntoCanvas } from './drag.ts';
 // `toCanvas`/2D-canvas compositing, `docs/adr/0020`) only runs in a real
 // browser, so this is the one place it's actually exercised — no component
 // test drives the real pipeline (`PlotCanvasSection.test.tsx` mocks it).
-// A very tall viewport keeps the palette entry and the canvas on-screen at
-// once: `page.mouse` works in viewport coordinates and does not scroll (see
-// `drag.ts`). 4000 is deliberate headroom over the ~3700 a filtered palette
-// plus the canvas actually needs today — at 3500 the canvas sat just below
-// the fold and drags intermittently did nothing. `drag.ts` asserts both ends
-// are in view, so if this ever stops being enough the failure says so.
-test.use({ viewport: { width: 1024, height: 4000 } });
+// An ordinary laptop viewport. `page.mouse` works in viewport coordinates and
+// does not scroll (see `drag.ts`), so both ends of the drag have to be on
+// screen at once — which, since UI redesign Phase 1, is simply what the
+// workspace layout does: the palette is the left sidebar and the canvas is the
+// centre region, always side by side above 900px wide. These specs used to
+// declare a 4000px-tall viewport to force the stacked page's palette and
+// canvas into view together; that trick is gone with the stacked page.
+test.use({ viewport: { width: 1440, height: 900 } });
 
 test('exporting the plot downloads a PNG with the placed crops and a legend', async ({ page }) => {
   await page.goto('/');
@@ -27,31 +28,36 @@ test('exporting the plot downloads a PNG with the placed crops and a legend', as
   const canvas = page.getByLabel(/plot canvas/i);
   await expect(canvas).toBeVisible();
 
-  // Place three distinct crops at different points on the plot. The canvas's
-  // on-page position shifts every time the search filter changes how many
-  // palette entries render above it, so its bounding box is read fresh right
-  // before each drag — the same gotcha `add-custom-crop.spec.ts` records.
-  const searchBox = page.getByLabel(/^search$/i);
-  const placements: ReadonlyArray<[crop: string, dx: number, dy: number]> = [
-    ['Onion', -40, -40],
-    ['Kale', 40, -40],
-    ['Lettuce', 0, 40],
+  // Place three distinct crops at three corners of the plot. The canvas's
+  // bounding box is read fresh right before each drag (`drag.ts` does it) —
+  // less critical since the workspace layout decoupled the canvas's position
+  // from the palette's length, but still right: placing a crop grows the dock
+  // beneath the canvas and re-centres the stage.
+  //
+  // Positions are in plot centimetres (`atPlotCm`) rather than pixel offsets
+  // from the canvas's centre. Since UI redesign Phase 2 the stage fills the
+  // region and each marker is drawn at its crop's real footprint — kale wants
+  // 75 cm — so a pixel offset that used to spread three crops out now piles
+  // three overlapping canopies on the middle of the bed. The exported PNG is
+  // supposed to look like a plan of a garden.
+  const placements: ReadonlyArray<[crop: string, x: number, y: number]> = [
+    ['Onion', 60, 50],
+    ['Kale', 240, 50],
+    ['Lettuce', 150, 160],
   ];
-  for (const [crop, dx, dy] of placements) {
-    await searchBox.fill(crop);
-    await dragCropOntoCanvas(page, crop, canvas, (box) => ({
-      x: box.x + box.width / 2 + dx,
-      y: box.y + box.height / 2 + dy,
-    }));
-    // Confirm this crop landed before filtering for the next one. Without it,
-    // the next `fill` races this placement's re-render — and a controlled
-    // React input mid-re-render can quietly drop the typed value, leaving the
-    // palette showing the previous crop.
+  for (const [crop, x, y] of placements) {
+    await filterPaletteTo(page, crop);
+    await dragCropOntoCanvas(page, crop, canvas, atPlotCm({ x, y }, { width: 300, height: 200 }));
+    // Confirm this crop landed before filtering for the next one, so each
+    // iteration starts from a settled page. The controlled-input race this
+    // used to be the only guard against — a `fill` dropped by a React
+    // re-render, leaving the palette on the previous crop — is now handled at
+    // source by `filterPaletteTo`, which re-types rather than waiting harder.
     await expect(page.locator('li', { hasText: new RegExp(`^${crop}:`) })).toContainText(
       '1 placed of',
     );
   }
-  await searchBox.fill('');
+  await page.getByLabel(/^search$/i).fill('');
   // Anchored, so "Onion:" can't also match a "Green Onion:" tally row if a
   // future change to the drag ever places the wrong crop — the assertion has
   // to name the same exact crop the drag did for it to mean anything.

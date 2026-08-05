@@ -5,7 +5,7 @@ import {
   rankPlants,
   type Plant,
 } from '@garden-planner/engine';
-import { filterRanked, matchesCategory, matchesSearch } from './filters.ts';
+import { filterRanked, matchesBand, matchesCategory, matchesSearch } from './filters.ts';
 
 /** A minimal, schema-valid fixture plant, overridable per test. */
 function fixturePlant(overrides: Partial<Plant> = {}): Plant {
@@ -59,6 +59,26 @@ describe('matchesCategory', () => {
   });
 });
 
+describe('matchesBand', () => {
+  it('matches every band when the filter is "all"', () => {
+    for (const band of ['excellent', 'good', 'fair', 'poor', 'unsuitable'] as const) {
+      expect(matchesBand(band, 'all'), band).toBe(true);
+    }
+  });
+
+  it('keeps only excellent and good under "great" — fair is not a great fit', () => {
+    expect(matchesBand('excellent', 'great')).toBe(true);
+    expect(matchesBand('good', 'great')).toBe(true);
+    // `fair` is where "we know almost nothing about this crop" lands, given
+    // most of the shipped dataset has no hardiness/soil/season data — see the
+    // predicate's own comment for why the review's "excellent + good" is taken
+    // literally rather than widened.
+    expect(matchesBand('fair', 'great')).toBe(false);
+    expect(matchesBand('poor', 'great')).toBe(false);
+    expect(matchesBand('unsuitable', 'great')).toBe(false);
+  });
+});
+
 describe('filterRanked', () => {
   const conditions = resolvePlotConditions({ light: 'full-sun' });
   const plants = [
@@ -73,21 +93,41 @@ describe('filterRanked', () => {
 
   it('narrows by search without reordering the survivors', () => {
     const ranked = rankPlants(plants, conditions);
-    const narrowed = filterRanked(ranked, 'chard', 'all');
+    const narrowed = filterRanked(ranked, 'chard', 'all', 'all');
     expect(narrowed).toHaveLength(1);
     expect(narrowed[0].plant.id).toBe('chard');
   });
 
   it('narrows by category', () => {
     const ranked = rankPlants(plants, conditions);
-    const narrowed = filterRanked(ranked, '', 'herb');
+    const narrowed = filterRanked(ranked, '', 'herb', 'all');
     expect(narrowed).toHaveLength(1);
     expect(narrowed[0].plant.id).toBe('basil');
   });
 
   it('combines search and category, both must match', () => {
     const ranked = rankPlants(plants, conditions);
-    expect(filterRanked(ranked, 'chard', 'herb')).toHaveLength(0);
-    expect(filterRanked(ranked, 'chard', 'vegetable')).toHaveLength(1);
+    expect(filterRanked(ranked, 'chard', 'herb', 'all')).toHaveLength(0);
+    expect(filterRanked(ranked, 'chard', 'vegetable', 'all')).toHaveLength(1);
+  });
+
+  /**
+   * Both fixtures are full-sun crops on a full-sun plot with nothing else
+   * known, so the engine bands them `good` (its own note: with only light
+   * known the best attainable ranking score is 0.675). That makes them a clean
+   * pair for "great keeps them, and a band the filter excludes drops them"
+   * without pinning this test to a particular score.
+   */
+  it('narrows by band, alongside the other two', () => {
+    const ranked = rankPlants(plants, conditions);
+    expect(ranked.map((entry) => entry.suitability.band)).toEqual(['good', 'good']);
+
+    expect(filterRanked(ranked, '', 'all', 'great')).toHaveLength(2);
+    expect(filterRanked(ranked, 'chard', 'all', 'great')).toHaveLength(1);
+
+    // A shady plot demotes both full-sun crops out of "great".
+    const shady = rankPlants(plants, resolvePlotConditions({ light: 'full-shade' }));
+    expect(filterRanked(shady, '', 'all', 'all')).toHaveLength(2);
+    expect(filterRanked(shady, '', 'all', 'great')).toHaveLength(0);
   });
 });

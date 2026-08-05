@@ -21,15 +21,19 @@ import { rectangleRegion, type PlotConditionsInput, type PlotRegion } from '@gar
  * A modest starting outline (3m x 2m) so the outline editor always has
  * something to show and adjust from the first render, rather than opening on
  * a blank canvas with nothing to drag.
+ *
+ * Exported since UI redesign Phase 5, because "New design" means *this* plot
+ * and this is where it is defined — `state/designs-store.ts` reaching for its
+ * own 300×200 would be a second definition of the app's starting point.
  */
-const DEFAULT_REGION: PlotRegion = rectangleRegion(300, 200);
+export const DEFAULT_REGION: PlotRegion = rectangleRegion(300, 200);
 
 /**
  * `light` is the one condition every plot has (`PlotConditionsInputSchema`),
  * so the form needs a starting value; full sun is the most common default for
  * an open allotment bed.
  */
-const DEFAULT_CONDITIONS_INPUT: PlotConditionsInput = { light: 'full-sun' };
+export const DEFAULT_CONDITIONS_INPUT: PlotConditionsInput = { light: 'full-sun' };
 
 interface PlotState {
   /** The current outline. Always a validated `PlotRegion` — never a mid-edit, possibly-invalid draft (that lives in `PlotOutlineEditor`'s own local state). */

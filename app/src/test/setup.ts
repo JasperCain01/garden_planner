@@ -38,11 +38,17 @@ function konvaMock(tag: string) {
   };
 }
 
+// Every react-konva component this app renders needs an entry: an unmocked
+// one resolves to `undefined` and React throws on the element type. `Rect` and
+// `Image` joined the list in UI redesign Phase 2, when the scene gained a soil
+// surround and the markers started drawing their icons at a scaled size.
 vi.mock('react-konva', () => ({
   Stage: konvaMock('Stage'),
   Layer: konvaMock('Layer'),
   Group: konvaMock('Group'),
   Line: konvaMock('Line'),
   Circle: konvaMock('Circle'),
+  Rect: konvaMock('Rect'),
+  Image: konvaMock('Image'),
   Text: konvaMock('Text'),
 }));

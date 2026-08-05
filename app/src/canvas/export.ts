@@ -29,6 +29,56 @@ import type { PlacedPlant } from '../state/placements-store.ts';
 /** Rasterisation density — doubles the export's pixel dimensions for crispness on modern (retina/HiDPI) screens without ballooning memory use. */
 const EXPORT_PIXEL_RATIO = 2;
 
+/**
+ * The plot scale an export is rasterised at, in canvas pixels per plot
+ * centimetre — **independent of what the user has the canvas zoomed to**.
+ *
+ * UI redesign Phase 2 made the on-screen scale live: it fits the plot to the
+ * viewport, so it depends on the window's size, the zoom buttons, and how much
+ * room the dock below the canvas is taking. Rasterising the stage as-is would
+ * make the exported PNG a different size every time — the same plot at 456px
+ * wide on a laptop and 1,500px on a desktop, for reasons nothing on screen
+ * explains. So {@link exportPixelRatio} scales the rasterisation back to this
+ * fixed density instead, and an export of a given plot comes out the same size
+ * whatever the window was doing.
+ *
+ * The value is the `PX_PER_CM` constant Phase 2 removed from `geometry.ts`, so
+ * exports keep exactly the dimensions they had before the canvas learned to
+ * scale — this phase changes what the app *looks* like, not what it produces.
+ */
+const EXPORT_PX_PER_CM = 0.6;
+
+/**
+ * Bounds on the rasterisation ratio.
+ *
+ * The ceiling is the one that matters: a very large plot fits at
+ * `geometry.ts`'s `MIN_PX_PER_CM`, where an unbounded ratio would be ~24 and
+ * would ask the browser for a canvas of tens of megapixels. Above roughly a
+ * 12m plot on a laptop, then, the export's absolute size does start to track
+ * the fitted scale again — a slightly-off-size PNG beats an allocation
+ * failure, and the plot is drawn at a legible density either way.
+ *
+ * The floor never binds in practice — at `MAX_PX_PER_CM` the ratio is exactly
+ * `0.2` — and exists only so a future change to the scale clamp can't produce
+ * a zero-size canvas silently.
+ */
+const MIN_EXPORT_PIXEL_RATIO = 0.2;
+const MAX_EXPORT_PIXEL_RATIO = 4;
+
+/**
+ * The `pixelRatio` to hand Konva's `toCanvas`, given the scale the stage is
+ * currently drawn at: enough to bring `pxPerCm` back to
+ * {@link EXPORT_PX_PER_CM}, times {@link EXPORT_PIXEL_RATIO} for HiDPI
+ * crispness, clamped.
+ *
+ * Exported (and pure) so `export.test.ts` can pin the "same plot, same size"
+ * property directly rather than inferring it from a PNG's byte count.
+ */
+export function exportPixelRatio(pxPerCm: number): number {
+  const ratio = (EXPORT_PX_PER_CM / pxPerCm) * EXPORT_PIXEL_RATIO;
+  return Math.min(Math.max(ratio, MIN_EXPORT_PIXEL_RATIO), MAX_EXPORT_PIXEL_RATIO);
+}
+
 /** Legend panel width, in CSS px before `EXPORT_PIXEL_RATIO` scaling. */
 const LEGEND_WIDTH_PX = 260;
 /** Padding inside the legend panel, in CSS px before scaling. */
@@ -167,13 +217,21 @@ function waitForIconImages(stage: Konva.Stage): Promise<void> {
  * itself" the brief describes, built with the plain 2D Canvas API rather than
  * a Konva node (see this module's doc comment for why).
  */
-function compositeExportCanvas(stage: Konva.Stage, legendText: string): HTMLCanvasElement {
-  const stageCanvas = stage.toCanvas({ pixelRatio: EXPORT_PIXEL_RATIO });
+function compositeExportCanvas(
+  stage: Konva.Stage,
+  legendText: string,
+  pixelRatio: number,
+): HTMLCanvasElement {
+  const stageCanvas = stage.toCanvas({ pixelRatio });
 
-  const legendWidthPx = LEGEND_WIDTH_PX * EXPORT_PIXEL_RATIO;
-  const legendPaddingPx = LEGEND_PADDING_PX * EXPORT_PIXEL_RATIO;
-  const lineHeightPx = LEGEND_LINE_HEIGHT_PX * EXPORT_PIXEL_RATIO;
-  const fontSizePx = LEGEND_FONT_SIZE_PX * EXPORT_PIXEL_RATIO;
+  // The legend is scaled by the same ratio as the plot, so its text stays the
+  // same size *relative to the plot* however the canvas was zoomed — a legend
+  // that grew while the plot shrank would be the same bug this ratio exists to
+  // fix, one panel over.
+  const legendWidthPx = LEGEND_WIDTH_PX * pixelRatio;
+  const legendPaddingPx = LEGEND_PADDING_PX * pixelRatio;
+  const lineHeightPx = LEGEND_LINE_HEIGHT_PX * pixelRatio;
+  const fontSizePx = LEGEND_FONT_SIZE_PX * pixelRatio;
 
   const lines = legendText.split('\n');
   const legendHeightPx = legendPaddingPx * 2 + lines.length * lineHeightPx;
@@ -220,11 +278,16 @@ function downloadDataUrl(dataUrl: string, filename: string): void {
  * @param placements - every plant currently placed, in placement order.
  * @param conditions - the plot's resolved conditions, or `null` if they don't
  * currently resolve.
+ * @param pxPerCm - the scale the stage is currently drawn at
+ * (`useCanvasScale`). Required, not defaulted: see {@link EXPORT_PX_PER_CM}
+ * for what an export does with it, and `geometry.ts`'s module doc for why
+ * Phase 2 made every scale parameter in this codebase mandatory.
  */
 export async function exportPlotImage(
   stageRef: Readonly<{ current: Konva.Stage | null }>,
   placements: readonly PlacedPlant[],
   conditions: PlotConditions | null,
+  pxPerCm: number,
 ): Promise<void> {
   const stage = stageRef.current;
   if (stage === null) return;
@@ -236,6 +299,6 @@ export async function exportPlotImage(
   await waitForIconImages(stage);
 
   const legendText = buildLegendText(placements, conditions);
-  const composite = compositeExportCanvas(stage, legendText);
+  const composite = compositeExportCanvas(stage, legendText, exportPixelRatio(pxPerCm));
   downloadDataUrl(composite.toDataURL('image/png'), EXPORT_FILENAME);
 }

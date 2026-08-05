@@ -8,7 +8,7 @@
  * inline in `PlotCanvas.tsx`.
  */
 
-import type { WarningSeverity } from '@garden-planner/engine';
+import type { Warning, WarningSeverity } from '@garden-planner/engine';
 
 /** Urgency order, low to high — the engine's own vocabulary carries no numeric rank, so this module supplies one. */
 const SEVERITY_RANK: Readonly<Record<WarningSeverity, number>> = {
@@ -39,8 +39,14 @@ export function worseSeverity(a: WarningSeverity, b: WarningSeverity): WarningSe
  * short — so it's darkened one step (a standard "700"-weight amber, same hue)
  * to `#b45309` (5.02:1); `info` (5.17:1) and `severe` (4.83:1) already
  * cleared the bar and are unchanged.
+ *
+ * **Mirrored in CSS (UI redesign Phase 0).** Konva needs these as literal
+ * strings for the canvas badge, so they stay here; `styles/tokens.css` carries
+ * the same values as `--severity-*` for the DOM warnings list, and
+ * `styles/tokens.test.ts` fails if the two copies drift apart. Exported for
+ * that test — `severityColor` below is still how a component asks for one.
  */
-const SEVERITY_COLORS: Readonly<Record<WarningSeverity, string>> = {
+export const SEVERITY_COLORS: Readonly<Record<WarningSeverity, string>> = {
   info: '#2563eb',
   warning: '#b45309',
   severe: '#dc2626',
@@ -69,4 +75,35 @@ const SEVERITY_GLYPHS: Readonly<Record<WarningSeverity, string>> = {
 /** The single-character glyph a canvas badge should draw for a given severity, so shape (not just colour) carries the distinction. */
 export function severityGlyph(severity: WarningSeverity): string {
   return SEVERITY_GLYPHS[severity];
+}
+
+/** One severity and how many warnings currently carry it. */
+export interface SeverityCount {
+  readonly severity: WarningSeverity;
+  readonly count: number;
+}
+
+/**
+ * How many warnings of each severity there are, **most urgent first**, with
+ * empty severities dropped — the warnings dock's count badge ("2 × 1 !", UI
+ * redesign Phase 4).
+ *
+ * Pure and here rather than inline in `WarningsPanel.tsx` for this module's
+ * standing reason: it is the one place that knows severities have an order, and
+ * a badge row that listed `info` before `severe` would be a bug a rendering
+ * test would have to catch by reading the DOM. `severity.test.ts` pins it
+ * against plain fixtures instead.
+ *
+ * Zero-count severities are omitted rather than rendered as "0 severe": the
+ * badge row is a summary of what is wrong, and three quarters of it saying
+ * "none of this" is not one.
+ */
+export function severityCounts(warnings: readonly Warning[]): readonly SeverityCount[] {
+  const counts = new Map<WarningSeverity, number>();
+  for (const warning of warnings) {
+    counts.set(warning.severity, (counts.get(warning.severity) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([severity, count]) => ({ severity, count }))
+    .sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity]);
 }

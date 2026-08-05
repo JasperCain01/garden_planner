@@ -1,0 +1,167 @@
+/*
+ * Segmented-control layout (UI redesign Phase 4). One joined row of options
+ * where there used to be a `<select>` whose choices you had to open to see.
+ *
+ * The mechanic — the invisible native radio stretched over the visible
+ * segment — is `ui/choice.module.css`'s and is composed in below; only the
+ * appearance is here.
+ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Matches the `<label>` above a `<select>` in the same form, so a segmented
+ * field and a select field read as the same kind of thing. `global.css`'s
+ * `legend` rule floats legends (to clear a fieldset's border cut-out); nothing
+ * here draws that border, and floating inside a flex column would take the
+ * legend out of the flow, so it is un-floated. */
+.legend {
+  float: none;
+  width: auto;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/*
+ * The segments share one outer border and are divided by hairlines, so the
+ * control reads as a single control with parts rather than as loose chips —
+ * which is the whole visual difference from the palette's filter chips, where
+ * each chip really is independent.
+ *
+ * `grid` with equal columns rather than `flex`: the options are alternatives of
+ * equal standing, and a row whose "Wet" is narrower than "Alkaline" invites a
+ * reading of importance that isn't there. Equal columns also make the hit
+ * targets equal, which is the accessible-target argument for the same choice.
+ *
+ * `minmax(0, 1fr)` and not a bare `1fr`: a bare `1fr` floors each track at its
+ * content's minimum, so one long option makes the whole control wider than the
+ * column it is in and the overflow is clipped by an ancestor — which is how
+ * "Alkaline" lost its last letter before this was written out.
+ *
+ * **Four options go to a 2 × 2 block**, three or fewer to one row. Measured
+ * rather than chosen: in a 300px sidebar a soil facet's four segments get
+ * ~63px each, and "Alkaline" needs 67 with its padding — it does not fit
+ * one-across at any indent, so the choice was between shrinking the type,
+ * shortening the engine's own vocabulary, and using the second dimension. The
+ * split is deterministic (`data-columns` on the element, set from the option
+ * count) rather than an `auto-fit` guess, which at this width drops four
+ * options into an unbalanced 3 + 1 and leaves empty tracks behind.
+ */
+.segments {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+
+.segments[data-columns='2'] {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.segment {
+  composes: target from './choice.module.css';
+  min-width: 0;
+}
+
+.segment + .segment {
+  border-left: 1px solid var(--border-input);
+}
+
+/* In the 2 × 2 block the dividers run both ways, and the left-hand cell of the
+ * second row starts a row rather than continuing one — so the generic rule
+ * above is undone for it and a top border is added instead. The positions are
+ * fixed because the layout is (two columns, four options), not fluid. */
+.segments[data-columns='2'] .segment:nth-child(2n + 1) {
+  border-left: 0;
+}
+
+.segments[data-columns='2'] .segment:nth-child(n + 3) {
+  border-top: 1px solid var(--border-input);
+}
+
+.input {
+  composes: control from './choice.module.css';
+}
+
+/*
+ * The part a user sees. `flex: 1` so the whole cell is the target (the label
+ * is a grid item; without this the visible body could be narrower than the
+ * stretched input beneath it, which would look like a mis-aimed click).
+ */
+.body {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-1);
+  background: var(--surface-card);
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) ease,
+    color var(--motion-fast) ease;
+}
+
+.segment:hover .body {
+  background: var(--green-100);
+}
+
+/* The one focus indicator `global.css` draws, moved onto the element that is
+ * actually visible — the input itself has no painted pixels. Inset rather than
+ * offset because an outline outside a segment would be drawn over its
+ * neighbours and clipped by the group's `overflow: hidden`. */
+.input:focus-visible + .body {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+
+/*
+ * Selected. `--green-700` fill with `--text-on-dark` on it: 6.39:1, past the
+ * 4.5:1 bar (`docs/accessibility.md` §9). Colour is never the only signal —
+ * these are real radios, so "selected" is in the accessibility tree, and the
+ * fill inverts rather than merely tinting, which survives a greyscale print
+ * and most colour-vision differences.
+ */
+.input:checked + .body {
+  background: var(--green-700);
+  color: var(--text-on-dark);
+}
+
+.segment:hover .input:checked + .body {
+  background: var(--green-900);
+}
+
+/*
+ * Print (UI redesign Phase 6, ADR 0035).
+ *
+ * The comment above already anticipated this medium — "the fill inverts rather
+ * than merely tinting, which survives a greyscale print" — but only if the fill
+ * is printed at all, and a browser drops background colours by default. That
+ * makes the selected segment identical to the three it is chosen over, which on
+ * the printed plan is the difference between "this plot is in full sun" and a
+ * row of words. `print-color-adjust` is the property that says a background is
+ * carrying meaning rather than decoration, and this is the one place in the app
+ * where that is literally true.
+ *
+ * Scoped to the checked segment, not the group: the unselected ones are exactly
+ * the decoration this exists to distinguish it from.
+ */
+@media print {
+  .input:checked + .body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

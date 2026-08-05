@@ -1,0 +1,261 @@
+/*
+ * Canvas-region styling (Phase 0's finish, Phase 1's shape, Phase 2's use of
+ * it).
+ *
+ * Phase 0 pulled the buttons out of loose `<p>` tags into one toolbar row and
+ * made the selected-placement readout a card. Phase 1 made this the *centre*
+ * of the workspace: a column that fills its region, with the canvas taking
+ * every pixel the toolbar and the dock below it don't. Phase 2 is what finally
+ * spends those pixels — the stage is fitted to `.viewport`'s measured content
+ * box (`canvas/useCanvasScale.ts`), so the plot is as large as the room it has
+ * rather than a fixed 0.6 px/cm postage stamp centred in it.
+ */
+
+.region {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-4);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.heading {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* The zoom cluster reads as one control: three buttons and a readout with no
+ * gaps between them, so "− 100% + Fit" is visibly a single group rather than
+ * four unrelated toolbar items. */
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.zoomReadout {
+  min-width: 4ch;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/*
+ * A compact square button for the glyph-only controls (zoom ±, ◀/▶). The
+ * review asks for Previous/Next to be "styled as compact icon buttons"; each
+ * still carries a full `aria-label`, so what is compact is the drawing, never
+ * the name.
+ */
+.iconButton {
+  min-width: 2.25rem;
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+
+.hint {
+  flex-shrink: 0;
+  margin: var(--space-2) 0 var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  /* Post-review fix B2. The two hint sentences (arrange mode's, edit mode's)
+   * are different lengths, so without a floor this box's own height changes
+   * with the mode too — on top of the toolbar row-count difference the fix
+   * targets, and in the *opposite* direction (arrange's longer sentence wraps
+   * to 4 lines here at 1440px; edit's wraps to 2), which very nearly canceled
+   * the toolbar fix out rather than visibly compounding it. `4 * 1.5` is four
+   * lines at this element's own `line-height` (`--leading`), which is what
+   * arrange mode's sentence measures at 1440px — reserving that keeps the
+   * canvas viewport's top edge from moving by a couple of pixels on top of
+   * whatever the toolbar contributes, the same way the toolbar fix keeps it
+   * from moving by tens. A narrower supported width that wraps arrange's
+   * sentence past 4 lines simply grows past this floor, same as before. */
+  min-height: calc(4 * 1.5 * var(--text-sm));
+}
+
+/*
+ * The canvas's own space — and, since Phase 2, the thing that decides how big
+ * the plot is drawn.
+ *
+ * `flex: 1` + `min-height: 0` is what makes this the region's largest element
+ * rather than the ~168px-tall postage stamp it used to be
+ * (`docs/ui-aesthetic-review.md`'s second finding): at 1440×900 the centre
+ * column is ~820×836, and every pixel of it that isn't toolbar or dock is
+ * this. `canvas/useCanvasScale.ts` observes this element and fits the plot to
+ * its **content** box — which is why the padding below is real padding and not
+ * a margin on the stage: it is the band the dimension labels are drawn in.
+ *
+ * `overflow: auto` stays for the reason Workplan Stage 6.2 added it, and now
+ * earns a second one: a plot zoomed past "fit" must scroll *here*, not drag
+ * the whole workspace sideways (ADR 0026) — and that scroll is also the pan,
+ * which is why `PlotCanvas` is handed a ref to this element.
+ *
+ * `safe center` rather than plain `center`: a centred grid item that is larger
+ * than its container overflows *both* ways and the top-left of it becomes
+ * unreachable by scrolling. `safe` falls back to start-alignment exactly then,
+ * which is the difference between "zoom in and pan around" and "zoom in and
+ * lose the top-left corner of your plot".
+ */
+.viewport {
+  display: grid;
+  align-items: safe center;
+  justify-items: safe center;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--soil-100);
+}
+
+/*
+ * Selection readout and count feedback, docked under the canvas. Capped and
+ * independently scrollable so a long tally (one row per distinct crop placed)
+ * can't eat the canvas's height — the region's whole point is that the canvas
+ * keeps the space.
+ */
+.dock {
+  flex-shrink: 0;
+  max-height: 38%;
+  overflow-y: auto;
+}
+
+/* An outline edit that didn't validate. Same wording and same `role="alert"`
+ * the deleted `PlotOutlineEditor` used — it just appears under the canvas now
+ * rather than under a separate editor, because the shape it is describing is
+ * on the canvas. */
+.outlineError {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+/* The Clear-all confirmation's buttons lived here until UI redesign Phase 5
+ * retired the dialog: clearing is undoable now, and a confirmation for a
+ * reversible action buys nothing (ADR 0034 §5). */
+
+.selected {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--green-700);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+}
+
+.selectedName {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  margin: 0;
+  font-weight: 600;
+}
+
+.selectedWarnings {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+/*
+ * The stacked fallback below `--layout-narrow` (`styles/tokens.css`): there is
+ * no region to fill, so nothing is pinned and nothing is capped — the canvas
+ * takes its natural height and the dock follows it down the page.
+ */
+@media (max-width: 899px) {
+  .region {
+    padding: 0;
+  }
+
+  .viewport {
+    flex: none;
+    padding: var(--space-3);
+  }
+
+  .dock {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/*
+ * Print (UI redesign Phase 6, ADR 0035 — `styles/global.css`'s print block has
+ * the whole story).
+ *
+ * This region is the plan itself: the plot picture, and under it the crop key.
+ * What goes is everything around them that only means something to a pointer
+ * or a keyboard — the whole actions cluster (hiding it rather than leaning on
+ * `global.css`'s blanket `button` rule, because the zoom *readout* is a
+ * `<span>` and would otherwise print a lone "100%" under the heading), the
+ * paragraph explaining how to drag a plant onto the plot, and the
+ * selected-placement readout, which is a *screen* state and would otherwise
+ * print "Selected: Carrot" onto a plan where nothing is selected.
+ *
+ * `PlacementFeedbackPanel`'s tally stays, and it is doing real work here: it is
+ * the printed sheet's crop key, in the same "one line per crop, not per placed
+ * instance" shape `canvas/export.ts` chose for the PNG legend. The markers on
+ * the plot label themselves with the crop's name at any scale past 0.9 px/cm
+ * (`footprint.ts`), and the default 3×2m plot fits at ~1.9, so the picture and
+ * the key name the same crops the same way.
+ */
+@media print {
+  .region {
+    display: block;
+    padding: 0;
+  }
+
+  .toolbar {
+    /* Only "Your plot" is left in it, and a flex row with one item that is a
+     * heading is just a heading. */
+    display: block;
+  }
+
+  .actions,
+  .hint,
+  .selected {
+    display: none;
+  }
+
+  /* The soil surround is the *screen's* frame for the stage; on paper the plot
+   * already paints its own ground (`PlotCanvas.tsx` fills the stage with
+   * `soil-100` so an export shows the same scene the app does), so this box
+   * would be a second, larger tinted rectangle around the first. */
+  .viewport {
+    display: block;
+    overflow: visible;
+    padding: 0;
+    background: none;
+  }
+
+  /* The stage keeps its screen size (`useCanvasScale.ts#isPrintLayout`), so on
+   * a sheet wider than it, it needs telling where to sit — `safe center` was
+   * doing that on screen and is a grid property this block just gave up. */
+  .viewport > * {
+    margin-inline: auto;
+  }
+
+  .dock {
+    max-height: none;
+    overflow-y: visible;
+  }
+}

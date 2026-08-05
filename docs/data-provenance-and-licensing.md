@@ -34,11 +34,12 @@ in the project either — see `NOTICE` for the same statement at the source.
 
 ## Licensing, in one table
 
-| What                          | Licence             | Where recorded                                                                |
-| ----------------------------- | ------------------- | ----------------------------------------------------------------------------- |
-| Code (`app/`, `packages/`)    | MIT                 | [`LICENSE`](../LICENSE)                                                       |
-| Dataset (`data/`)             | CC0-1.0             | [ADR 0023](./adr/0023-dataset-licence-cc0.md), `NOTICE`                       |
-| Crop icons (`app/src/icons/`) | MIT (original work) | `NOTICE`'s "ILLUSTRATIONS" section, [icon style guide](./icon-style-guide.md) |
+| What                          | Licence             | Where recorded                                                                                                                                                       |
+| ----------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code (`app/`, `packages/`)    | MIT                 | [`LICENSE`](../LICENSE)                                                                                                                                              |
+| Dataset (`data/`)             | CC0-1.0             | [ADR 0023](./adr/0023-dataset-licence-cc0.md), `NOTICE`                                                                                                              |
+| Crop icons (`app/src/icons/`) | MIT (original work) | `NOTICE`'s "ILLUSTRATIONS" section, [icon style guide](./icon-style-guide.md)                                                                                        |
+| Heading font (Fraunces)       | OFL-1.1             | `NOTICE`'s "TYPOGRAPHY" section, [ADR 0029](./adr/0029-design-tokens-css-modules-and-self-hosted-font.md); licence text ships at `app/public/fonts-fraunces-OFL.txt` |
 
 The dataset was **CC BY-NC-SA 4.0** from Stage 1.5 until Stage 6.0: that
 restriction existed only to absorb Plants For A Future, whose terms would

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { dragCropOntoCanvas } from './drag.ts';
+import { dragCropOntoCanvas, filterPaletteTo } from './drag.ts';
 
 // The offline E2E test WORKPLAN.md §1.3 requires: "An E2E run that loads the
 // app, goes offline, and confirms it still functions." Stage 5.1 adds the
@@ -18,16 +18,14 @@ import { dragCropOntoCanvas } from './drag.ts';
 // forcing it — but the test still has to *wait* for it rather than assuming
 // it's instantaneous, hence `waitForFunction` below instead of a fixed sleep.
 //
-// Tall viewport for the same reason as `plot-canvas.spec.ts`: the unfiltered
-// palette makes the page much taller than a normal viewport, and a
-// `page.mouse` drag doesn't auto-scroll the way a `Locator` action would.
-// A very tall viewport keeps the palette entry and the canvas on-screen at
-// once: `page.mouse` works in viewport coordinates and does not scroll (see
-// `drag.ts`). 4000 is deliberate headroom over the ~3700 a filtered palette
-// plus the canvas actually needs today — at 3500 the canvas sat just below
-// the fold and drags intermittently did nothing. `drag.ts` asserts both ends
-// are in view, so if this ever stops being enough the failure says so.
-test.use({ viewport: { width: 1024, height: 4000 } });
+// An ordinary laptop viewport, same as `plot-canvas.spec.ts`. `page.mouse` works in viewport coordinates and
+// does not scroll (see `drag.ts`), so both ends of the drag have to be on
+// screen at once — which, since UI redesign Phase 1, is simply what the
+// workspace layout does: the palette is the left sidebar and the canvas is the
+// centre region, always side by side above 900px wide. These specs used to
+// declare a 4000px-tall viewport to force the stacked page's palette and
+// canvas into view together; that trick is gone with the stacked page.
+test.use({ viewport: { width: 1440, height: 900 } });
 
 test('the app works with the network off, once the service worker has installed', async ({
   page,
@@ -61,7 +59,7 @@ test('the app works with the network off, once the service worker has installed'
   await page.reload();
   await expect(page.getByRole('heading', { name: /garden planner/i })).toBeVisible();
 
-  await page.getByLabel(/^search$/i).fill('Onion');
+  await filterPaletteTo(page, 'Onion');
 
   const canvas = page.getByLabel(/plot canvas/i);
   await expect(canvas).toBeVisible();

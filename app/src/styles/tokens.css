@@ -1,0 +1,232 @@
+/*
+ * Design tokens — the single source of colour, type, spacing, radius and
+ * shadow for the whole app (UI redesign **Phase 0**,
+ * `docs/ui-aesthetic-review.md`; reasoning in ADR 0029).
+ *
+ * Before this file the app had no stylesheet at all: every rule was an inline
+ * `style` prop and everything else was browser default. The rule from here on
+ * is that a component never invents a colour or a gap — it spends a token
+ * defined here, so a change of mind about (say) how warm the page background
+ * is happens once, in one place.
+ *
+ * **Three token families live in TypeScript instead, on purpose.** Konva
+ * draws to a `<canvas>` and so needs literal colour strings, not CSS custom
+ * properties: `canvas/PlotCanvas.tsx`'s `CATEGORY_COLORS` and
+ * `warnings/severity.ts`'s `SEVERITY_COLORS` are those, and the values below
+ * mirror them for the DOM side of the same idea (a category chip, a severity
+ * label). `styles/tokens.test.ts` fails if the two copies ever drift apart —
+ * the mirror is checked, not trusted. The band colours have no Konva
+ * consumer, so they live *only* here.
+ *
+ * **Contrast is measured, not eyeballed** — the method Workplan Stage 6.2
+ * established (`docs/accessibility.md`). Every text/background pairing this
+ * file introduces was computed; the ratios are recorded inline below so the
+ * next person can check the sums rather than re-derive them.
+ */
+
+:root {
+  /* ---------------------------------------------------------------- Surfaces
+   * A warm cream page instead of clinical white, with white cards floating on
+   * it — the "warm, garden, high-spirited" direction Phase 0 asked for. Every
+   * card surface stays white so the contrast ratios below (computed against
+   * white where text sits on a card) hold.
+   */
+  --surface-page: #f6f3ea;
+  --surface-card: #ffffff;
+  --surface-sunken: #efe6dc;
+
+  /* ------------------------------------------------------------ Green ramp
+   * The primary ramp: buttons, plot fills, focus accents, the wordmark.
+   */
+  --green-900: #1b4332;
+  --green-700: #2d6a4f;
+  --green-500: #40916c;
+  --green-100: #d8f3dc;
+
+  /* ------------------------------------------------------- Earth (secondary)
+   * Used for quiet chrome — the canvas surround, sunken wells — where green
+   * would read as "this means something".
+   */
+  --soil-700: #6f4e37;
+  --soil-100: #efe6dc;
+
+  /* ------------------------------------------------------------- Accents
+   * `--sky-500` is the information/decoration blue (the outline editor's
+   * "add a corner" handles). `--sky-600` is its text-and-focus-safe sibling:
+   * 5.40:1 on white, 4.87:1 on the page cream, where `--sky-500` manages only
+   * 3.32:1 / 2.99:1 and so can never carry text. `--sun-400` is a highlight
+   * fill only — 2.07:1 against white, so nothing white ever sits on it.
+   */
+  --sky-500: #4d94c4;
+  --sky-600: #2f6f9e;
+  --sun-400: #f4a259;
+
+  /* --------------------------------------------------------------- Ink
+   * body 10.78:1 on the page cream / 11.96:1 on a white card;
+   * muted 5.03:1 / 5.58:1; strong 13.36:1 on cream.
+   */
+  --text-strong: #1b2b23;
+  --text: #2b3a33;
+  --text-muted: #5f6b62;
+  --text-on-dark: #ffffff;
+  --danger: #b3261e;
+
+  /* ------------------------------------------------------------- Lines
+   * `--border` is decorative hairline (card edges, dividers) — it is never
+   * the only thing separating two regions, so it is free to be quiet.
+   * `--border-input` bounds a real control and so has to clear WCAG 1.4.11's
+   * 3:1 for UI components against *both* backgrounds it can appear on:
+   * 3.85:1 on white, 3.47:1 on the page cream.
+   * `--focus-ring` is the visible keyboard focus indicator everywhere:
+   * 5.40:1 on white, 4.87:1 on cream. It is drawn as an `outline` with an
+   * offset, so on a green button it sits on the page background rather than
+   * on the button's own fill (which it would only manage 1.18:1 against).
+   */
+  --border: #e5dfd2;
+  --border-input: #8a8170;
+  --focus-ring: #2f6f9e;
+
+  /* -------------------------------------------------------- Band colours
+   * Suitability bands (`BAND_LABELS`, `@garden-planner/engine`), rendered as
+   * a chip: band-coloured text on a tint of the same hue. These started as
+   * `PlantPalette.tsx`'s `BAND_COLORS`, hand-tuned in Stage 6.2 to clear
+   * 4.5:1 **against white** — but a chip puts them on a tint, which is
+   * darker than white, so every pairing was re-measured here:
+   *
+   *   excellent  #1a7f37 on #eaf7ee — 4.60:1 ✅ (unchanged)
+   *   good       #3f7522 on #eef6e8 — 5.02:1 ✅ (unchanged)
+   *   fair       #8a6c00 on #fcf7e8 — 4.64:1 ✅ (unchanged)
+   *   poor       #b35c00 on any usable tint tops out at 4.48:1 ❌
+   *              → darkened one step, same hue, to #a85600: 4.69:1 ✅
+   *   unsuitable #767676 only reaches 4.54:1 on *white*, so no grey tint can
+   *              work → darkened to #6b6b6b: 4.64:1 ✅
+   *
+   * Both darkened values also still clear the bar on plain white (5.26:1 and
+   * 5.33:1), so a chip that ever lands on a white surface stays compliant.
+   * Colour is supplementary here, exactly as before: `BAND_LABELS`' words
+   * ("Excellent match") carry the meaning (WCAG 1.4.1).
+   */
+  --band-excellent: #1a7f37;
+  --band-excellent-bg: #eaf7ee;
+  --band-good: #3f7522;
+  --band-good-bg: #eef6e8;
+  --band-fair: #8a6c00;
+  --band-fair-bg: #fcf7e8;
+  --band-poor: #a85600;
+  --band-poor-bg: #fdf0e4;
+  --band-unsuitable: #6b6b6b;
+  --band-unsuitable-bg: #f0efed;
+
+  /* ---------------------------------------------------- Category colours
+   * Mirrors `canvas/PlotCanvas.tsx`'s `CATEGORY_COLORS` so a category reads
+   * the same everywhere it appears — canvas marker, palette chip, legend.
+   * Fills only (they carry no text), so 1.4.3 doesn't apply; the marker
+   * always pairs them with the crop's icon and name.
+   * Guarded against drift by `styles/tokens.test.ts`.
+   *
+   * **The `-bg` tints are UI redesign Phase 3's**, added for the same reason
+   * the `--band-*-bg` tints above exist: the palette needed a *surface* in a
+   * category's hue — the disc behind a crop's 40px icon, and the background of
+   * a selected category filter chip — and mixing one ad hoc in a component
+   * would put an unmeasured colour on screen. Each is a 12% mix of its own
+   * category colour over white, and each pairing was computed rather than
+   * eyeballed:
+   *
+   *   vegetable  #eaf1e6 — `--text-strong` 12.87:1 ✅, own dot 3.58:1 ✅
+   *   herb       #e0efed — `--text-strong` 12.52:1 ✅, own dot 4.49:1 ✅
+   *   fruit      #f7e7e6 — `--text-strong` 12.37:1 ✅, own dot 4.54:1 ✅
+   *
+   * ("own dot" is the pure category colour drawn on its own tint, held to WCAG
+   * 1.4.11's 3:1 bar for a graphical object rather than the text bar — it is
+   * the chip's colour swatch, and the chip's own word carries the meaning.)
+   *
+   * **Why a tint and not a filled chip.** A selected chip filled with the
+   * category colour and labelled in white is the obvious design, and it fails:
+   * white on `--category-vegetable` is **4.12:1**, short of 4.5:1, and moving
+   * the green to fix it would break the mirror with `CATEGORY_COLORS` and so
+   * change the canvas markers to fix a chip. Dark text on a light tint clears
+   * the bar three times over and leaves the canvas alone.
+   */
+  --category-vegetable: #4c8c2b;
+  --category-herb: #00796b;
+  --category-fruit: #c0392b;
+  --category-vegetable-bg: #eaf1e6;
+  --category-herb-bg: #e0efed;
+  --category-fruit-bg: #f7e7e6;
+
+  /* ---------------------------------------------------- Severity colours
+   * Mirrors `warnings/severity.ts`'s `SEVERITY_COLORS` (which Konva needs as
+   * literals for the canvas badge). Used as *text* colour in the warnings
+   * list, so the Stage 6.2 audit's 4.5:1-on-white figures apply — which is
+   * why every DOM surface that shows a severity word is a white card, not
+   * the page cream (severe manages only 4.35:1 there).
+   * Guarded against drift by `styles/tokens.test.ts`.
+   */
+  --severity-info: #2563eb;
+  --severity-warning: #b45309;
+  --severity-severe: #dc2626;
+
+  /* ------------------------------------------------------------- Spacing
+   * One 4px-based scale. Components pick a step, never a raw pixel value.
+   */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* ------------------------------------------------------ Radius & shadow
+   * Two radii (controls, cards) and two shadow levels (resting card,
+   * floating overlay) — deliberately few, so surfaces read as one system.
+   */
+  --radius: 8px;
+  --radius-card: 12px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgb(27 67 50 / 6%), 0 2px 8px rgb(27 67 50 / 6%);
+  --shadow-overlay: 0 8px 24px rgb(27 67 50 / 16%);
+
+  /* --------------------------------------------------------- Typography
+   * Fraunces (a friendly display serif, self-hosted — see `fonts.css`) for
+   * headings and the wordmark; the system stack for body text, which stays
+   * the most legible thing on any machine and costs nothing to download.
+   * Sizes follow Phase 0's spec: h1 28px, section headings 20px, body 16px.
+   */
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --text-h1: 1.75rem;
+  --text-h2: 1.25rem;
+  --text-h3: 1.0625rem;
+  --text-base: 1rem;
+  --text-sm: 0.875rem;
+  --text-xs: 0.8125rem;
+  --leading: 1.5;
+
+  /* ------------------------------------------------------------ Motion
+   * One duration for hover/press feedback, one for expanding things. Both
+   * are switched off under `prefers-reduced-motion` in `global.css`.
+   */
+  --motion-fast: 120ms;
+  --motion-medium: 200ms;
+
+  /* ----------------------------------------------------------- Layout
+   * The workspace's three column widths (UI redesign Phase 1, ADR 0030),
+   * from `docs/ui-aesthetic-review.md`'s sketch. The centre column takes
+   * whatever is left, which is the point: at 1440×900 that is ~820×836 —
+   * 53% of the viewport, against the ~2% the old 640px column gave the
+   * canvas.
+   *
+   * `--layout-narrow` is the app's **one** breakpoint: below it the
+   * workspace collapses back to the stacked flow Workplan Stage 6.2's
+   * responsive pass tuned for phones. A media query cannot read a custom
+   * property, so every module that needs it writes `899px` out and points
+   * back here — this declaration is the definition, not a second copy.
+   */
+  --workspace-plants: 320px;
+  --workspace-checks: 300px;
+  --layout-narrow: 900px;
+
+  /* The reading width for pages that are prose rather than workspace (the
+   * not-found route) — what the whole app used to be capped at. */
+  --reading-column: 40rem;
+}

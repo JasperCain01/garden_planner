@@ -1,0 +1,102 @@
+/*
+ * Growing-conditions form layout (UI redesign Phase 4; Phase 0 stripped the
+ * fieldset borders in `global.css` and gave the groups a rhythm, which this
+ * replaces).
+ *
+ * Phase 0's hairline-ruled groups were a way of making a three-deep nest of
+ * fieldsets legible. Phase 4 removed the nest instead — one flat stack of
+ * fields, of which three are segmented controls (`ui/SegmentedControl.tsx`) and
+ * one is a disclosure — so the rules that separated the groups have nothing
+ * left to separate and are gone with them. The form is 635px → see ADR 0033 §1
+ * for where that went.
+ */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.field label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------- Soil */
+
+/*
+ * The soil disclosure. Styled like the settings panels above it
+ * (`PlotDefinitionPage.module.css`) — a rotating chevron in place of the native
+ * triangle — but one level quieter: this is a field inside a panel, not a panel.
+ */
+.soil {
+  border-radius: var(--radius);
+}
+
+.soilSummary {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.soilSummary::-webkit-details-marker {
+  display: none;
+}
+
+.soilSummary::before {
+  content: '▾';
+  display: inline-block;
+  color: var(--green-700);
+  font-size: var(--text-xs);
+  transition: transform var(--motion-fast) ease;
+}
+
+.soil:not([open]) .soilSummary::before {
+  transform: rotate(-90deg);
+}
+
+.soilSummary:hover {
+  color: var(--green-900);
+}
+
+/* Indented under the summary, so an open disclosure reads as three fields
+ * belonging to it rather than three more fields in the form. */
+.soilBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--border);
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+/* Print (UI redesign Phase 6, ADR 0035): the soil disclosure's chevron goes for
+ * the same reason the two panel chevrons do — see
+ * `PlotDefinitionPage.module.css`'s print block. What the disclosure is holding
+ * prints only if it was left open, which is deliberate: a plan is a snapshot of
+ * the workspace as it stands, and CSS cannot open a `<details>` in one engine
+ * the same way it can in another. */
+@media print {
+  .soilSummary::before {
+    display: none;
+  }
+}

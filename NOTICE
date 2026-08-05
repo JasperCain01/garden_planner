@@ -96,6 +96,25 @@ If a future contributor replaces a placeholder icon with hand-drawn or
 commissioned artwork that is not their own original work under MIT-compatible
 terms, record its source and licence here.
 
+TYPOGRAPHY
+----------
+The app ships one webfont: Fraunces (headings and the wordmark), vendored from
+the @fontsource-variable/fraunces npm package and served from the app's own
+origin — never a CDN (docs/adr/0022 offline goal; docs/adr/0029 for the
+typography decision).
+
+  Fraunces — Copyright 2020 The Fraunces Project Authors
+  (https://github.com/undercasetype/Fraunces)
+  Licensed under the SIL Open Font License, Version 1.1.
+
+The OFL requires the licence to travel with the font, so the full text ships
+with the built app at app/public/fonts-fraunces-OFL.txt (served as
+/fonts-fraunces-OFL.txt). Body text uses the reader's own system font stack and
+ships nothing.
+
+If you add another font, vendor it the same way, check that its licence permits
+redistribution, and record it here.
+
 If you add a new data source, record it here and in /data/README.md — and check
 its licence first. CC0 is only honest while every input permits it: ingesting a
 share-alike or non-commercial source (Plants For A Future, for instance) would

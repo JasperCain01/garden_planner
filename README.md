@@ -178,23 +178,40 @@ npm run a11y -w app
 
 Runs `app/e2e/a11y.spec.ts` (its own Playwright config,
 `app/playwright.a11y.config.ts`, so it's never part of `npm run e2e`/`verify`)
-against the plot-definition page in two states — a fresh load, and after
-placing a crop via the keyboard-operable "Add to plot" button — checking the
+against the plot-definition page in eight states — a fresh load, after placing a
+crop via the keyboard-operable "Add to plot" button, in the canvas's
+edit-shape mode, with the designs switcher open (and again mid-confirmation),
+with a palette card's reasoning expanded, with a warning in the warnings dock,
+with the growing-conditions form's soil disclosure open, and with the "Add your
+own crop" modal dialog open (each arrived with the surface it scans: the dialog
+in UI redesign Phase 1, the two canvas states in Phase 2, the expanded card in
+Phase 3, the dock and the soil disclosure in Phase 4, and the switcher in Phase
+5, which took the retired clear-all confirmation's place) — checking the
 `wcag2a`/`wcag2aa`/`wcag21a`/`wcag21aa` rule tags with
 [`@axe-core/playwright`](https://www.npmjs.com/package/@axe-core/playwright).
 
-**Today's recorded result: 0 violations, in both states** (re-confirmed
-unchanged at Stage 6.3, and now enforced on every push and pull request by the
-`a11y` job in [`.github/workflows/checks.yml`](./.github/workflows/checks.yml)
-— a new violation fails the build).
+**Today's recorded result: 0 violations, in all eight states** (re-confirmed
+unchanged at Stage 6.3 and after each of the UI redesign's phases; the canvas
+phase added two states, the palette phase a sixth, the settings-column phase a
+seventh and eighth, and the persistence phase swapped one for the designs
+switcher, and the whole run is enforced on every push and pull
+request by the `a11y` job in
+[`.github/workflows/checks.yml`](./.github/workflows/checks.yml) — a new
+violation fails the build).
 
 ```
-Running 2 tests using 1 worker
+Running 8 tests using 1 worker
 
-  ✓  1 e2e/a11y.spec.ts:36:1 › the plot-definition page has no axe violations in its initial state
-  ✓  2 e2e/a11y.spec.ts:44:1 › the plot-definition page has no axe violations once a plant is placed and selected
+  ✓  1 e2e/a11y.spec.ts:38:1 › the plot-definition page has no axe violations in its initial state
+  ✓  2 e2e/a11y.spec.ts:46:1 › the plot-definition page has no axe violations once a plant is placed and selected
+  ✓  3 e2e/a11y.spec.ts:71:1 › the canvas has no axe violations in edit-shape mode
+  ✓  4 e2e/a11y.spec.ts:86:1 › the designs switcher has no axe violations, including mid-confirmation
+  ✓  5 e2e/a11y.spec.ts:112:1 › the palette has no axe violations with a card’s reasoning expanded
+  ✓  6 e2e/a11y.spec.ts:132:1 › the warnings dock has no axe violations with a warning in it
+  ✓  7 e2e/a11y.spec.ts:155:1 › the growing-conditions form has no axe violations with the soil disclosure open
+  ✓  8 e2e/a11y.spec.ts:170:1 › the add-crop dialog has no axe violations while open
 
-  2 passed
+  8 passed
 ```
 
 What this can't check: the plot canvas renders to a single opaque

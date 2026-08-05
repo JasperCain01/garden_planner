@@ -52,6 +52,29 @@ npm test           # unit/component tests (Vitest)
 npm run e2e        # end-to-end tests (Playwright)
 ```
 
+## Styling conventions
+
+The app has a small design system (UI redesign Phase 0, [ADR
+0029](./docs/adr/0029-design-tokens-css-modules-and-self-hosted-font.md)).
+Three rules keep it one system rather than a pile of stylesheets:
+
+1. **Spend a token, never a literal.** Colours, spacing, radii, shadows and
+   type sizes all come from `app/src/styles/tokens.css`. If you need a value
+   that isn't there, add it there with a comment saying what it's for — don't
+   inline `#4a7` in a component.
+2. **Element styling is global; layout is a module.** `app/src/styles/global.css`
+   styles the HTML primitives (buttons, inputs, selects, fieldsets, links,
+   focus rings) and holds exactly three utility classes. Everything specific to
+   one component goes in a `*.module.css` beside it.
+3. **Inline `style` is for values computed per render** — a drag transform, a
+   canvas's pixel size — and nothing else. If it's a constant, it belongs in
+   CSS.
+
+New text/background pairings must clear WCAG AA (4.5:1 for normal text, 3:1
+for a control's boundary), **measured** — `docs/accessibility.md` shows the
+method and records every ratio this project has computed. `npm run a11y` must
+stay at zero violations.
+
 ## The architecture in one paragraph
 
 The deployed app is **100% static and client-side** (it runs on GitHub Pages and

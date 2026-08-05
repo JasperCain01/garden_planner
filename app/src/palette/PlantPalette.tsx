@@ -8,93 +8,127 @@
  * shared Zustand store (ADR 0015's convention).
  *
  * **Layout decision (the brief's one open call):** the palette renders
- * *on the plot-definition page*, below the growing-conditions form, rather
- * than behind a separate route. See `docs/architecture.md`'s Stage 3.3 note
- * for the reasoning (short version: `DESIGN.md`'s core loop reads as one
- * continuous flow, and Stage 3.4's canvas will want the palette visible
- * alongside placement rather than a nav click away).
+ * *on the plot-definition page*, rather than behind a separate route. See
+ * `docs/architecture.md`'s Stage 3.3 note for the reasoning (short version:
+ * `DESIGN.md`'s core loop reads as one continuous flow, and Stage 3.4's canvas
+ * will want the palette visible alongside placement rather than a nav click
+ * away). UI redesign Phase 1 delivered on the second half of that: the palette
+ * is the workspace's left sidebar, permanently on screen beside the canvas, so
+ * "drag a plant onto the plot" is a short gesture instead of a ~1,500px
+ * journey down the page.
+ *
+ * ## What UI redesign Phase 3 changed, and why (ADR 0032)
+ *
+ * Every row rendered the engine's whole answer at once — icon, name, band,
+ * category, summary sentence, confidence, and a four-bullet per-dimension
+ * reasoning list. Measured in the sidebar at 1440×900 that was a **median
+ * 631px per row** and ~93,900px of list in a **394px** box: the shortest row
+ * was taller than the box, so the number of crops you could see without
+ * scrolling was **zero**. The reasoning is good content; it was at the wrong
+ * altitude.
+ *
+ * So the row is a compact card (icon, name, band, category — {@link
+ * PaletteEntry}) and everything else opens on demand. Three consequences worth
+ * knowing before editing this file:
+ *
+ * 1. **The sidebar's chrome had to shrink too**, not just the rows. Eight
+ *    64px cards need ~530px and the sidebar is ~836px tall, so the heading,
+ *    the intro paragraph, the two-row filter grid, the count line and the
+ *    add-crop trigger between them had a budget of ~300px. The intro is not
+ *    deleted — it says something honest about the dataset that a confidence
+ *    figure alone doesn't — it is a closed disclosure above the list, one line
+ *    instead of three.
+ * 2. **The filters are chips**, and the category chips double as the legend
+ *    mapping category colours to the canvas's markers: a chip carrying a
+ *    category's own colour *and* its name is that mapping, and a separate
+ *    legend line would restate it for ~24px of the budget the list needs.
+ * 3. **Nothing here is sticky**, because nothing needs to be: Phase 1 made the
+ *    sidebar a flex column in which only the crop list scrolls, so the filters
+ *    stay put by construction.
  *
  * Ranking itself is entirely `rankPlants`' job (`@garden-planner/engine`) —
  * this component adds only **display-only** narrowing on top (search,
- * category, and an unsuitable-hiding toggle that maps onto `rankPlants`'
+ * category, band, and an unsuitable-hiding toggle that maps onto `rankPlants`'
  * own `excludeUnsuitable` option), and never re-derives a score or reason
  * the engine already computed. `rankPlants`' own note applies here too: most
  * of today's shipped dataset has no hardiness/soil/season data, so a bare
- * score would overstate certainty — every entry shows the engine's own
- * `summary`, `confidence`, and per-dimension reasoning instead of a lone
- * number.
+ * score would overstate certainty — which is exactly what the disclosure above
+ * the list says, and why the per-dimension reasoning is one press away rather
+ * than gone.
  *
  * **Drag affordance (Workplan Stage 3.4).** Every entry is a dnd-kit
  * `useDraggable` source (`PaletteEntry` below), carrying its `Plant` as drag
  * data (`{ plant }`, the shape `canvas/drop.ts`'s `resolveDrop` expects) —
  * the palette→canvas handoff half of the plot canvas's drag-and-drop. See
  * `docs/adr/0017-plot-canvas-konva-and-dnd-kit.md` for why dnd-kit owns this
- * handoff and react-konva owns everything after the plant lands.
+ * handoff and react-konva owns everything after the plant lands. Phase 3 gave
+ * the sensors an activation constraint so that a *click* on that same element
+ * is no longer a one-pixel drag — see `plot/PlotDefinitionPage.tsx`, which
+ * owns the `DndContext`, and ADR 0032 §2.
  *
- * **Keyboard alternative (Workplan Stage 6.2, ADR 0026).** dnd-kit's default
- * `KeyboardSensor` already lets a focused entry be picked up (Space/Enter)
- * and nudged (arrow keys) — `canvas/drop.ts#resolveDrop` reads the dragged
- * element's own translated rect regardless of *how* the drag started, so
- * that "just works". But it's impractical as the *primary* keyboard path: it
- * moves the card in raw screen pixels, and the canvas can be a long way down
- * the page. So every entry also renders a plain "Add to plot" `<button>` —
- * places the plant at the region's centre (`canvas/geometry.ts#regionCentre`)
- * and selects it, ready for the canvas's arrow-key nudge to fine-position.
- * See ADR 0026 for why this, and not a custom keyboard-drag interaction, is
- * the answer to "what does a keyboard-initiated drop position mean".
+ * **Keyboard alternative (Workplan Stage 6.2, ADR 0026).** dnd-kit's
+ * `KeyboardSensor` lets a focused entry be picked up (Space) and nudged (arrow
+ * keys) — `canvas/drop.ts#resolveDrop` reads the dragged element's own
+ * translated rect regardless of *how* the drag started, so that "just works".
+ * But it's impractical as the *primary* keyboard path: it moves the card in
+ * raw screen pixels, and the canvas can be a long way off. So every entry also
+ * renders a `＋` `<button>` — places the plant at the first free spot near the
+ * middle of the plot (`canvas/geometry.ts#firstFreePosition`) and selects it,
+ * ready for the canvas's arrow-key nudge to fine-position. See ADR 0026 for
+ * why this, and not a custom keyboard-drag interaction, is the answer to "what
+ * does a keyboard-initiated drop position mean", and ADR 0031 for why "the
+ * first free spot" replaced "the centre" in UI redesign Phase 2.
  *
  * The button is a **sibling** of the draggable region, not nested inside it —
  * dnd-kit's `attributes` already put `role="button"` on the draggable
  * element, and a real `<button>` nested inside another `role="button"`
  * element is exactly what axe's `nested-interactive` check flags (a screen
  * reader can't sensibly navigate into an interactive control that lives
- * inside another one). `PaletteEntry` below splits the `<li>` into a
- * draggable inner `<div>` (the drag surface + keyboard-drag target) and the
- * button next to it, both direct children of the plain `<li>`.
+ * inside another one). `PaletteEntry` below keeps the draggable inner `<div>`
+ * (the drag surface, the keyboard-drag target and now the disclosure) and the
+ * button as its sibling. **Two focusable controls per row, and no more** —
+ * 144 crops means 288 tab stops, and a third control per row would make it
+ * 432 (`docs/accessibility.md` §8).
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type KeyboardEvent } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import {
   BAND_LABELS,
   EdibleCategorySchema,
   rankPlants,
   resolvePlotConditions,
+  type EdibleCategory,
+  type Plant,
   type RankedPlant,
   type SuitabilityBand,
 } from '@garden-planner/engine';
 import { resolveIcon } from '../icons/index.ts';
 import type { PaletteDragData } from '../canvas/drop.ts';
-import { regionCentre } from '../canvas/geometry.ts';
+import { firstFreePosition, plantSeparationCm } from '../canvas/geometry.ts';
 import { usePlacementsStore } from '../state/placements-store.ts';
 import { usePlantList } from '../state/use-plant-list.ts';
 import { usePlotStore } from '../state/plot-store.ts';
-import { filterRanked, type CategoryFilter } from './filters.ts';
+import { filterRanked, type BandFilter, type CategoryFilter } from './filters.ts';
+import { paletteAddLabel, paletteDragLabel } from './labels.ts';
+import styles from './PlantPalette.module.css';
 
 const CATEGORY_OPTIONS = EdibleCategorySchema.options;
 
 /**
- * Colour cue per band, from a confident match (green) to a hard mismatch
- * (grey-out) — supplementary to `BAND_LABELS`' own text, which is what
- * actually carries the meaning (WCAG 1.4.1: colour is never the only signal
- * here, see `PaletteEntry` below).
- *
- * **Contrast (Workplan Stage 6.2 a11y pass):** every value here reaches at
- * least 4.5:1 against a white background — this is a text colour
- * (`PaletteEntry`'s band `<span>`), so that's the normal-text bar, not the
- * looser 3:1 large-text/UI-component one. `good` (`#4c8c2b`, 4.12:1) and
- * `fair` (`#9a7b0a`, 4.03:1) both fell short; darkened one step each, same
- * hue, to `#3f7522` (5.56:1) and `#8a6c00` (4.97:1). `excellent` (5.08:1),
- * `poor` (4.72:1) and `unsuitable` (4.54:1) already cleared it.
+ * The category chips, in one list so the filter and the legend can't disagree
+ * about what a colour means. `'all'` leads and draws no swatch — it is the
+ * "filter off" state, not a fourth category.
  */
-const BAND_COLORS: Readonly<Record<SuitabilityBand, string>> = {
-  excellent: '#1a7f37',
-  good: '#3f7522',
-  fair: '#8a6c00',
-  poor: '#b35c00',
-  unsuitable: '#767676',
-};
+const CATEGORY_CHIPS: readonly { readonly value: CategoryFilter; readonly label: string }[] = [
+  { value: 'all', label: 'All' },
+  ...CATEGORY_OPTIONS.map((option: EdibleCategory) => ({
+    value: option,
+    // The data's own word, capitalised — "vegetable" on a card and "Vegetable"
+    // on the chip that filters to it should obviously be the same thing.
+    label: option.charAt(0).toUpperCase() + option.slice(1),
+  })),
+];
 
 export function PlantPalette() {
   const plants = usePlantList();
@@ -102,7 +136,19 @@ export function PlantPalette() {
 
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<CategoryFilter>('all');
+  const [band, setBand] = useState<BandFilter>('all');
   const [hideUnsuitable, setHideUnsuitable] = useState(false);
+
+  /**
+   * Which crop's reasoning is open — **at most one** (UI redesign Phase 3).
+   *
+   * An accordion rather than independent per-row toggles: an expanded row
+   * measures ~470px against the compact card's 62px — it is the wall of text
+   * this phase moved out of the default view, and several of them open at once
+   * rebuilds it. Holding the id here rather than
+   * inside each row is also what makes "at most one" expressible at all.
+   */
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /**
    * `conditionsInput` is the form's editable shape, not the resolved
@@ -126,121 +172,197 @@ export function PlantPalette() {
     [plants, conditions, hideUnsuitable],
   );
 
-  const visible = useMemo(() => filterRanked(ranked, search, category), [ranked, search, category]);
+  const visible = useMemo(
+    () => filterRanked(ranked, search, category, band),
+    [ranked, search, category, band],
+  );
 
   return (
-    <section>
-      <h2>2. Discover suitable plants</h2>
+    <div className={styles.palette}>
+      {/*
+       * The heading and the count share a line. Two lines is the obvious
+       * markup and costs ~25px of a sidebar in which eight crop cards need
+       * ~530px of ~836px — the count is four words about the list, so it sits
+       * beside the list's title rather than on a row of its own.
+       */}
+      <div className={styles.header}>
+        <h2 className={styles.heading}>Plants</h2>
+        {conditions !== null && (
+          <p className={styles.count}>
+            {visible.length} of {ranked.length} crops
+          </p>
+        )}
+      </div>
 
       {conditions === null ? (
         <p role="alert">
-          Fix the growing-conditions form above to see ranked suggestions — the palette needs valid
+          Fix the growing-conditions form to see ranked suggestions — the palette needs valid
           conditions to score against.
         </p>
       ) : (
         <>
-          <p>
-            Ranked against your plot&rsquo;s current conditions. Most of today&rsquo;s dataset has
-            no hardiness, soil or season data, so read the confidence and per-plant reasoning below,
-            not just the band.
-          </p>
-
-          <div>
-            <label htmlFor="palette-search">Search</label>
+          <div className={styles.filters}>
+            {/*
+             * The label is hidden, not removed: `e2e/drag.ts` and the keyboard
+             * walkthrough both find this field by the accessible name
+             * "Search", and a placeholder is not an accessible name.
+             */}
+            <label className="visually-hidden" htmlFor="palette-search">
+              Search
+            </label>
             <input
               id="palette-search"
               type="search"
+              className={styles.search}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by name…"
+              placeholder="Search crops by name…"
             />
-          </div>
 
-          <div>
-            <label htmlFor="palette-category">Category</label>
-            <select
-              id="palette-category"
-              value={category}
-              onChange={(event) => setCategory(event.target.value as CategoryFilter)}
-            >
-              <option value="all">All categories</option>
-              {CATEGORY_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
+            {/*
+             * Category as a radio group, not four toggle buttons: a native
+             * radio group is **one** tab stop with arrow keys inside it, which
+             * is the behaviour a roving-tabindex widget would have to be
+             * hand-written to imitate — and this palette counts its tab stops
+             * (see the module doc). The inputs are visually hidden but still
+             * focusable, so the chip a user sees is styled from
+             * `:checked`/`:focus-visible` on the real control.
+             */}
+            <fieldset className={styles.chipGroup}>
+              <legend className="visually-hidden">Category</legend>
+              {CATEGORY_CHIPS.map((chip) => (
+                <label key={chip.value} className={styles.chip} data-category={chip.value}>
+                  <input
+                    type="radio"
+                    name="palette-category"
+                    className={styles.chipInput}
+                    value={chip.value}
+                    checked={category === chip.value}
+                    onChange={() => setCategory(chip.value)}
+                  />
+                  <span className={styles.chipBody}>
+                    {chip.value !== 'all' && <span className={styles.chipDot} aria-hidden="true" />}
+                    {chip.label}
+                  </span>
+                </label>
               ))}
-            </select>
+            </fieldset>
+
+            <div className={styles.chipGroup}>
+              <label className={styles.chip}>
+                <input
+                  type="checkbox"
+                  className={styles.chipInput}
+                  checked={band === 'great'}
+                  onChange={(event) => setBand(event.target.checked ? 'great' : 'all')}
+                />
+                <span className={styles.chipBody}>Great fits</span>
+              </label>
+
+              <label className={styles.chip}>
+                <input
+                  type="checkbox"
+                  className={styles.chipInput}
+                  checked={hideUnsuitable}
+                  onChange={(event) => setHideUnsuitable(event.target.checked)}
+                />
+                <span className={styles.chipBody}>Hide unsuitable</span>
+              </label>
+            </div>
           </div>
 
-          <div>
-            <label>
-              <input
-                type="checkbox"
-                checked={hideUnsuitable}
-                onChange={(event) => setHideUnsuitable(event.target.checked)}
-              />
-              Hide unsuitable crops
-            </label>
-          </div>
-
-          <p>
-            {visible.length} of {ranked.length} crops shown.
-          </p>
+          {/*
+           * The honest note about the dataset, kept but re-altituded.
+           *
+           * It used to be a three-line paragraph under the heading — real
+           * content, saying something a confidence percentage on its own
+           * doesn't, which is why it isn't simply deleted. Three lines at this
+           * sidebar width is ~60px of the vertical budget the crop list needs,
+           * for a sentence you read once and then scroll past forever. As a
+           * closed disclosure directly above the list it costs one line and
+           * one tab stop, and it sits where it is relevant: immediately before
+           * the ranking it is describing.
+           */}
+          <details className={styles.about}>
+            <summary>How these ranks are worked out</summary>
+            <p>
+              Ranked against your plot&rsquo;s current conditions. Most of today&rsquo;s dataset has
+              no hardiness, soil or season data, so read the confidence and per-plant reasoning, not
+              just the band.
+            </p>
+          </details>
 
           {visible.length === 0 ? (
             <p>No crops match your plot&rsquo;s conditions and current filters.</p>
           ) : (
-            /**
-             * **Bounded height, not the page (Workplan Stage 6.2 responsive
-             * fix).** Every matching crop used to render in full, unbounded —
-             * with all 144 shipped crops visible at once (the common case:
-             * no search, no category filter) that pushed everything below
-             * the palette, including the plot canvas, arbitrarily far down
-             * the page. `docs/review-pre-deployment.md` §2 measured the
-             * canvas at y ≈ 3500px because of exactly this, and the figure
-             * only grows as the dataset does. A capped, internally-scrolling
-             * list keeps the page's own height roughly constant regardless
-             * of how many crops match, which is what actually makes the
-             * canvas reachable on a phone — a media-query breakpoint
-             * wouldn't touch this, since the list was already a single
-             * column at every width.
-             */
-            <ul
-              style={{
-                listStyle: 'none',
-                padding: '0.5rem',
-                margin: 0,
-                maxHeight: '65vh',
-                overflowY: 'auto',
-                border: '1px solid #ddd',
-                borderRadius: '0.5rem',
-              }}
-            >
+            <ul className={styles.list}>
               {visible.map((entry) => (
-                <PaletteEntry key={entry.plant.id} entry={entry} />
+                <PaletteEntry
+                  key={entry.plant.id}
+                  entry={entry}
+                  expanded={expandedId === entry.plant.id}
+                  onToggle={() =>
+                    setExpandedId((current) => (current === entry.plant.id ? null : entry.plant.id))
+                  }
+                />
               ))}
             </ul>
           )}
         </>
       )}
-    </section>
+    </div>
   );
 }
 
 /**
- * One palette row. Two ways onto the plot, both landing on the same
- * `addPlacement` action:
+ * One palette row: a compact card, and the engine's reasoning behind it.
+ *
+ * Three ways in, all on two focusable controls (see the module doc's tab-stop
+ * budget):
  *
  * 1. **Pointer/keyboard drag** — `useDraggable` carries the row's `Plant` as
- *    drag data and follows the pointer via a CSS transform while dragging,
- *    so `canvas/drop.ts`'s `resolveDrop` can read the dragged card's own
- *    rect as the drop point (see that module's doc for why). Applied to the
- *    inner `<div>`, not the `<li>` — see below.
- * 2. **"Add to plot" button (Workplan Stage 6.2, ADR 0026)** — places `plant`
- *    directly at the plot's centre and selects it, no drag at all. This is
- *    the primary non-pointer path (see the module doc's "Keyboard
- *    alternative" section for why dnd-kit's keyboard-sensor drag alone isn't
- *    enough here).
+ *    drag data, and since UI redesign Phase 5 the thing that follows the
+ *    pointer is a `<DragOverlay>` ghost ({@link PaletteDragGhost}) rather than
+ *    this card: the card stays put and dims. That is what un-clips the drag at
+ *    the sidebar's edge, and it is why the inline `transform` this element used
+ *    to carry is gone. `canvas/drop.ts`'s `resolveDrop` is unaffected — it
+ *    prefers the real pointer for a pointer drag, and its keyboard-drag
+ *    fallback reads dnd-kit's own `active.rect.current.translated`, which
+ *    dnd-kit computes from the measured rect and the drag transform whether or
+ *    not anything renders that transform. Applied to the inner `<div>`, not the
+ *    `<li>` — see below.
+ * 2. **"Add to plot" (Workplan Stage 6.2, ADR 0026)** — the `＋` button places
+ *    `plant` directly on the plot and selects it, no drag at all. This is the
+ *    primary non-pointer path (see the module doc's "Keyboard alternative").
+ * 3. **Press the card to see why it ranks here (UI redesign Phase 3)** — the
+ *    summary, confidence and per-dimension reasoning that used to be inlined
+ *    on every row, in one click.
+ *
+ * **The same element is the drag surface and the disclosure, which takes
+ * three deliberate pieces to be true** (ADR 0032 §2):
+ *
+ * - `PlotDefinitionPage`'s `PointerSensor` has an `activationConstraint`, so a
+ *   press that never travels 4px is a click and not a one-pixel drag. Without
+ *   it these two gestures are the same `pointerdown` and the drag wins every
+ *   time. When a drag *does* start, dnd-kit suppresses the trailing `click`
+ *   itself (a capture-phase listener on the document), so `onClick` below
+ *   fires only for a press that stayed put.
+ * - Its `KeyboardSensor` starts a drag on **Space only**, where dnd-kit's
+ *   default is Space *or* Enter. That frees Enter for the disclosure, so a
+ *   keyboard user reaches the reasoning by the same key everything else in the
+ *   app opens with, and still picks the card up with the key the sensor's own
+ *   screen-reader instructions name.
+ * - `handleKeyDown` calls dnd-kit's listener **first** and only then considers
+ *   Enter. Spreading `{...listeners}` and adding an `onKeyDown` after it would
+ *   silently replace the sensor's handler and delete the keyboard drag.
+ *
+ * `aria-expanded` says which state the card is in; the accessible name
+ * (`labels.ts`) says both jobs, because a control announced as "collapsed"
+ * whose name only mentions dragging is a control whose name is wrong. There is
+ * deliberately no `aria-controls`: the reasoning is not in the DOM while
+ * collapsed, and pointing at an id that doesn't exist is an
+ * `aria-valid-attr-value` violation — the disclosure sits immediately after
+ * its trigger's row instead, which is the pattern that needs no reference.
  *
  * **Why the `<li>` itself isn't the draggable node.** dnd-kit's `attributes`
  * put `role="button"` and `tabIndex={0}` on whatever `setNodeRef` attaches
@@ -249,78 +371,211 @@ export function PlantPalette() {
  * role — axe's `nested-interactive` check exists precisely because a screen
  * reader has no sane way to navigate into a control nested inside another
  * control. So the draggable surface is an inner `<div>` (still carrying the
- * drag `aria-label`, still keyboard-focusable), and the button is the
- * `<li>`'s other, sibling child.
+ * drag `aria-label`, still keyboard-focusable), and the button is its sibling.
+ *
+ * **The crop's name is not an `<h3>` any more**, and that is a fix rather than
+ * a loss. `role="button"` makes its subtree presentational in ARIA, so the
+ * heading inside the drag surface was never reliably announced as a heading;
+ * what it did do was put 144 entries into the document outline, ahead of the
+ * six headings that actually structure the app. The list itself is the
+ * structure a screen reader navigates by ("list, 144 items"), and
+ * `PlantPalette.test.tsx` reads ranking order off the drag surfaces' own names.
  *
  * **The region is read at click-time (`usePlotStore.getState()`), not
  * subscribed to** — `handleAddToPlot` only ever needs it at the moment the
  * button is actually pressed, so there's no reason for every one of up to
  * 144 rows to re-render on every outline edit just to keep an unused prop
- * current. This trims *a* cost, but not the main one: mounting a second
- * interactive control on every matching row is genuinely more DOM, and
- * `PlotDefinitionPage.test.tsx`/`App.test.tsx` both needed longer timeouts to
- * match (see their own comments) — a real, accepted cost of the button
- * existing at all, not something this particular choice was going to erase.
+ * current.
  */
-function PaletteEntry({ entry }: { readonly entry: RankedPlant }) {
+/**
+ * What a compact card looks like: the icon on its category disc, the crop's
+ * name, its suitability band and its category.
+ *
+ * Split out in UI redesign Phase 5 so the **drag ghost** can be the same card
+ * rather than a lookalike ({@link PaletteDragGhost}). It carries no
+ * interaction and no accessible name of its own — the element around it does,
+ * and in the ghost's case there is deliberately nothing to announce at all.
+ */
+/**
+ * The band chip's headline word ("Excellent") and the rest of
+ * `BAND_LABELS`' phrase ("Match") — post-review fix B1.
+ *
+ * `.head`'s width budget cannot fit "Excellent match" *and* the category
+ * word (see the CSS comment on `.head`): the review found the category word
+ * degrading past its own measured floor — "veget…" rather than the accepted
+ * "vegetab…" — on every excellent-match vegetable row at 1440×900, in a
+ * live Chromium session, worse than what was measured and accepted. Rather
+ * than re-tune a compromise that is platform-sensitive by nature, the chip's
+ * *visible* text drops to one word, freeing the space the category word
+ * needs. Nothing announced changes: the full two-word phrase still reaches
+ * assistive tech, split the same way `ShapePicker.tsx`'s `MetreField` splits
+ * a field's visible label from its accessible name for a unit suffix.
+ */
+function bandHeadline(band: SuitabilityBand): { readonly word: string; readonly rest: string } {
+  const full = BAND_LABELS[band];
+  const firstSpace = full.indexOf(' ');
+  if (firstSpace === -1) return { word: full, rest: '' };
+  return { word: full.slice(0, firstSpace), rest: full.slice(firstSpace) };
+}
+
+function PaletteCardFace({
+  plant,
+  band,
+}: {
+  readonly plant: Plant;
+  readonly band: SuitabilityBand;
+}) {
+  const icon = resolveIcon(plant);
+  const { word: bandWord, rest: bandRest } = bandHeadline(band);
+  return (
+    <>
+      <span className={styles.iconWrap} data-category={plant.category}>
+        <img src={icon.url} alt="" className={styles.icon} aria-hidden="true" />
+      </span>
+      <span className={styles.body}>
+        <span className={styles.name}>{plant.commonName}</span>
+        <span className={styles.meta}>
+          <span className={styles.band} data-band={band}>
+            {bandWord}
+            {bandRest !== '' && <span className="visually-hidden">{bandRest}</span>}
+          </span>
+          {/*
+           * The category, in words, next to the chip whose colour also says
+           * it. The icon disc behind this card is tinted by category (and the
+           * filter chips above map those tints to names), so without this word
+           * the tint would be meaning carried by colour alone — WCAG 1.4.1,
+           * the same reason the band is a labelled chip rather than a coloured
+           * dot.
+           */}
+          <span className={styles.category}>{plant.category}</span>
+        </span>
+      </span>
+    </>
+  );
+}
+
+/**
+ * The card that follows the pointer during a drag (UI redesign Phase 5) —
+ * rendered by `plot/PlotDefinitionPage.tsx` inside dnd-kit's `<DragOverlay>`,
+ * which is why it lives here but is not used here.
+ *
+ * **This is the fix three ADRs deferred to this phase.** The crop list scrolls,
+ * which makes it a clipping box on both axes, so a card that followed the
+ * pointer *in place* was cut off at the sidebar's edge the moment the drag
+ * started towards the canvas (ADR 0030 §consequences, and the note at the
+ * clipping rule in this component's stylesheet). An overlay is rendered outside
+ * that box entirely, so the ghost crosses the workspace intact — and it is the
+ * review's "drag ghost slightly enlarged with shadow" at the same time.
+ *
+ * **It is `aria-hidden`, and that is not an oversight.** dnd-kit announces
+ * drags through its own live region, the card the user picked up keeps its
+ * accessible name and its focus, and a second copy of "Drag Onion onto the
+ * plot" appearing in the accessibility tree mid-drag would be one crop
+ * announced twice.
+ */
+export function PaletteDragGhost({
+  plant,
+  band,
+}: {
+  readonly plant: Plant;
+  readonly band: SuitabilityBand;
+}) {
+  return (
+    <div className={`${styles.row} ${styles.ghost}`} data-band={band} aria-hidden="true">
+      <div className={styles.head}>
+        <div className={styles.entry}>
+          <PaletteCardFace plant={plant} band={band} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaletteEntry({
+  entry,
+  expanded,
+  onToggle,
+}: {
+  readonly entry: RankedPlant;
+  readonly expanded: boolean;
+  readonly onToggle: () => void;
+}) {
   const { plant, suitability } = entry;
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: plant.id,
-    data: { plant } satisfies PaletteDragData,
+    // The band travels with the plant so the overlay can draw this exact card
+    // without reaching back into the ranked list — see `canvas/drop.ts`.
+    data: { plant, band: suitability.band } satisfies PaletteDragData,
   });
 
-  const icon = resolveIcon(plant);
-
+  /**
+   * Place this crop somewhere it can actually be seen (UI redesign Phase 2).
+   *
+   * Until this phase every press landed the crop at the plot's centre, so
+   * three presses produced three markers in one spot and the review's live
+   * session recorded the first-run impression exactly: "you add plants and the
+   * plot appears to eat them". `firstFreePosition` searches outward from that
+   * same centre for a spot the crop's own footprint fits in — the pure part is
+   * in `canvas/geometry.ts`, unit-tested, precisely so this stays two lines.
+   *
+   * Both stores are read at click-time (`getState()`) rather than subscribed
+   * to, for the reason this component's doc gives about the region: the
+   * placements list changes on every drop, and re-rendering up to 144 palette
+   * rows each time to keep an argument current that is only read when a button
+   * is pressed would be a real cost for no benefit.
+   */
   function handleAddToPlot(): void {
-    usePlacementsStore.getState().addPlacement(plant, regionCentre(usePlotStore.getState().region));
+    const { region } = usePlotStore.getState();
+    const { placements, addPlacement } = usePlacementsStore.getState();
+    addPlacement(plant, firstFreePosition(region, placements, plantSeparationCm(plant)));
+  }
+
+  /**
+   * dnd-kit's own key handling first (Space picks the card up), then Enter as
+   * the disclosure. See the component doc for why the order matters and why
+   * Enter is free to mean this.
+   */
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
+    listeners?.onKeyDown?.(event);
+    if (event.defaultPrevented || isDragging) return;
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    onToggle();
   }
 
   return (
-    <li style={{ marginBottom: '0.75rem' }}>
-      <div
-        ref={setNodeRef}
-        {...listeners}
-        {...attributes}
-        aria-label={`drag ${plant.commonName} onto the plot to place it`}
-        style={{
-          border: '1px solid #ccc',
-          borderRadius: '0.5rem',
-          padding: '0.75rem',
-          opacity: suitability.band === 'unsuitable' ? 0.6 : isDragging ? 0.4 : 1,
-          cursor: 'grab',
-          touchAction: 'none',
-          transform: CSS.Translate.toString(transform),
-          zIndex: isDragging ? 1 : undefined,
-          position: isDragging ? 'relative' : undefined,
-          display: 'flex',
-          gap: '0.75rem',
-          alignItems: 'flex-start',
-        }}
-      >
-        <img
-          src={icon.url}
-          alt=""
-          style={{
-            width: '3rem',
-            height: '3rem',
-            flexShrink: 0,
-            borderRadius: '0.25rem',
-          }}
-          aria-hidden="true"
-        />
-        <div style={{ flex: 1 }}>
-          <h3 style={{ margin: 0 }}>
-            {plant.commonName}{' '}
-            <span style={{ color: BAND_COLORS[suitability.band], fontSize: '0.85em' }}>
-              {BAND_LABELS[suitability.band]}
-            </span>
-          </h3>
-          <p style={{ margin: '0.25rem 0', fontStyle: 'italic' }}>{plant.category}</p>
-          <p style={{ margin: '0.25rem 0' }}>{suitability.summary}</p>
-          <p style={{ margin: '0.25rem 0', fontSize: '0.85em' }}>
+    <li className={styles.row} data-band={suitability.band}>
+      <div className={styles.head}>
+        <div
+          ref={setNodeRef}
+          {...listeners}
+          {...attributes}
+          onKeyDown={handleKeyDown}
+          onClick={onToggle}
+          aria-label={paletteDragLabel(plant.commonName)}
+          aria-expanded={expanded}
+          className={styles.entry}
+          data-dragging={isDragging}
+        >
+          <PaletteCardFace plant={plant} band={suitability.band} />
+        </div>
+        <button
+          type="button"
+          onClick={handleAddToPlot}
+          aria-label={paletteAddLabel(plant.commonName)}
+          className={styles.addButton}
+        >
+          <span aria-hidden="true">＋</span>
+        </button>
+      </div>
+
+      {expanded && (
+        <div className={styles.details}>
+          <p className={styles.summary}>{suitability.summary}</p>
+          <p className={styles.confidence}>
             Confidence: {Math.round(suitability.confidence * 100)}%
           </p>
-          <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
+          <ul className={styles.reasons}>
             {suitability.dimensions.map((dimension) => (
               <li key={dimension.dimension}>
                 <strong>{dimension.dimension}:</strong> {dimension.reason}
@@ -328,15 +583,7 @@ function PaletteEntry({ entry }: { readonly entry: RankedPlant }) {
             ))}
           </ul>
         </div>
-      </div>
-      <button
-        type="button"
-        onClick={handleAddToPlot}
-        aria-label={`Add ${plant.commonName} to the plot, without dragging`}
-        style={{ marginTop: '0.5rem' }}
-      >
-        Add to plot
-      </button>
+      )}
     </li>
   );
 }
