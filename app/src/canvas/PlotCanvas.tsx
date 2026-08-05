@@ -78,12 +78,7 @@ import { usePlacementsStore, type PlacedPlant } from '../state/placements-store.
 import { usePrefersReducedMotion } from '../ui/usePrefersReducedMotion.ts';
 import { severityColor, severityGlyph } from '../warnings/severity.ts';
 import { CANVAS_DROPPABLE_ID } from './drop.ts';
-import {
-  canopyRadiusPx,
-  iconRadiusPx,
-  NAME_LABEL_MIN_PX_PER_CM,
-  spacingLabel,
-} from './footprint.ts';
+import { canopyRadiusPx, iconRadiusPx, spacingLabel } from './footprint.ts';
 import {
   CANVAS_PADDING_CM,
   canvasSizePx,
@@ -93,6 +88,7 @@ import {
   regionBounds,
 } from './geometry.ts';
 import { majorGridLinesCm, metresLabel, minorGridLinesCm } from './grid.ts';
+import { NAME_FONT_SIZE_PX, visibleLabels } from './labels.ts';
 import { SCENE_COLORS, withAlpha } from './scene.ts';
 import type { OutlineEditing } from './useOutlineEditing.ts';
 import styles from './PlotCanvas.module.css';
@@ -114,9 +110,8 @@ const NUDGE_DIRECTIONS: Readonly<Record<string, { dx: number; dy: number }>> = {
 /** Radius of a warning badge, in canvas pixels — small enough to read as a corner accent, not a second marker. Deliberately **not** scaled: it is a piece of UI sitting on the scene, not a thing in the garden. */
 const BADGE_RADIUS_PX = 7;
 
-/** Type sizes for the things drawn on the scene that are UI rather than garden — dimension labels, crop names, the tooltip. Screen pixels, so they stay readable at every zoom. */
+/** Type sizes for the things drawn on the scene that are UI rather than garden — dimension labels, the tooltip. Screen pixels, so they stay readable at every zoom. (The name label's own size, `NAME_FONT_SIZE_PX`, lives in `labels.ts` now — `visibleLabels`'s collision estimate needs the same figure this draws with.) */
 const LABEL_FONT_SIZE_PX = 13;
-const NAME_FONT_SIZE_PX = 11;
 const TOOLTIP_FONT_SIZE_PX = 12;
 
 /** How strongly the two grids show through the plot's fill. Faint enough to read as texture rather than as a second drawing, per the review's "subtle grid at 50cm (fainter) / 1m (stronger)". */
@@ -213,6 +208,8 @@ interface PlacementMarkerProps {
   readonly px: { x: number; y: number };
   readonly pxPerCm: number;
   readonly isSelected: boolean;
+  /** Whether this placement survived `labels.ts#visibleLabels`'s collision pass (post-review fix A2) — replaces the old `pxPerCm >= NAME_LABEL_MIN_PX_PER_CM` check, which said nothing about *neighbouring* labels. */
+  readonly showLabel: boolean;
   readonly reduceMotion: boolean;
   readonly severityByPlacementId: ReadonlyMap<string, WarningSeverity>;
   readonly onDragEnd: (event: Konva.KonvaEventObject<DragEvent>) => void;
@@ -226,6 +223,7 @@ function PlacementMarker({
   px,
   pxPerCm,
   isSelected,
+  showLabel,
   reduceMotion,
   severityByPlacementId,
   onDragEnd,
@@ -340,8 +338,10 @@ function PlacementMarker({
           listening={false}
         />
       )}
-      {/* The crop's name, once there is room for it to mean anything. */}
-      {pxPerCm >= NAME_LABEL_MIN_PX_PER_CM && (
+      {/* The crop's name, once there is room for it to mean anything *and*
+          `labels.ts#visibleLabels` says it doesn't collide with a
+          neighbour's (post-review fix A2). */}
+      {showLabel && (
         <Text
           text={placement.plant.commonName}
           fontSize={NAME_FONT_SIZE_PX}
@@ -436,6 +436,9 @@ export function PlotCanvas({
   });
   const outlineInvalid = editing && outlineEditing?.error != null;
   const hovered = placements.find((placement) => placement.id === hoveredId) ?? null;
+  // Post-review fix A2: which markers actually get to draw a name label,
+  // once neighbours are close enough to collide (`labels.ts`).
+  const shownLabelIds = visibleLabels(placements, region, pxPerCm, selectedId);
 
   /*
    * Panning by dragging empty ground, the review's companion to zoom.
@@ -779,6 +782,7 @@ export function PlotCanvas({
               px={toPx(placement)}
               pxPerCm={pxPerCm}
               isSelected={placement.id === selectedId}
+              showLabel={shownLabelIds.has(placement.id)}
               reduceMotion={reduceMotion}
               severityByPlacementId={severityByPlacementId}
               onDragEnd={(event) => handlePlantDragEnd(placement.id, event)}
