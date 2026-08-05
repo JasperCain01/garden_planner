@@ -258,15 +258,25 @@
   display: flex;
   gap: var(--space-1);
   align-items: center;
-  /* Tighter on the sides than top and bottom, and measured rather than
-   * chosen. The second line has to hold a band chip and the category word, and
-   * a 287px sidebar is not wide enough for the longest of each: "Excellent
-   * match" is 125px of the 183px the text column gets, leaving 54px for a
-   * word that wants 65. These 8px of side padding bought back 8 of that 11px
-   * gap, which is the difference between "V…" (the point of the word lost) and
-   * "vegetab…" (still unambiguously the category). Measured across the shipped
-   * dataset: 4 of 144 rows ellipsis at all, all of them excellent-match
-   * vegetables — the one pairing where both strings are at their longest. */
+  /* Tighter on the sides than top and bottom.
+   *
+   * **Post-review fix B1 amends the record below.** The second line used to
+   * hold the band chip at its full two-word phrase ("Excellent match") next
+   * to the category word, measured to fit a 287px sidebar with 4 of 144 rows
+   * (every excellent-match vegetable) accepted as an ellipsised "vegetab…".
+   * That compromise turned out to be platform-sensitive: a live Chromium
+   * session at the same viewport rendered "veget…" instead — worse than the
+   * measured floor — because the category word is the palette's WCAG 1.4.1
+   * answer for colour-blind users (`docs/accessibility.md` §8), and a
+   * measurement that degrades further on a different font stack isn't one to
+   * re-tune, it's one to stop needing. `PlantPalette.tsx`'s `bandHeadline`
+   * now draws only the chip's headline word ("Excellent") — the full phrase
+   * still reaches assistive tech via a hidden suffix — which is ~40px
+   * narrower at this font and comfortably refunds what the category word
+   * needs. No row in the shipped dataset ellipsises its category word any
+   * more (`e2e/palette.spec.ts` pins this: `scrollWidth <= clientWidth` on
+   * every rendered row's category element). These 8px of side padding are
+   * unchanged from before this fix; they were never the load-bearing part. */
   padding: var(--space-2) var(--space-1);
 }
 
@@ -388,18 +398,38 @@
 }
 
 /*
- * The suitability band, as a chip. Colour is supplementary — the chip's own
- * text is `BAND_LABELS`' wording ("Excellent match"), so nothing here depends
- * on distinguishing hues (WCAG 1.4.1). Each pairing clears 4.5:1; the
+ * The suitability band, as a chip. Colour is supplementary — the chip's
+ * visible text is `BAND_LABELS`' own headline word ("Excellent"; the full
+ * "Excellent match" still reaches assistive tech, see `.head`'s comment and
+ * `PlantPalette.tsx`'s `bandHeadline`, post-review fix B1), so nothing here
+ * depends on distinguishing hues (WCAG 1.4.1). Each pairing clears 4.5:1; the
  * measurements, and why two of the five values moved, are recorded on the
  * `--band-*` tokens in `styles/tokens.css`.
  */
 .band {
+  /*
+   * A positioned containing block for `PlantPalette.tsx`'s hidden
+   * accessible-name suffix (post-review fix B1's own regression, caught by
+   * `e2e/workspace-layout.spec.ts`). `.visually-hidden` is `position:
+   * absolute`; with no positioned ancestor its containing block is the
+   * *initial* containing block, not this small chip — and with 144 of them,
+   * one per row, each one's "static position" lands at its row's *unclipped*
+   * document offset, which for a row far down the list is thousands of
+   * pixels down. `.list`'s own `overflow: auto` clips its own descendants
+   * correctly, but an absolutely-positioned box whose containing block is
+   * the document root is not, for layout purposes, contained by a box that
+   * never established a containing block for it — so it still inflated the
+   * *page's* scrollable area even though the list itself looked fine.
+   * `position: relative` here gives each hidden suffix a containing block the
+   * size of the chip it sits in, which is where its static position already
+   * puts it.
+   */
+  position: relative;
   padding: 1px var(--space-1);
   border-radius: var(--radius-pill);
   /* Never shrinks: it is the row's headline fact, and a band chip reading
-   * "Excellent matc…" would be worse than the category beside it losing its
-   * last two letters (see `.category`). */
+   * "Excelle…" would be worse than the category beside it losing its last
+   * two letters (see `.category`). */
   flex-shrink: 0;
   font-size: var(--text-xs);
   font-weight: 700;

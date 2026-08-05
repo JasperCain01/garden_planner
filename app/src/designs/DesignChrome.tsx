@@ -83,16 +83,34 @@ export function DesignChrome() {
       </div>
 
       {/*
-       * The visible text is the whole accessible name, on purpose: WCAG 2.5.3
-       * wants the visible label contained in the name, and a design called
-       * "Untitled design 2" is only distinguishable from "Untitled design" if
-       * the name is spoken in full. It truncates with an ellipsis at narrow
-       * widths rather than being hidden, because `display: none` would take the
-       * name out of the accessibility tree along with the pixels.
+       * The button's accessible name is an explicit `aria-label` now
+       * (post-review fix B4), not its own text content — the same
+       * visible/accessible-name split `ShapePicker.tsx`'s `MetreField` uses
+       * for a unit, and `PlotCanvasSection.tsx`'s toggle and corner buttons
+       * (B2) now use too. That is what lets the "Designs:" prefix disappear
+       * from the *visible* label at phone widths without taking the word out
+       * of what's announced: WCAG 2.5.3 only asks that the visible text be
+       * contained in the accessible name, and "My garden" is a substring of
+       * "Designs: My garden" whether or not the prefix is drawn. The design
+       * name still truncates with an ellipsis rather than being hidden
+       * outright, because `display: none` on that span specifically *would*
+       * take it out of the accessibility tree — the difference from the
+       * always-`aria-hidden` prefix is that the name is the one thing here
+       * WCAG 2.5.3 needs to see, not just hear.
        */}
-      <button type="button" className={styles.designsButton} onClick={() => setSwitcherOpen(true)}>
-        <span aria-hidden="true">🗂</span> Designs:{' '}
-        <span className={styles.designName}>{activeName}</span>
+      <button
+        type="button"
+        className={styles.designsButton}
+        onClick={() => setSwitcherOpen(true)}
+        aria-label={`Designs: ${activeName}`}
+      >
+        <span aria-hidden="true">🗂</span>
+        <span className={styles.designsPrefix} aria-hidden="true">
+          Designs:
+        </span>
+        <span className={styles.designName} aria-hidden="true">
+          {activeName}
+        </span>
       </button>
 
       <DesignsDialog open={switcherOpen} onClose={() => setSwitcherOpen(false)} />

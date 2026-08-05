@@ -167,6 +167,49 @@ describe('the designs library', () => {
     );
   });
 
+  it('keeps an edit made inside the debounce window when duplicating (post-review fix A3)', () => {
+    // Without a flush at the top of `duplicateDesign`, this edit is written to
+    // *neither* the original's record nor the copy: the copy is read from
+    // whatever `records.get(id)` held at the moment of the call, and the
+    // original's autosave then reschedules against the copy's id instead.
+    usePlacementsStore.getState().addPlacement(ONION, { x: 40, y: 60 });
+    const originalId = useDesignsStore.getState().activeId as string;
+    flushPendingSave();
+
+    usePlacementsStore.getState().addPlacement(ONION, { x: 80, y: 90 });
+    vi.advanceTimersByTime(50); // well inside SAVE_DEBOUNCE_MS (200ms) — still pending
+
+    useDesignsStore.getState().duplicateDesign(originalId);
+
+    // The copy is open and has both placements.
+    expect(usePlacementsStore.getState().placements).toHaveLength(2);
+
+    // And the original, read back, also has both — the edit was not lost.
+    useDesignsStore.getState().loadDesign(originalId);
+    expect(usePlacementsStore.getState().placements).toHaveLength(2);
+  });
+
+  it('keeps an edit made inside the debounce window when switching with loadDesign (post-review fix A3)', () => {
+    usePlacementsStore.getState().addPlacement(ONION, { x: 40, y: 60 });
+    const originalId = useDesignsStore.getState().activeId as string;
+    flushPendingSave();
+
+    useDesignsStore.getState().newDesign();
+    const secondId = useDesignsStore.getState().activeId as string;
+    flushPendingSave();
+
+    useDesignsStore.getState().loadDesign(originalId);
+    usePlacementsStore.getState().addPlacement(ONION, { x: 80, y: 90 });
+    vi.advanceTimersByTime(50); // still inside the debounce window
+
+    // Switch away before the debounce would have fired on its own.
+    useDesignsStore.getState().loadDesign(secondId);
+
+    // The outgoing design (the one just left) kept the edit.
+    useDesignsStore.getState().loadDesign(originalId);
+    expect(usePlacementsStore.getState().placements).toHaveLength(2);
+  });
+
   it('renames the open design, and the name survives a reload', () => {
     const id = useDesignsStore.getState().activeId as string;
     useDesignsStore.getState().renameDesign(id, 'The allotment');

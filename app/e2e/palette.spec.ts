@@ -71,6 +71,30 @@ test('at least eight crops are visible in the sidebar without scrolling', async 
   ).toBeGreaterThanOrEqual(8);
 });
 
+test('no card’s category word ellipsizes (post-review fix B1)', async ({ page }) => {
+  // The review's live finding: at 1440×900 with default Chromium fonts, the
+  // category word rendered "veget…" — worse than the measured, accepted
+  // floor of "vegetab…" — on every excellent-match vegetable row, because the
+  // band chip's full "Excellent match" phrase left it no room. The fix
+  // shrinks the chip's *visible* text to its headline word; this checks the
+  // budget that frees for the category word actually gets spent, on every
+  // rendered row, not just the worst case the review happened to hit.
+  await page.goto('/');
+  await expect(page.getByText(/144 of 144 crops/)).toBeVisible();
+
+  const overflowing = await page.evaluate(() => {
+    const categories = document.querySelectorAll<HTMLElement>('span[class*="category"]');
+    return [...categories]
+      .filter((el) => el.scrollWidth > el.clientWidth)
+      .map((el) => el.textContent);
+  });
+
+  expect(
+    overflowing,
+    `${overflowing.length} category word(s) ellipsized: ${overflowing.join(', ')}`,
+  ).toEqual([]);
+});
+
 test('one click on a card opens the engine’s reasoning for that crop', async ({ page }) => {
   await page.goto('/');
   const card = page.getByRole('button', { name: /^drag Onion onto the plot/i });

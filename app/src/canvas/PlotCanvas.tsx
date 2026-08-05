@@ -78,12 +78,7 @@ import { usePlacementsStore, type PlacedPlant } from '../state/placements-store.
 import { usePrefersReducedMotion } from '../ui/usePrefersReducedMotion.ts';
 import { severityColor, severityGlyph } from '../warnings/severity.ts';
 import { CANVAS_DROPPABLE_ID } from './drop.ts';
-import {
-  canopyRadiusPx,
-  iconRadiusPx,
-  NAME_LABEL_MIN_PX_PER_CM,
-  spacingLabel,
-} from './footprint.ts';
+import { canopyRadiusPx, iconRadiusPx, spacingLabel } from './footprint.ts';
 import {
   CANVAS_PADDING_CM,
   canvasSizePx,
@@ -93,7 +88,9 @@ import {
   regionBounds,
 } from './geometry.ts';
 import { majorGridLinesCm, metresLabel, minorGridLinesCm } from './grid.ts';
-import { SCENE_COLORS, withAlpha } from './scene.ts';
+import { NAME_FONT_SIZE_PX, visibleLabels } from './labels.ts';
+import { desaturateColor, SCENE_COLORS, withAlpha } from './scene.ts';
+import { strandedPlacementIds } from './stranded.ts';
 import type { OutlineEditing } from './useOutlineEditing.ts';
 import styles from './PlotCanvas.module.css';
 
@@ -114,9 +111,8 @@ const NUDGE_DIRECTIONS: Readonly<Record<string, { dx: number; dy: number }>> = {
 /** Radius of a warning badge, in canvas pixels — small enough to read as a corner accent, not a second marker. Deliberately **not** scaled: it is a piece of UI sitting on the scene, not a thing in the garden. */
 const BADGE_RADIUS_PX = 7;
 
-/** Type sizes for the things drawn on the scene that are UI rather than garden — dimension labels, crop names, the tooltip. Screen pixels, so they stay readable at every zoom. */
+/** Type sizes for the things drawn on the scene that are UI rather than garden — dimension labels, the tooltip. Screen pixels, so they stay readable at every zoom. (The name label's own size, `NAME_FONT_SIZE_PX`, lives in `labels.ts` now — `visibleLabels`'s collision estimate needs the same figure this draws with.) */
 const LABEL_FONT_SIZE_PX = 13;
-const NAME_FONT_SIZE_PX = 11;
 const TOOLTIP_FONT_SIZE_PX = 12;
 
 /** How strongly the two grids show through the plot's fill. Faint enough to read as texture rather than as a second drawing, per the review's "subtle grid at 50cm (fainter) / 1m (stronger)". */
@@ -135,6 +131,9 @@ const DROP_POP_FROM = 0.6;
 
 /** A pointer press that moves less than this many pixels is a click, not a pan — so "click empty ground to deselect" survives the pan gesture living on the same button. */
 const PAN_CLICK_SLOP_PX = 4;
+
+/** The dash pattern (on/off, in screen pixels) for a stranded marker's canopy ring — post-review fix B3. */
+const STRANDED_DASH_PX = [4, 3];
 
 /** No warnings for anyone — the default so callers that haven't computed warnings yet (or whose conditions don't currently resolve) can pass nothing rather than build an empty map themselves. */
 const NO_SEVERITIES: ReadonlyMap<string, WarningSeverity> = new Map();
@@ -191,12 +190,32 @@ export interface PlotCanvasProps {
  * Plus a warning badge when the placement has one, a glow ring when it is
  * selected, and a name label once the canvas is zoomed in far enough for the
  * text to be shorter than the plant's own footprint.
+ *
+ * **The canopy's *fill* is not drawn here (post-review fix A1).** A
+ * tree-scale crop's footprint can exceed the plot itself — an Apple
+ * (360×450 cm spacing) on the default 3×2 m bed floods the entire canvas in
+ * translucent red, reading as an error overlay rather than one plant's
+ * footprint. `PlotCanvas`'s render draws every placement's fill together in
+ * one `<Group>` clipped to the plot outline (the same `clipFunc` the grid
+ * uses), *below* every marker, so the flood can never spill onto the soil
+ * surround or the dimension labels and never covers a neighbouring marker's
+ * core. This component still draws the canopy's **outline ring**, unclipped
+ * — the ring visibly exceeding the plot is the honest part of the picture,
+ * matching the engine's own "only 0 fit" feedback, and clipping only the
+ * fill is what keeps it that way. Clipping was measured sufficient for the
+ * Apple-on-3×2m case (every core renders after every fill, so cores are
+ * never obscured regardless of fill opacity); the optional alpha-easing this
+ * fix's writeup allowed for wasn't needed.
  */
 interface PlacementMarkerProps {
   readonly placement: PlacedPlant;
   readonly px: { x: number; y: number };
   readonly pxPerCm: number;
   readonly isSelected: boolean;
+  /** Whether this placement survived `labels.ts#visibleLabels`'s collision pass (post-review fix A2) — replaces the old `pxPerCm >= NAME_LABEL_MIN_PX_PER_CM` check, which said nothing about *neighbouring* labels. */
+  readonly showLabel: boolean;
+  /** Whether a reshape has left this placement outside the plot outline (post-review fix B3, `stranded.ts`). */
+  readonly isStranded: boolean;
   readonly reduceMotion: boolean;
   readonly severityByPlacementId: ReadonlyMap<string, WarningSeverity>;
   readonly onDragEnd: (event: Konva.KonvaEventObject<DragEvent>) => void;
@@ -210,6 +229,8 @@ function PlacementMarker({
   px,
   pxPerCm,
   isSelected,
+  showLabel,
+  isStranded,
   reduceMotion,
   severityByPlacementId,
   onDragEnd,
@@ -223,12 +244,27 @@ function PlacementMarker({
 
   const canopyPx = canopyRadiusPx(placement.plant, pxPerCm);
   const corePx = iconRadiusPx(placement.plant, pxPerCm);
-  const categoryColor = CATEGORY_COLORS[placement.plant.category];
+  // Stranded (post-review fix B3): desaturated rather than category-coloured
+  // — "visible-but-honest, no motion", the muted-when-unsuitable palette
+  // precedent applied to the canvas. `scene.ts#desaturateColor` derives it
+  // from the crop's own colour rather than a fourth hand-picked grey.
+  const categoryColor = isStranded
+    ? desaturateColor(CATEGORY_COLORS[placement.plant.category])
+    : CATEGORY_COLORS[placement.plant.category];
 
   /*
    * The drop "pop": a marker scales up from 60% to full over 150ms when it
    * first appears. Markers are keyed by placement id, so a mount *is* a drop —
    * there is no "which one is new" bookkeeping to get wrong.
+   *
+   * **Post-review fix A1 moved the canopy fill out of this Group** (it now
+   * draws in `PlotCanvas`'s own plot-clipped layer, below every marker, so a
+   * tree-scale crop's fill can't flood the canvas). The pop still animates
+   * this whole Group — glow, ring, core, icon, badge, label — the fill simply
+   * isn't a member of it any more and appears at its clipped size without
+   * popping. A ring popping in around an already-present fill reads fine;
+   * splitting the pop itself across two layers to keep the fill animated too
+   * would need a second, position-synced tween for one cosmetic 150ms beat.
    *
    * `node.to()` is a method on an already-constructed Konva node, never a
    * `new Konva.Tween()`, for the same reason `export.ts` only ever calls
@@ -281,14 +317,27 @@ function PlacementMarker({
           listening={false}
         />
       )}
-      {/* The canopy: how much ground this plant actually wants. */}
+      {/* The canopy's outline ring only — how much ground this plant actually
+          wants. Deliberately unclipped, unlike the fill (drawn separately, in
+          `PlotCanvas`'s own clipped layer, below every marker — see A1's note
+          on `PlacementMarker`'s doc comment): the ring visibly exceeding the
+          plot for a tree-scale crop is the honest part of the picture. Not
+          listening — the **core** below is the marker's hit target, so a
+          click anywhere in a huge canopy doesn't select it from arbitrary
+          distance. Dashed when stranded (post-review fix B3) — the same
+          honest-but-muted signal the core's desaturation gives, on the piece
+          of the marker most likely to be the only part still inside the
+          plot. */}
       <Circle
         radius={canopyPx}
-        fill={withAlpha(categoryColor, 0.22)}
         stroke={withAlpha(categoryColor, 0.55)}
         strokeWidth={1}
+        dash={isStranded ? STRANDED_DASH_PX : undefined}
+        listening={false}
       />
-      {/* The core, always visible for immediate category feedback. */}
+      {/* The core, always visible for immediate category feedback, and what
+          gets clicked (Konva bubbles a hit on this shape up to this Group's
+          onClick/onTap). */}
       <Circle
         radius={corePx}
         fill={categoryColor}
@@ -306,8 +355,10 @@ function PlacementMarker({
           listening={false}
         />
       )}
-      {/* The crop's name, once there is room for it to mean anything. */}
-      {pxPerCm >= NAME_LABEL_MIN_PX_PER_CM && (
+      {/* The crop's name, once there is room for it to mean anything *and*
+          `labels.ts#visibleLabels` says it doesn't collide with a
+          neighbour's (post-review fix A2). */}
+      {showLabel && (
         <Text
           text={placement.plant.commonName}
           fontSize={NAME_FONT_SIZE_PX}
@@ -402,6 +453,13 @@ export function PlotCanvas({
   });
   const outlineInvalid = editing && outlineEditing?.error != null;
   const hovered = placements.find((placement) => placement.id === hoveredId) ?? null;
+  // Post-review fix A2: which markers actually get to draw a name label,
+  // once neighbours are close enough to collide (`labels.ts`).
+  const shownLabelIds = visibleLabels(placements, region, pxPerCm, selectedId);
+  // Post-review fix B3: which placements a reshape has left outside the
+  // outline (`stranded.ts`) — drawn in a desaturated, dashed-ring style
+  // rather than silently left unmarked on the soil surround.
+  const strandedIds = strandedPlacementIds(placements, region);
 
   /*
    * Panning by dragging empty ground, the review's companion to zoom.
@@ -416,11 +474,27 @@ export function PlotCanvas({
    * the two are told apart the only way they can be: by whether the pointer
    * actually moved (`PAN_CLICK_SLOP_PX`). A press that doesn't move is a
    * click and still deselects.
+   *
+   * **The window listeners live only as long as one press (post-review fix
+   * C2).** They used to be attached for the component's whole life (a
+   * mount-time effect); a plot is panned rarely against how often it renders,
+   * so that was a permanently-registered `pointermove` handler doing nothing
+   * on every pointer movement anywhere on the page. `handleMove`/`handleUp`
+   * are now declared *inside* `handleStageBackgroundPress` (one pointerdown),
+   * added there, and `handleUp` removes both itself and `handleMove` the
+   * moment the press ends — the deselect-on-unmoved-press path is unchanged,
+   * it just runs from the same closure that attached the listeners. The
+   * mount-effect below is only the safety net for a press abandoned by an
+   * unmount (a route change mid-drag) rather than a `pointerup`.
    */
   const panRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(
     null,
   );
   const pannedRef = useRef(false);
+  const activePanListenersRef = useRef<{
+    readonly move: (event: PointerEvent) => void;
+    readonly up: () => void;
+  } | null>(null);
 
   function handleStageBackgroundPress(event: Konva.KonvaEventObject<Event>): void {
     if (event.target !== event.target.getStage()) {
@@ -441,35 +515,44 @@ export function PlotCanvas({
       scrollLeft: container.scrollLeft,
       scrollTop: container.scrollTop,
     };
-  }
 
-  useEffect(() => {
-    function handleMove(event: PointerEvent): void {
+    // Re-bound as its own `const`: a nested `function` declaration doesn't
+    // keep TypeScript's null-narrowing on `container` from the guard above.
+    const scrollTarget = container;
+
+    function handleMove(moveEvent: PointerEvent): void {
       const start = panRef.current;
-      const container = panContainerRef?.current;
-      if (start === null || container == null) return;
-      const dx = event.clientX - start.x;
-      const dy = event.clientY - start.y;
+      if (start === null) return;
+      const dx = moveEvent.clientX - start.x;
+      const dy = moveEvent.clientY - start.y;
       if (!pannedRef.current && Math.hypot(dx, dy) < PAN_CLICK_SLOP_PX) return;
       pannedRef.current = true;
-      container.scrollLeft = start.scrollLeft - dx;
-      container.scrollTop = start.scrollTop - dy;
+      scrollTarget.scrollLeft = start.scrollLeft - dx;
+      scrollTarget.scrollTop = start.scrollTop - dy;
     }
 
     function handleUp(): void {
-      if (panRef.current === null) return;
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+      activePanListenersRef.current = null;
       panRef.current = null;
       // A press on empty ground that never became a pan is a click.
       if (!pannedRef.current) selectPlacement(null);
     }
 
+    activePanListenersRef.current = { move: handleMove, up: handleUp };
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleUp);
+  }
+
+  useEffect(() => {
     return () => {
-      window.removeEventListener('pointermove', handleMove);
-      window.removeEventListener('pointerup', handleUp);
+      const active = activePanListenersRef.current;
+      if (active === null) return;
+      window.removeEventListener('pointermove', active.move);
+      window.removeEventListener('pointerup', active.up);
     };
-  }, [panContainerRef, selectPlacement]);
+  }, []);
 
   /** A placed plant's own drag (moving it within the plot) — Konva's job, not dnd-kit's; see the module doc. */
   function handlePlantDragEnd(placementId: string, event: Konva.KonvaEventObject<DragEvent>): void {
@@ -697,6 +780,55 @@ export function PlotCanvas({
             listening={false}
           />
 
+          {/* Every placement's canopy **fill**, clipped to the outline —
+              post-review fix A1. A tree-scale crop's footprint can exceed the
+              plot itself (an Apple's 360×450 cm spacing dwarfs the default
+              3×2 m bed); drawn per-marker at true scale with no clip, that
+              fill floods the whole canvas — plot, soil surround, every other
+              marker — in translucent colour, reading as an error rather than
+              one plant's footprint. Clipping the *fill* to the same outline
+              polygon the grid clips to (`clipFunc`, above) contains the
+              flood; `PlacementMarker` still draws each canopy's *ring*
+              unclipped, so a marker whose footprint genuinely doesn't fit
+              still visibly says so at the plot's edge. Drawn as one shared,
+              non-listening group *before* the markers below, so every core is
+              always on top of every fill regardless of draw order or overlap
+              — clicking a marker never hits a neighbour's canopy fill
+              instead. */}
+          <Group
+            listening={false}
+            clipFunc={(ctx: Konva.Context) => {
+              ctx.beginPath();
+              region.vertices.forEach((vertex, index) => {
+                const px = toPx(vertex);
+                if (index === 0) ctx.moveTo(px.x, px.y);
+                else ctx.lineTo(px.x, px.y);
+              });
+              ctx.closePath();
+            }}
+          >
+            {placements.map((placement) => {
+              const centre = toPx(placement);
+              const categoryColor = CATEGORY_COLORS[placement.plant.category];
+              // Stranded (post-review fix B3): the same desaturation the
+              // core gets, for the rare sliver of a stranded placement's
+              // canopy that still overlaps the outline enough to be clipped
+              // in at all.
+              const fillColor = strandedIds.has(placement.id)
+                ? desaturateColor(categoryColor)
+                : categoryColor;
+              return (
+                <Circle
+                  key={placement.id}
+                  x={centre.x}
+                  y={centre.y}
+                  radius={canopyRadiusPx(placement.plant, pxPerCm)}
+                  fill={withAlpha(fillColor, 0.22)}
+                />
+              );
+            })}
+          </Group>
+
           {placements.map((placement) => (
             <PlacementMarker
               key={placement.id}
@@ -704,6 +836,8 @@ export function PlotCanvas({
               px={toPx(placement)}
               pxPerCm={pxPerCm}
               isSelected={placement.id === selectedId}
+              showLabel={shownLabelIds.has(placement.id)}
+              isStranded={strandedIds.has(placement.id)}
               reduceMotion={reduceMotion}
               severityByPlacementId={severityByPlacementId}
               onDragEnd={(event) => handlePlantDragEnd(placement.id, event)}

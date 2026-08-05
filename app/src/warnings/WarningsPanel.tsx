@@ -53,6 +53,15 @@ export interface WarningsPanelProps {
   readonly suggestions: readonly CompanionSuggestion[];
   /** The current runtime plant list (`usePlantList()`), used only to resolve a suggestion's bare `suggestedPlantId` to a display name. */
   readonly plants: readonly Plant[];
+  /**
+   * How many placements a reshape has left outside the plot outline
+   * (post-review fix B3, `canvas/stranded.ts`) — not one of the engine's
+   * `Warning`s (it's a canvas-geometry fact, not a growing-conditions rule),
+   * so it is its own count rather than folded into `warnings`.
+   */
+  readonly strandedCount: number;
+  /** Which stranded placement "Show me" on the summary card targets — the first one, or `null` when `strandedCount` is 0. */
+  readonly firstStrandedPlacementId: string | null;
   /** Called with a placement id when the user asks to be shown which marker a warning or suggestion concerns — selects it *and* scrolls it into view (`WarningsSection.tsx`). */
   readonly onFocusPlacement: (placementId: string) => void;
 }
@@ -66,6 +75,8 @@ export function WarningsPanel({
   warnings,
   suggestions,
   plants,
+  strandedCount,
+  firstStrandedPlacementId,
   onFocusPlacement,
 }: WarningsPanelProps) {
   const counts = severityCounts(warnings);
@@ -93,6 +104,32 @@ export function WarningsPanel({
           </p>
         )}
       </div>
+
+      {/*
+       * Stranded placements (post-review fix B3) — a reshape leaving a plant
+       * outside the plot outline with nothing on screen saying so. Not an
+       * engine `Warning` (see the prop doc), so it is its own card rather
+       * than a list item styled to look like one — but it reuses `.item`'s
+       * card look, which is what makes it read as "a problem" without
+       * borrowing a severity colour that isn't really its own.
+       */}
+      {strandedCount > 0 && (
+        <p className={`${styles.item} ${styles.strandedCard}`}>
+          <span className={styles.reason}>
+            {strandedCount} {strandedCount === 1 ? 'plant is' : 'plants are'} outside the plot
+            outline.
+          </span>
+          <button
+            type="button"
+            className={styles.showMe}
+            onClick={() => {
+              if (firstStrandedPlacementId !== null) onFocusPlacement(firstStrandedPlacementId);
+            }}
+          >
+            Show me
+          </button>
+        </p>
+      )}
 
       {warnings.length === 0 ? (
         <p className={styles.empty}>No problems &mdash; looking good 🌿</p>

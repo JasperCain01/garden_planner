@@ -60,7 +60,14 @@ const INFO_WARNING: OvercrowdingWarning = {
 describe('WarningsPanel', () => {
   it('shows reassuring copy when there is nothing to report', () => {
     render(
-      <WarningsPanel warnings={[]} suggestions={[]} plants={[]} onFocusPlacement={() => {}} />,
+      <WarningsPanel
+        warnings={[]}
+        suggestions={[]}
+        plants={[]}
+        strandedCount={0}
+        firstStrandedPlacementId={null}
+        onFocusPlacement={() => {}}
+      />,
     );
 
     expect(screen.getByText(/no problems — looking good/i)).toBeTruthy();
@@ -74,6 +81,8 @@ describe('WarningsPanel', () => {
         warnings={[ANTAGONIST_WARNING]}
         suggestions={[]}
         plants={[]}
+        strandedCount={0}
+        firstStrandedPlacementId={null}
         onFocusPlacement={onFocusPlacement}
       />,
     );
@@ -95,6 +104,8 @@ describe('WarningsPanel', () => {
         warnings={[INFO_WARNING, ANTAGONIST_WARNING]}
         suggestions={[]}
         plants={[]}
+        strandedCount={0}
+        firstStrandedPlacementId={null}
         onFocusPlacement={() => {}}
       />,
     );
@@ -112,6 +123,8 @@ describe('WarningsPanel', () => {
         warnings={[]}
         suggestions={[SUGGESTION]}
         plants={[GARLIC]}
+        strandedCount={0}
+        firstStrandedPlacementId={null}
         onFocusPlacement={onFocusPlacement}
       />,
     );
@@ -130,10 +143,58 @@ describe('WarningsPanel', () => {
         warnings={[]}
         suggestions={[SUGGESTION]}
         plants={[]}
+        strandedCount={0}
+        firstStrandedPlacementId={null}
         onFocusPlacement={() => {}}
       />,
     );
 
     expect(screen.getByText('garlic')).toBeTruthy();
+  });
+
+  // Post-review fix B3: stranded placements.
+  it('shows no stranded-placements card when nothing is stranded', () => {
+    render(
+      <WarningsPanel
+        warnings={[]}
+        suggestions={[]}
+        plants={[]}
+        strandedCount={0}
+        firstStrandedPlacementId={null}
+        onFocusPlacement={() => {}}
+      />,
+    );
+
+    expect(screen.queryByText(/outside the plot outline/i)).toBeNull();
+  });
+
+  it('reports how many placements are stranded, singular and plural, and focuses the first on request', () => {
+    const onFocusPlacement = vi.fn();
+    const { rerender } = render(
+      <WarningsPanel
+        warnings={[]}
+        suggestions={[]}
+        plants={[]}
+        strandedCount={1}
+        firstStrandedPlacementId="stranded-1"
+        onFocusPlacement={onFocusPlacement}
+      />,
+    );
+
+    expect(screen.getByText(/1 plant is outside the plot outline/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /show me/i }));
+    expect(onFocusPlacement).toHaveBeenCalledWith('stranded-1');
+
+    rerender(
+      <WarningsPanel
+        warnings={[]}
+        suggestions={[]}
+        plants={[]}
+        strandedCount={2}
+        firstStrandedPlacementId="stranded-1"
+        onFocusPlacement={onFocusPlacement}
+      />,
+    );
+    expect(screen.getByText(/2 plants are outside the plot outline/i)).toBeTruthy();
   });
 });

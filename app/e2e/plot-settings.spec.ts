@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { atPlotCm, dragCropOntoCanvas, filterPaletteTo } from './drag.ts';
+import { atPlotCm, canvasBoxOf, dragCropOntoCanvas, filterPaletteTo } from './drag.ts';
 
 /**
  * The UI redesign Phase 4 acceptance criteria, as a test
@@ -259,4 +259,57 @@ test('"Show me" scrolls a zoomed-in plot until the marker is actually on screen'
       { message: 'the canvas viewport scrolled towards the warned-about marker' },
     )
     .toBeGreaterThan(10);
+});
+
+test('reshaping the plot strands a placement, the dock reports it, and dragging it back inside clears both (post-review fix B3)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const canvas = page.getByLabel(/plot canvas/i);
+  await expect(canvas).toBeVisible();
+
+  // Placed at the default 3×2m plot's centre (Onion via keyboard-operable
+  // "Add to plot" — `geometry.ts#regionCentre`), then nudged towards its
+  // corner with the arrow keys: a fast (Shift) 50cm step plus four normal
+  // 10cm steps each way moves it from (150,100) to (240,190), clamped by
+  // `clampToBounds` to the plot's own bounding box (300×200 — no clamping
+  // actually needed at this target).
+  await filterPaletteTo(page, 'Onion');
+  await page.getByRole('button', { name: /^add onion to the plot, without dragging$/i }).click();
+  await expect(page.getByText(/^Selected:/)).toBeVisible();
+  await expect(page.getByText(/outside the plot outline/i)).toHaveCount(0);
+
+  await canvas.focus();
+  await page.keyboard.press('Shift+ArrowRight');
+  for (let i = 0; i < 4; i += 1) await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
+  for (let i = 0; i < 4; i += 1) await page.keyboard.press('ArrowDown');
+
+  // The 2.5m circle preset (`ShapePicker.tsx`'s own default dimensions)
+  // inscribes its circle in [0, 250]×[0, 250]cm, centred at (125,125) with a
+  // 125cm radius — the onion's stored position doesn't move with the
+  // reshape, and (240,190) sits inside that *bounding box* but a good 7cm
+  // outside the actual circle (distance from centre ≈ 132cm), which is what
+  // a plot corner losing its roundness genuinely does to a placement near it.
+  // Deliberately not further out still (e.g. the box's very corner): the
+  // padded canvas only extends 40cm past the outline, and a placement beyond
+  // that is drawn off the visible stage entirely — a real, more severe case
+  // this fix also covers, but not one a mouse can grab to test the "drag it
+  // back" half of this spec.
+  await page.getByRole('radio', { name: /^circle$/i }).click();
+  await page.getByRole('button', { name: /use this shape/i }).click();
+
+  await expect(page.getByText(/1 plant is outside the plot outline/i)).toBeVisible();
+
+  // Drag it back inside, towards the new outline's own centre.
+  const NEW_PLOT_CM = { width: 250, height: 250 };
+  const canvasBox = await canvasBoxOf(canvas);
+  const strandedAt = atPlotCm({ x: 240, y: 190 }, NEW_PLOT_CM)(canvasBox);
+  const circleCentre = atPlotCm({ x: 125, y: 125 }, NEW_PLOT_CM)(canvasBox);
+  await page.mouse.move(strandedAt.x, strandedAt.y);
+  await page.mouse.down();
+  await page.mouse.move(circleCentre.x, circleCentre.y, { steps: 10 });
+  await page.mouse.up();
+
+  await expect(page.getByText(/outside the plot outline/i)).toHaveCount(0);
 });

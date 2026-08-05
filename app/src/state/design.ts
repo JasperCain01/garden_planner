@@ -137,7 +137,9 @@ export function isContinuation(prev: Design, next: Design): boolean {
  * Derived from the two designs rather than reported by each call site, so no
  * store action has to know it is being recorded. Compound edits that a diff
  * cannot name usefully (loading the example bed) pass their own label instead —
- * see `design-history.ts`'s `labelNextEdit`.
+ * see `design-history.ts`'s `recordAs` (post-review fix C1: this comment named
+ * an earlier working name for that function, `labelNextEdit`, that shipped
+ * under a different one).
  */
 export function describeEdit(prev: Design, next: Design): string {
   const before = new Map(prev.placements.map((placement) => [placement.id, placement]));

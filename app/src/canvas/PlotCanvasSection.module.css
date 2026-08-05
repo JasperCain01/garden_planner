@@ -73,6 +73,19 @@
   margin: var(--space-2) 0 var(--space-3);
   color: var(--text-muted);
   font-size: var(--text-sm);
+  /* Post-review fix B2. The two hint sentences (arrange mode's, edit mode's)
+   * are different lengths, so without a floor this box's own height changes
+   * with the mode too — on top of the toolbar row-count difference the fix
+   * targets, and in the *opposite* direction (arrange's longer sentence wraps
+   * to 4 lines here at 1440px; edit's wraps to 2), which very nearly canceled
+   * the toolbar fix out rather than visibly compounding it. `4 * 1.5` is four
+   * lines at this element's own `line-height` (`--leading`), which is what
+   * arrange mode's sentence measures at 1440px — reserving that keeps the
+   * canvas viewport's top edge from moving by a couple of pixels on top of
+   * whatever the toolbar contributes, the same way the toolbar fix keeps it
+   * from moving by tens. A narrower supported width that wraps arrange's
+   * sentence past 4 lines simply grows past this floor, same as before. */
+  min-height: calc(4 * 1.5 * var(--text-sm));
 }
 
 /*

@@ -75,6 +75,58 @@
 }
 
 /*
+ * Phone widths (post-review fix B4) — the same breakpoint
+ * `routes/AppShell.module.css` shrinks the wordmark's font at, amending the
+ * `.chrome` comment's "nothing here wraps: the design name truncates
+ * instead" for what "instead" turned out to still not be enough of at 390px:
+ * the review found "Garden Plan… / Designs: M…" — *both* halves of the
+ * header ellipsising, because the switcher's own fixed text ("🗂 Designs: ")
+ * was competing with the wordmark for the same shrinking flex row before
+ * either got to spend anything on the name.
+ *
+ * Dropping the "Designs:" word from what's drawn (not from what's announced
+ * — see the component's doc) gives that space back — and the point of giving
+ * it back is spending it on the name, so `.designName`'s 899px-breakpoint cap
+ * is lifted here too: `.designsButton`'s own `min-width: 0` still shrinks it
+ * with an ellipsis for a name genuinely too long to fit, but a name that
+ * fits no longer truncates just because 4.5rem was calibrated for a button
+ * that also had to fit the word "Designs:". Measured at 390×844: both the
+ * full wordmark and a 10-character design name now render with no ellipsis
+ * on either.
+ */
+@media (max-width: 599px) {
+  .chrome {
+    gap: var(--space-1);
+  }
+
+  .designsPrefix {
+    display: none;
+  }
+
+  .designName {
+    max-width: none;
+  }
+
+  /* Dropping the prefix alone freed 8-ish pixels short of what a 10-character
+   * name needs at this width; the icon buttons give up a little of their own
+   * — still comfortably tappable — rather than the name losing its last
+   * couple of letters again. */
+  .iconButton {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  /* `button`'s global rule (`styles/global.css`) spends 16px of horizontal
+   * padding a side, sized for a button that is mostly its own label — this
+   * one is mostly an emoji and a name, and at this width every pixel not
+   * spent on the name is a pixel the name doesn't have. */
+  .designsButton {
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+  }
+}
+
+/*
  * Print (UI redesign Phase 6, ADR 0035 — `styles/global.css`'s print block has
  * the whole story).
  *

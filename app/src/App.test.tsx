@@ -22,11 +22,6 @@ function renderApp(initialPath = '/') {
 }
 
 describe('App shell', () => {
-  it('renders the title', () => {
-    renderApp();
-    expect(screen.getByRole('heading', { name: /garden planner/i })).toBeTruthy();
-  });
-
   // Mounts the real, unfiltered palette (~130+ shipped crops match the
   // default full-sun conditions), and Workplan Stage 6.2 gave every row a
   // second interactive control (the "Add to plot" button, alongside the

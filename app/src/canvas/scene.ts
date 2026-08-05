@@ -64,3 +64,22 @@ export function withAlpha(hex: string, alpha: number): string {
   const blue = Number.parseInt(hex.slice(5, 7), 16);
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
+
+/**
+ * `hex`, converted to a neutral grey at the same perceived lightness (Rec.
+ * 601 luma: `0.299R + 0.587G + 0.114B`) — post-review fix B3's "desaturated"
+ * treatment for a marker whose placement has been stranded outside the plot
+ * outline by a reshape. Derived at the point of use from the crop's own
+ * category colour, the same way {@link withAlpha} derives a translucent
+ * variant, rather than a fourth hand-picked grey living beside
+ * {@link SCENE_COLORS}: the marker is still honestly "this crop, muted", not
+ * a new colour with its own meaning to learn.
+ */
+export function desaturateColor(hex: string): string {
+  const red = Number.parseInt(hex.slice(1, 3), 16);
+  const green = Number.parseInt(hex.slice(3, 5), 16);
+  const blue = Number.parseInt(hex.slice(5, 7), 16);
+  const gray = Math.round(0.299 * red + 0.587 * green + 0.114 * blue);
+  const channel = gray.toString(16).padStart(2, '0');
+  return `#${channel}${channel}${channel}`;
+}
