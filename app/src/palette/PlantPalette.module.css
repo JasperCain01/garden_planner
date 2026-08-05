@@ -407,6 +407,24 @@
  * `--band-*` tokens in `styles/tokens.css`.
  */
 .band {
+  /*
+   * A positioned containing block for `PlantPalette.tsx`'s hidden
+   * accessible-name suffix (post-review fix B1's own regression, caught by
+   * `e2e/workspace-layout.spec.ts`). `.visually-hidden` is `position:
+   * absolute`; with no positioned ancestor its containing block is the
+   * *initial* containing block, not this small chip — and with 144 of them,
+   * one per row, each one's "static position" lands at its row's *unclipped*
+   * document offset, which for a row far down the list is thousands of
+   * pixels down. `.list`'s own `overflow: auto` clips its own descendants
+   * correctly, but an absolutely-positioned box whose containing block is
+   * the document root is not, for layout purposes, contained by a box that
+   * never established a containing block for it — so it still inflated the
+   * *page's* scrollable area even though the list itself looked fine.
+   * `position: relative` here gives each hidden suffix a containing block the
+   * size of the chip it sits in, which is where its static position already
+   * puts it.
+   */
+  position: relative;
   padding: 1px var(--space-1);
   border-radius: var(--radius-pill);
   /* Never shrinks: it is the row's headline fact, and a band chip reading
