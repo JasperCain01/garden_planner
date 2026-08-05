@@ -474,11 +474,27 @@ export function PlotCanvas({
    * the two are told apart the only way they can be: by whether the pointer
    * actually moved (`PAN_CLICK_SLOP_PX`). A press that doesn't move is a
    * click and still deselects.
+   *
+   * **The window listeners live only as long as one press (post-review fix
+   * C2).** They used to be attached for the component's whole life (a
+   * mount-time effect); a plot is panned rarely against how often it renders,
+   * so that was a permanently-registered `pointermove` handler doing nothing
+   * on every pointer movement anywhere on the page. `handleMove`/`handleUp`
+   * are now declared *inside* `handleStageBackgroundPress` (one pointerdown),
+   * added there, and `handleUp` removes both itself and `handleMove` the
+   * moment the press ends — the deselect-on-unmoved-press path is unchanged,
+   * it just runs from the same closure that attached the listeners. The
+   * mount-effect below is only the safety net for a press abandoned by an
+   * unmount (a route change mid-drag) rather than a `pointerup`.
    */
   const panRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(
     null,
   );
   const pannedRef = useRef(false);
+  const activePanListenersRef = useRef<{
+    readonly move: (event: PointerEvent) => void;
+    readonly up: () => void;
+  } | null>(null);
 
   function handleStageBackgroundPress(event: Konva.KonvaEventObject<Event>): void {
     if (event.target !== event.target.getStage()) {
@@ -499,35 +515,44 @@ export function PlotCanvas({
       scrollLeft: container.scrollLeft,
       scrollTop: container.scrollTop,
     };
-  }
 
-  useEffect(() => {
-    function handleMove(event: PointerEvent): void {
+    // Re-bound as its own `const`: a nested `function` declaration doesn't
+    // keep TypeScript's null-narrowing on `container` from the guard above.
+    const scrollTarget = container;
+
+    function handleMove(moveEvent: PointerEvent): void {
       const start = panRef.current;
-      const container = panContainerRef?.current;
-      if (start === null || container == null) return;
-      const dx = event.clientX - start.x;
-      const dy = event.clientY - start.y;
+      if (start === null) return;
+      const dx = moveEvent.clientX - start.x;
+      const dy = moveEvent.clientY - start.y;
       if (!pannedRef.current && Math.hypot(dx, dy) < PAN_CLICK_SLOP_PX) return;
       pannedRef.current = true;
-      container.scrollLeft = start.scrollLeft - dx;
-      container.scrollTop = start.scrollTop - dy;
+      scrollTarget.scrollLeft = start.scrollLeft - dx;
+      scrollTarget.scrollTop = start.scrollTop - dy;
     }
 
     function handleUp(): void {
-      if (panRef.current === null) return;
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+      activePanListenersRef.current = null;
       panRef.current = null;
       // A press on empty ground that never became a pan is a click.
       if (!pannedRef.current) selectPlacement(null);
     }
 
+    activePanListenersRef.current = { move: handleMove, up: handleUp };
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleUp);
+  }
+
+  useEffect(() => {
     return () => {
-      window.removeEventListener('pointermove', handleMove);
-      window.removeEventListener('pointerup', handleUp);
+      const active = activePanListenersRef.current;
+      if (active === null) return;
+      window.removeEventListener('pointermove', active.move);
+      window.removeEventListener('pointerup', active.up);
     };
-  }, [panContainerRef, selectPlacement]);
+  }, []);
 
   /** A placed plant's own drag (moving it within the plot) — Konva's job, not dnd-kit's; see the module doc. */
   function handlePlantDragEnd(placementId: string, event: Konva.KonvaEventObject<DragEvent>): void {
