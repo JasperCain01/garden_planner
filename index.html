@@ -4,9 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Offline-capable planner for edible gardens and allotments." />
-    <meta name="theme-color" content="#4f8a45" />
+    <meta name="theme-color" content="#2d6a4f" />
+    <!--
+      The favicon (UI redesign Phase 5). This file declared none at all until
+      now, so every tab showed the browser's blank-page mark — the one item of
+      the review's micro-polish sweep that was genuinely outstanding rather than
+      already done.
+
+      It is `pwa-icon.svg`, the manifest's own icon, and not a new drawing: the
+      mark in the tab and the mark on the home screen should be the same mark,
+      and this one is already precached by the service worker (`includeAssets`
+      in `vite.config.ts`), so it costs no extra request and works offline.
+
+      SVG only, deliberately. Every browser this PWA targets supports
+      `rel="icon"` with an SVG, the manifest has shipped SVG-only icons since
+      Stage 5.1 (ADR 0022), and a second raster copy would be a second thing to
+      keep in step with the first. `/garden_planner/` rather than a leading slash,
+      because on GitHub Pages the app is served from `/garden_planner/` — the
+      same substitution `vite.config.ts`'s `base` drives everywhere else.
+    -->
+    <link rel="icon" type="image/svg+xml" href="/garden_planner/pwa-icon.svg" />
     <title>Garden Planner</title>
-    <script type="module" crossorigin src="/garden_planner/assets/index-BGa386iJ.js"></script>
+    <script type="module" crossorigin src="/garden_planner/assets/index-Ckp-3Dzd.js"></script>
+    <link rel="stylesheet" crossorigin href="/garden_planner/assets/index-DwFSWU4g.css">
   <link rel="manifest" href="/garden_planner/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/garden_planner/registerSW.js"></script></head>
   <body>
     <div id="root"></div>
