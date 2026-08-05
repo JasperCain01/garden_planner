@@ -141,6 +141,14 @@
   line-height: 1.4;
 }
 
+/* The stranded-placements card (post-review fix B3): `.item`'s card look,
+ * spaced like the list it sits above rather than touching it, and — unlike
+ * `.item[data-severity]` — no coloured left edge, because this isn't one of
+ * the engine's severities to borrow a colour from. */
+.strandedCard {
+  margin: 0 0 var(--space-2);
+}
+
 .suggested {
   color: var(--text-strong);
 }

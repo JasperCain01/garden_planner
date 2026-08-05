@@ -89,7 +89,8 @@ import {
 } from './geometry.ts';
 import { majorGridLinesCm, metresLabel, minorGridLinesCm } from './grid.ts';
 import { NAME_FONT_SIZE_PX, visibleLabels } from './labels.ts';
-import { SCENE_COLORS, withAlpha } from './scene.ts';
+import { desaturateColor, SCENE_COLORS, withAlpha } from './scene.ts';
+import { strandedPlacementIds } from './stranded.ts';
 import type { OutlineEditing } from './useOutlineEditing.ts';
 import styles from './PlotCanvas.module.css';
 
@@ -130,6 +131,9 @@ const DROP_POP_FROM = 0.6;
 
 /** A pointer press that moves less than this many pixels is a click, not a pan — so "click empty ground to deselect" survives the pan gesture living on the same button. */
 const PAN_CLICK_SLOP_PX = 4;
+
+/** The dash pattern (on/off, in screen pixels) for a stranded marker's canopy ring — post-review fix B3. */
+const STRANDED_DASH_PX = [4, 3];
 
 /** No warnings for anyone — the default so callers that haven't computed warnings yet (or whose conditions don't currently resolve) can pass nothing rather than build an empty map themselves. */
 const NO_SEVERITIES: ReadonlyMap<string, WarningSeverity> = new Map();
@@ -210,6 +214,8 @@ interface PlacementMarkerProps {
   readonly isSelected: boolean;
   /** Whether this placement survived `labels.ts#visibleLabels`'s collision pass (post-review fix A2) — replaces the old `pxPerCm >= NAME_LABEL_MIN_PX_PER_CM` check, which said nothing about *neighbouring* labels. */
   readonly showLabel: boolean;
+  /** Whether a reshape has left this placement outside the plot outline (post-review fix B3, `stranded.ts`). */
+  readonly isStranded: boolean;
   readonly reduceMotion: boolean;
   readonly severityByPlacementId: ReadonlyMap<string, WarningSeverity>;
   readonly onDragEnd: (event: Konva.KonvaEventObject<DragEvent>) => void;
@@ -224,6 +230,7 @@ function PlacementMarker({
   pxPerCm,
   isSelected,
   showLabel,
+  isStranded,
   reduceMotion,
   severityByPlacementId,
   onDragEnd,
@@ -237,7 +244,13 @@ function PlacementMarker({
 
   const canopyPx = canopyRadiusPx(placement.plant, pxPerCm);
   const corePx = iconRadiusPx(placement.plant, pxPerCm);
-  const categoryColor = CATEGORY_COLORS[placement.plant.category];
+  // Stranded (post-review fix B3): desaturated rather than category-coloured
+  // — "visible-but-honest, no motion", the muted-when-unsuitable palette
+  // precedent applied to the canvas. `scene.ts#desaturateColor` derives it
+  // from the crop's own colour rather than a fourth hand-picked grey.
+  const categoryColor = isStranded
+    ? desaturateColor(CATEGORY_COLORS[placement.plant.category])
+    : CATEGORY_COLORS[placement.plant.category];
 
   /*
    * The drop "pop": a marker scales up from 60% to full over 150ms when it
@@ -311,11 +324,15 @@ function PlacementMarker({
           plot for a tree-scale crop is the honest part of the picture. Not
           listening — the **core** below is the marker's hit target, so a
           click anywhere in a huge canopy doesn't select it from arbitrary
-          distance. */}
+          distance. Dashed when stranded (post-review fix B3) — the same
+          honest-but-muted signal the core's desaturation gives, on the piece
+          of the marker most likely to be the only part still inside the
+          plot. */}
       <Circle
         radius={canopyPx}
         stroke={withAlpha(categoryColor, 0.55)}
         strokeWidth={1}
+        dash={isStranded ? STRANDED_DASH_PX : undefined}
         listening={false}
       />
       {/* The core, always visible for immediate category feedback, and what
@@ -439,6 +456,10 @@ export function PlotCanvas({
   // Post-review fix A2: which markers actually get to draw a name label,
   // once neighbours are close enough to collide (`labels.ts`).
   const shownLabelIds = visibleLabels(placements, region, pxPerCm, selectedId);
+  // Post-review fix B3: which placements a reshape has left outside the
+  // outline (`stranded.ts`) — drawn in a desaturated, dashed-ring style
+  // rather than silently left unmarked on the soil surround.
+  const strandedIds = strandedPlacementIds(placements, region);
 
   /*
    * Panning by dragging empty ground, the review's companion to zoom.
@@ -763,13 +784,21 @@ export function PlotCanvas({
           >
             {placements.map((placement) => {
               const centre = toPx(placement);
+              const categoryColor = CATEGORY_COLORS[placement.plant.category];
+              // Stranded (post-review fix B3): the same desaturation the
+              // core gets, for the rare sliver of a stranded placement's
+              // canopy that still overlaps the outline enough to be clipped
+              // in at all.
+              const fillColor = strandedIds.has(placement.id)
+                ? desaturateColor(categoryColor)
+                : categoryColor;
               return (
                 <Circle
                   key={placement.id}
                   x={centre.x}
                   y={centre.y}
                   radius={canopyRadiusPx(placement.plant, pxPerCm)}
-                  fill={withAlpha(CATEGORY_COLORS[placement.plant.category], 0.22)}
+                  fill={withAlpha(fillColor, 0.22)}
                 />
               );
             })}
@@ -783,6 +812,7 @@ export function PlotCanvas({
               pxPerCm={pxPerCm}
               isSelected={placement.id === selectedId}
               showLabel={shownLabelIds.has(placement.id)}
+              isStranded={strandedIds.has(placement.id)}
               reduceMotion={reduceMotion}
               severityByPlacementId={severityByPlacementId}
               onDragEnd={(event) => handlePlantDragEnd(placement.id, event)}

@@ -34,14 +34,28 @@
  * (to badge markers on the canvas itself), and `PlotDefinitionPage` is already
  * the one place both are composed — computing it once there and passing it to
  * both avoids evaluating every warning rule twice per render.
+ *
+ * **Stranded placements (post-review fix B3) are not threaded the same way.**
+ * They are not an engine `Warning` — reshaping the outline and leaving a
+ * placement outside it is a canvas-geometry fact, not one of the five rules
+ * `evaluate-canvas.ts` evaluates — so this reads `usePlotStore`'s `region` and
+ * `usePlacementsStore`'s `placements` directly, the same "read the shared
+ * store, no prop threading" convention `PlantPalette.tsx` and
+ * `PlotCanvasSection.tsx` already follow for things `PlotDefinitionPage`
+ * doesn't otherwise need. `region` here is the *committed* outline
+ * (`usePlotStore`, not `useOutlineEditing`'s draft) — the same one
+ * `useCanvasWarnings` is called with — so the dock and the rest of the
+ * warnings it sits beside agree about which plot they're describing.
  */
 
-import { useCallback } from 'react';
-import type { CanvasWarnings } from './evaluate-canvas.ts';
-import { WarningsPanel } from './WarningsPanel.tsx';
+import { useCallback, useMemo } from 'react';
+import { strandedPlacementIds } from '../canvas/stranded.ts';
 import { useCanvasViewStore } from '../state/canvas-view-store.ts';
 import { usePlacementsStore } from '../state/placements-store.ts';
+import { usePlotStore } from '../state/plot-store.ts';
 import { usePlantList } from '../state/use-plant-list.ts';
+import type { CanvasWarnings } from './evaluate-canvas.ts';
+import { WarningsPanel } from './WarningsPanel.tsx';
 
 export interface WarningsSectionProps {
   /** `null` when the plot's growing conditions don't currently resolve (`useCanvasWarnings`'s own contract) — mirrors `PlantPalette`'s inline-alert fallback for the same case. */
@@ -50,8 +64,12 @@ export interface WarningsSectionProps {
 
 export function WarningsSection({ canvasWarnings }: WarningsSectionProps) {
   const plants = usePlantList();
+  const placements = usePlacementsStore((state) => state.placements);
+  const region = usePlotStore((state) => state.region);
   const selectPlacement = usePlacementsStore((state) => state.selectPlacement);
   const requestReveal = useCanvasViewStore((state) => state.requestReveal);
+
+  const stranded = useMemo(() => strandedPlacementIds(placements, region), [placements, region]);
 
   const showPlacement = useCallback(
     (placementId: string) => {
@@ -73,6 +91,8 @@ export function WarningsSection({ canvasWarnings }: WarningsSectionProps) {
           warnings={canvasWarnings.warnings}
           suggestions={canvasWarnings.suggestions}
           plants={plants}
+          strandedCount={stranded.size}
+          firstStrandedPlacementId={placements.find((p) => stranded.has(p.id))?.id ?? null}
           onFocusPlacement={showPlacement}
         />
       )}

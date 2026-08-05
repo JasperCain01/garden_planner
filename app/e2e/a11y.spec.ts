@@ -152,6 +152,37 @@ test('the warnings dock has no axe violations with a warning in it', async ({ pa
   expect(results.violations).toEqual([]);
 });
 
+test('the warnings dock has no axe violations with a stranded placement in it', async ({
+  page,
+}) => {
+  // Post-review fix B3: a new card in the dock, not an engine `Warning` and
+  // so not covered by the scan above — it has its own "Show me" button and
+  // its own singular/plural sentence to get right.
+  //
+  // Placed via the keyboard-operable "Add to plot" button (lands at the
+  // default plot's centre), then nudged with the arrow keys — same
+  // technique as `canvas-scale.spec.ts`'s edit-shape spec — towards a corner
+  // that a smaller preset leaves outside its outline.
+  await page.goto('/');
+  await filterPaletteTo(page, 'Onion');
+  await page.getByRole('button', { name: /^add onion to the plot, without dragging$/i }).click();
+  await expect(page.getByText(/^Selected:/)).toBeVisible();
+
+  const canvas = page.getByLabel(/plot canvas/i);
+  await canvas.focus();
+  await page.keyboard.press('Shift+ArrowRight');
+  for (let i = 0; i < 4; i += 1) await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
+  for (let i = 0; i < 4; i += 1) await page.keyboard.press('ArrowDown');
+
+  await page.getByRole('radio', { name: /^circle$/i }).click();
+  await page.getByRole('button', { name: /use this shape/i }).click();
+  await expect(page.getByText(/1 plant is outside the plot outline/i)).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+});
+
 test('the growing-conditions form has no axe violations with the soil disclosure open', async ({
   page,
 }) => {
