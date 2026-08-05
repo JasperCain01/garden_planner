@@ -106,3 +106,45 @@ test('below the narrow breakpoint the workspace stacks back into a scrolling pag
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
   ).toBe(true);
 });
+
+test('the phone header shows the full wordmark and design name, neither ellipsised (post-review fix B4)', async ({
+  page,
+}) => {
+  // The review's finding at this exact viewport: "Garden Plan… / Designs:
+  // M…" — both halves of the one-row header truncating at once, because the
+  // switcher's own fixed "Designs:" text was competing with the wordmark for
+  // the same shrinking row before either got to spend anything on the name.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.getByLabel(/plot canvas/i)).toBeVisible();
+
+  // Rename to a genuine 10-character name — the default "My garden" is one
+  // short of the acceptance's own figure, and this is a case worth measuring
+  // in its own right, not the easiest one available.
+  await page.getByRole('button', { name: /designs:/i }).click();
+  const renameField = page.getByRole('textbox');
+  await renameField.fill('Allotment1');
+  await renameField.blur();
+  await page.keyboard.press('Escape');
+
+  const wordmarkLink = page.getByRole('heading', { level: 1 }).getByRole('link');
+  const switcher = page.getByRole('button', { name: /^designs: allotment1$/i });
+  await expect(switcher).toBeVisible();
+
+  expect(
+    await wordmarkLink.evaluate((el) => el.scrollWidth <= el.clientWidth),
+    'the brand wordmark renders without ellipsis',
+  ).toBe(true);
+
+  const designName = switcher.locator('span').last();
+  expect(
+    await designName.evaluate((el) => el.scrollWidth <= el.clientWidth),
+    'the design name renders without ellipsis',
+  ).toBe(true);
+  await expect(designName).toHaveText('Allotment1');
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+    'no horizontal page scroll',
+  ).toBe(true);
+});
