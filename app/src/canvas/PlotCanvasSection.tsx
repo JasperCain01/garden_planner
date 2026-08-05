@@ -208,9 +208,16 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
             type="button"
             onClick={() => outlineEditing.setActive(!outlineEditing.active)}
             aria-pressed={outlineEditing.active}
+            // Post-review fix B2: full phrase kept in the accessible name
+            // (WCAG 2.5.3 — the visible "Done" is contained in it) via
+            // `aria-label`, the same visible/accessible-name split
+            // `ShapePicker.tsx`'s `MetreField` uses for a unit and this
+            // component's own "Example bed" button already uses below. Every
+            // existing `/done editing shape/i` lookup still matches.
+            aria-label={outlineEditing.active ? 'Done editing shape' : undefined}
             data-variant={outlineEditing.active ? 'primary' : undefined}
           >
-            {outlineEditing.active ? 'Done editing shape' : 'Edit shape'}
+            {outlineEditing.active ? 'Done' : 'Edit shape'}
           </button>
 
           {/* In edit mode the arrow keys act on a corner, so the selection
@@ -234,20 +241,28 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
               >
                 ▶
               </button>
+              {/* Post-review fix B2: "Add"/"Remove", not "Add corner"/"Remove
+                  corner" — same accessible-name split as "Done" above, so the
+                  edit-mode button set (this pair, the corner-selection pair,
+                  and the toggle) fits alongside the heading on one row at
+                  1440×900 instead of wrapping the toolbar to a second, which
+                  used to shift the canvas viewport down on every mode toggle. */}
               <button
                 type="button"
                 onClick={() =>
                   outlineEditing.addCornerAfter(outlineEditing.selectedCornerIndex ?? 0)
                 }
+                aria-label="Add corner"
               >
-                Add corner
+                Add
               </button>
               <button
                 type="button"
                 onClick={() => outlineEditing.removeCorner(outlineEditing.selectedCornerIndex ?? 0)}
                 disabled={outlineEditing.selectedCornerIndex === null}
+                aria-label="Remove corner"
               >
-                Remove corner
+                Remove
               </button>
             </>
           ) : (
@@ -286,8 +301,16 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
            * The rule is *reversibility*, not destructiveness: deleting a saved
            * design still confirms (`designs/DesignsDialog.tsx`), because the
            * history is per-design and cannot reach it.
+           *
+           * **Hidden while editing the shape (post-review fix B2).** It acts on
+           * placements, not the outline, so it has no job in this mode — and
+           * hiding it (along with "Export image", below) is what keeps the
+           * busier edit-mode button set ("Done editing shape", the corner
+           * selection pair, "Add corner", "Remove corner") on one row at the
+           * supported widths instead of wrapping to a second, which used to
+           * shift the canvas viewport's top edge down on every mode toggle.
            */}
-          {placements.length > 0 && (
+          {!outlineEditing.active && placements.length > 0 && (
             <button type="button" onClick={clearPlacements}>
               Clear all
             </button>
@@ -318,9 +341,13 @@ export function PlotCanvasSection({ canvasWarnings }: PlotCanvasSectionProps) {
               Example bed
             </button>
           )}
-          <button type="button" onClick={handleExport} disabled={isExporting}>
-            {isExporting ? 'Exporting…' : 'Export image'}
-          </button>
+          {/* Hidden while editing the shape (post-review fix B2) — see the
+              "Clear all" comment above; it acts on placements too. */}
+          {!outlineEditing.active && (
+            <button type="button" onClick={handleExport} disabled={isExporting}>
+              {isExporting ? 'Exporting…' : 'Export image'}
+            </button>
+          )}
         </div>
       </div>
       <p className={styles.hint}>

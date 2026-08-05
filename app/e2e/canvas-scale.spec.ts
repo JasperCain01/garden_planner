@@ -359,3 +359,36 @@ test('"Edit shape" reshapes the plot from the keyboard alone', async ({ page }) 
   await page.getByRole('button', { name: /done editing shape/i }).click();
   await expect(page.getByLabel(/drag plants here to place them/i)).toBeVisible();
 });
+
+test('"Edit shape" does not reflow the toolbar to a second row (post-review fix B2)', async ({
+  page,
+}) => {
+  // Edit mode swaps in "Done editing shape", the corner selection pair,
+  // "Add corner" and "Remove corner" — more buttons than arrange mode's set.
+  // At 1440×900 the review found that pushed the toolbar's `.actions` onto a
+  // second row, shifting the whole canvas viewport down ~44px on every mode
+  // toggle. The fix hides "Clear all" and "Export image" while editing (they
+  // act on placements, not the outline) so both modes fit one row; the
+  // canvas viewport's own top edge not moving is the observable that proves it.
+  await page.goto('/');
+  const canvas = page.getByLabel(/plot canvas/i);
+  await expect(canvas).toBeVisible();
+  const viewport = page.locator('div[class*="viewport"]');
+
+  const before = await viewport.boundingBox();
+  if (before === null) throw new Error('the canvas viewport has no bounding box');
+
+  await page.getByRole('button', { name: /^edit shape$/i }).click();
+  await expect(page.getByLabel(/editing the plot shape/i)).toBeVisible();
+
+  const duringEdit = await viewport.boundingBox();
+  if (duringEdit === null) throw new Error('the canvas viewport has no bounding box');
+  expect(duringEdit.y).toBeCloseTo(before.y, 0);
+
+  await page.getByRole('button', { name: /done editing shape/i }).click();
+  await expect(page.getByLabel(/drag plants here to place them/i)).toBeVisible();
+
+  const after = await viewport.boundingBox();
+  if (after === null) throw new Error('the canvas viewport has no bounding box');
+  expect(after.y).toBeCloseTo(before.y, 0);
+});
