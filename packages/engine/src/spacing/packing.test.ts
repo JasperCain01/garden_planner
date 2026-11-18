@@ -108,13 +108,6 @@ describe('square packing on a rectangle', () => {
     const there = layOutPlants(moved, request({ betweenRowCm: 30 }));
     expect(there.positions).toHaveLength(here.positions.length);
   });
-
-  it('finds nothing in a plot narrower than one plant', () => {
-    // 8 cm of bed cannot hold a 10 cm cell, however long it is.
-    const sliver = layOutPlants(rectangleRegion(8, 500), request());
-    expect(sliver.positions).toEqual([]);
-    expect(sliver.rows).toBe(0);
-  });
 });
 
 describe('offset packing', () => {

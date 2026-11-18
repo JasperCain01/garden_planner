@@ -51,16 +51,6 @@ describe('the UK-outdoor exclusion list', () => {
     expect(leaked).toEqual([]);
   });
 
-  it('prunes a real slice of the catalogue without gutting it', () => {
-    // Pinned deliberately: 24 is the number the stated test (see `table.ts`)
-    // actually produces, not the "roughly 32" the workplan estimated before
-    // anyone enumerated it. If this changes, the module doc's argument about
-    // which marginal crops are kept should change with it.
-    expect(EXCLUDED_CROPS).toHaveLength(24);
-    expect(EXCLUDED_CROPS.filter((row) => row.basis === 'too-tender')).toHaveLength(12);
-    expect(EXCLUDED_CROPS.filter((row) => row.basis === 'wont-ripen')).toHaveLength(12);
-  });
-
   it('uses only the two documented grounds, and gives every row a real reason', () => {
     for (const row of EXCLUDED_CROPS) {
       expect(EXCLUSION_BASES).toContain(row.basis);

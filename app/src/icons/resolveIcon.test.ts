@@ -53,9 +53,7 @@ describe('resolveIcon', () => {
     const fallenBack = SHIPPED_PLANTS.filter((plant) => resolveIcon(plant).isFallback);
 
     expect(fallenBack.map((p) => p.id)).toEqual([]);
-  });
-
-  it('bundles exactly one icon per shipped crop', () => {
+    // ...and nothing extra is bundled for crops that no longer ship.
     expect(bundledCropIconCount()).toBe(SHIPPED_PLANTS.length);
   });
 });

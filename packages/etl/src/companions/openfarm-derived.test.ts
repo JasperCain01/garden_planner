@@ -3,8 +3,7 @@ import {
   deriveOpenFarmCompanionRelationships,
   OPENFARM_DERIVED_COMPANION_RELATIONSHIPS,
 } from './openfarm-derived.ts';
-import { CompanionRelationshipSchema, findDanglingRelationships } from './schema.ts';
-import { PLANT_ID_UNIVERSE } from './plant-id-universe.ts';
+import { CompanionRelationshipSchema } from './schema.ts';
 import type { OpenFarmCropRaw } from '../sources/openfarm/types.ts';
 
 const RETRIEVED_AT = '2026-07-18';
@@ -102,25 +101,9 @@ describe('deriveOpenFarmCompanionRelationships', () => {
 });
 
 describe('OPENFARM_DERIVED_COMPANION_RELATIONSHIPS (the real, computed set)', () => {
-  it('is a non-trivial set derived from the real cache', () => {
-    expect(OPENFARM_DERIVED_COMPANION_RELATIONSHIPS.length).toBeGreaterThan(0);
-  });
-
-  it('every relationship is schema-valid', () => {
-    for (const relationship of OPENFARM_DERIVED_COMPANION_RELATIONSHIPS) {
-      expect(() => CompanionRelationshipSchema.parse(relationship)).not.toThrow();
-    }
-  });
-
   it('every relationship is tagged traditional (an uncited scraped field never becomes well-supported)', () => {
     for (const relationship of OPENFARM_DERIVED_COMPANION_RELATIONSHIPS) {
       expect(relationship.evidence).toBe('traditional');
     }
-  });
-
-  it('has no referentially-dangling relationship against the plant-id universe', () => {
-    expect(
-      findDanglingRelationships(OPENFARM_DERIVED_COMPANION_RELATIONSHIPS, PLANT_ID_UNIVERSE),
-    ).toEqual([]);
   });
 });

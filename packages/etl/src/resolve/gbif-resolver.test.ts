@@ -102,15 +102,16 @@ describe('createGbifResolver', () => {
     expect(outcome).toMatchObject({ status: 'resolved', gbifId: 1000009 });
   });
 
-  it('serves a cache hit without calling the transport (offline-first)', async () => {
-    const transport = stubTransport({
-      onion: {
-        usageKey: 1000001,
-        canonicalName: 'Allium cepa',
-        matchType: 'EXACT',
-        confidence: 98,
-      },
-    });
+  it('is offline-first: a cached name never reaches the network, whether pre-loaded or learned this run', async () => {
+    const onionMatch = {
+      usageKey: 1000001,
+      canonicalName: 'Allium cepa',
+      matchType: 'EXACT' as const,
+      confidence: 98,
+    };
+
+    // Pre-loaded cache: served without any network call, case-insensitively.
+    const loaded = stubTransport({ onion: onionMatch });
     const cache: NameCache = {
       onion: {
         status: 'resolved',
@@ -120,31 +121,16 @@ describe('createGbifResolver', () => {
         confidence: 98,
       },
     };
-    const resolver = createGbifResolver({ transport, cache });
+    const fromCache = await createGbifResolver({ transport: loaded, cache }).resolve('Onion');
+    expect(fromCache).toMatchObject({ status: 'resolved', gbifId: 1000001, fromCache: true });
+    expect(loaded.matchName).not.toHaveBeenCalled();
 
-    const outcome = await resolver.resolve('Onion'); // different case → same cache key
-
-    expect(outcome).toMatchObject({ status: 'resolved', gbifId: 1000001, fromCache: true });
-    expect(transport.matchName).not.toHaveBeenCalled();
-  });
-
-  it('caches a resolution after the first (network) lookup so a second call needs no network', async () => {
-    const transport = stubTransport({
-      onion: {
-        usageKey: 1000001,
-        canonicalName: 'Allium cepa',
-        matchType: 'EXACT',
-        confidence: 98,
-      },
-    });
-    const resolver = createGbifResolver({ transport });
-
-    const first = await resolver.resolve('onion');
-    const second = await resolver.resolve('onion');
-
-    expect(first).toMatchObject({ status: 'resolved', fromCache: false });
-    expect(second).toMatchObject({ status: 'resolved', fromCache: true });
-    expect(transport.matchName).toHaveBeenCalledTimes(1);
+    // Learned this run: the first lookup goes to the network, the second doesn't.
+    const live = stubTransport({ onion: onionMatch });
+    const resolver = createGbifResolver({ transport: live });
+    expect(await resolver.resolve('onion')).toMatchObject({ status: 'resolved', fromCache: false });
+    expect(await resolver.resolve('onion')).toMatchObject({ status: 'resolved', fromCache: true });
+    expect(live.matchName).toHaveBeenCalledTimes(1);
   });
 
   it('handles an unrecognized name gracefully, without throwing', async () => {

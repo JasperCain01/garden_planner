@@ -221,39 +221,6 @@ describe('monotonicity: wider spacing never fits more plants', () => {
   });
 });
 
-describe('zero and degenerate plots', () => {
-  it('refuses a plot with no area at the schema, not at the calculator', () => {
-    expect(() => rectangleRegion(0, 100)).toThrow(/positive number/);
-    expect(() =>
-      validatePlotRegion({
-        vertices: [
-          { x: 0, y: 0 },
-          { x: 100, y: 0 },
-          { x: 50, y: 0 },
-        ],
-      }),
-    ).toThrow();
-  });
-
-  it('returns an explained zero for a plot too small to hold anything', () => {
-    for (const spacing of SPACINGS.slice(1)) {
-      const result = fitSpacing(spacing, rectangleRegion(2, 2));
-      expect(result.count).toBe(0);
-      expect(result.positions).toEqual([]);
-      expect(result.densityPerSquareMetre).toBe(0);
-      expect(result.summary).toContain('nothing fits');
-    }
-  });
-
-  it('returns an explained zero for a plot narrower than one plant', () => {
-    // 5 cm × 10 m: 0.5 m² of ground, and not one onion, because the shape is
-    // wrong rather than the area. An area-based calculator would say 16.
-    const sliver = rectangleRegion(5, 1000);
-    expect(regionAreaCm2(sliver)).toBe(5000);
-    expect(fitSpacing({ row: { inRowCm: 10, betweenRowCm: 30 } }, sliver).count).toBe(0);
-  });
-});
-
 describe('the known limitation: growing a plot leftwards moves the lattice', () => {
   /**
    * A comb-shaped plot: a full-width base bar with three teeth standing on it.

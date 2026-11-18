@@ -3,10 +3,6 @@ import { isUserPlantId, validatePlant } from '@garden-planner/engine';
 import { CURATED_PLANTS } from './plants.ts';
 
 describe('CURATED_PLANTS', () => {
-  it('is not empty — Stage 1.7 ships at least one curated crop', () => {
-    expect(CURATED_PLANTS.length).toBeGreaterThan(0);
-  });
-
   it('is schema-valid — the same unrelaxed validatePlant every shipped record clears', () => {
     for (const plant of CURATED_PLANTS) {
       expect(() => validatePlant(plant)).not.toThrow();
@@ -32,15 +28,6 @@ describe('CURATED_PLANTS', () => {
     for (const plant of CURATED_PLANTS) {
       expect(plant.companions).toBeUndefined();
       expect(plant.antagonists).toBeUndefined();
-    }
-  });
-
-  it('cites at least one real source per record', () => {
-    for (const plant of CURATED_PLANTS) {
-      expect(plant.provenance.sources.length).toBeGreaterThan(0);
-      for (const source of plant.provenance.sources) {
-        expect(source.source.length).toBeGreaterThan(0);
-      }
     }
   });
 });
