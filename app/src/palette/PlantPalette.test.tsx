@@ -208,42 +208,22 @@ describe('PlantPalette', () => {
     expect(shadeDweller.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('demotes a full-sun crop below a shade-tolerant one once the plot turns shady', () => {
-    addBothFixtures();
-    act(() => {
-      usePlotStore.getState().setConditionsInput({ light: 'full-shade' });
-    });
-
-    render(<PlantPalette />);
-
-    const names = rowNames();
-    const shadeIndex = names.findIndex((name) => name.includes('Shade Dweller'));
-    const sunIndex = names.findIndex((name) => name.includes('Sun Lover'));
-
-    expect(shadeIndex).toBeGreaterThanOrEqual(0);
-    expect(sunIndex).toBeGreaterThanOrEqual(0);
-    expect(shadeIndex).toBeLessThan(sunIndex);
-
-    // The full-sun crop hits a hard light mismatch (two shade steps short) and
-    // bands as unsuitable; the shade-tolerant crop, a clean light match, does not.
-    expect(screen.getByText('Sun Lover').closest('li')?.textContent).toMatch(/unsuitable/i);
-    expect(screen.getByText('Shade Dweller').closest('li')?.textContent).not.toMatch(/unsuitable/i);
-  });
-
-  it('re-ranks live as the plot store changes after the initial render', () => {
+  it('re-ranks live when the plot turns shady: the full-sun crop drops below the shade-tolerant one and is marked unsuitable', () => {
     addBothFixtures();
     render(<PlantPalette />);
-
-    // Starts full-sun (the default plot store value): the sun-lover is not
-    // demoted to unsuitable.
     expect(screen.getByText('Sun Lover').closest('li')?.textContent).not.toMatch(/unsuitable/i);
 
     act(() => {
       usePlotStore.getState().setConditionsInput({ light: 'full-shade' });
     });
 
-    // Same rendered component, no remount: the plot turning shady demotes it.
+    const names = rowNames();
+    const shadeIndex = names.findIndex((name) => name.includes('Shade Dweller'));
+    const sunIndex = names.findIndex((name) => name.includes('Sun Lover'));
+    expect(shadeIndex).toBeGreaterThanOrEqual(0);
+    expect(sunIndex).toBeGreaterThan(shadeIndex);
     expect(screen.getByText('Sun Lover').closest('li')?.textContent).toMatch(/unsuitable/i);
+    expect(screen.getByText('Shade Dweller').closest('li')?.textContent).not.toMatch(/unsuitable/i);
   });
 
   it('hides unsuitable crops once the toggle is checked, and shows them again once unchecked', () => {

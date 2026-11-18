@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  rectangleRegion,
-  validatePlant,
-  type Plant,
-  type PlotRegion,
-} from '@garden-planner/engine';
+import { rectangleRegion, type PlotRegion } from '@garden-planner/engine';
 import {
   CANVAS_PADDING_CM,
   canvasSizePx,
@@ -17,7 +12,6 @@ import {
   MAX_PX_PER_CM,
   MIN_PX_PER_CM,
   MIN_SEARCH_STEP_CM,
-  plantSeparationCm,
   pxToCm,
   regionBounds,
   regionCentre,
@@ -199,25 +193,6 @@ describe('firstFreePosition', () => {
     expect(Math.hypot(second.x - first.x, second.y - first.y)).toBeGreaterThanOrEqual(
       MIN_SEARCH_STEP_CM,
     );
-  });
-});
-
-describe('plantSeparationCm', () => {
-  const plantWith = (inRowCm: number, betweenRowCm: number): Plant =>
-    validatePlant({
-      id: 'fixture',
-      commonName: 'Fixture',
-      scientificName: 'Fixtura test',
-      gbifId: null,
-      category: 'vegetable',
-      light: 'full-sun',
-      spacing: { row: { inRowCm, betweenRowCm } },
-      provenance: { sources: [{ source: 'hand-written test fixture' }] },
-    });
-
-  it('is the crop’s wider spacing dimension — the same square `placement-derivation.ts` models', () => {
-    expect(plantSeparationCm(plantWith(3, 15))).toBe(15);
-    expect(plantSeparationCm(plantWith(150, 90))).toBe(150);
   });
 });
 

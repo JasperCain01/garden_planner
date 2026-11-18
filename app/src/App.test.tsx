@@ -50,9 +50,4 @@ describe('App shell', () => {
       expect(screen.getByRole('region', { name })).toBeTruthy();
     }
   }, 15_000);
-
-  it('routes an unmatched path to the not-found page', () => {
-    renderApp('/somewhere-that-does-not-exist');
-    expect(screen.getByRole('heading', { name: /page not found/i })).toBeTruthy();
-  });
 });

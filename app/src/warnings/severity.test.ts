@@ -18,21 +18,14 @@ function contrastRatio(a: string, b: string): number {
 }
 
 describe('worseSeverity', () => {
-  it('picks severe over warning or info', () => {
-    expect(worseSeverity('severe', 'info')).toBe('severe');
-    expect(worseSeverity('info', 'severe')).toBe('severe');
-    expect(worseSeverity('severe', 'warning')).toBe('severe');
-  });
-
-  it('picks warning over info', () => {
-    expect(worseSeverity('warning', 'info')).toBe('warning');
-    expect(worseSeverity('info', 'warning')).toBe('warning');
-  });
-
-  it('is a no-op when both sides match', () => {
-    expect(worseSeverity('info', 'info')).toBe('info');
-    expect(worseSeverity('warning', 'warning')).toBe('warning');
-    expect(worseSeverity('severe', 'severe')).toBe('severe');
+  it('returns the more urgent of two severities, in either order', () => {
+    const order = ['info', 'warning', 'severe'] as const;
+    for (const a of order) {
+      for (const b of order) {
+        const expected = order[Math.max(order.indexOf(a), order.indexOf(b))];
+        expect(worseSeverity(a, b), `${a} vs ${b}`).toBe(expected);
+      }
+    }
   });
 });
 
