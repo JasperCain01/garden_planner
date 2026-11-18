@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, statSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -97,11 +97,16 @@ describe('etl entry point', () => {
           confidence: 98,
         },
       });
+      // Backdate the file, so any rewrite (even with identical content, which a
+      // content comparison would miss) moves its modification time.
+      const past = new Date('2020-01-01T00:00:00Z');
+      utimesSync(cachePath, past, past);
       const before = loadCache(cachePath);
       const transport = stubTransport({});
 
       await main({ cachePath, sources: [fixtureSource(['onion'])], transport });
 
+      expect(statSync(cachePath).mtime.getTime()).toBe(past.getTime());
       expect(loadCache(cachePath)).toEqual(before);
     });
 
