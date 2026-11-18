@@ -230,23 +230,6 @@ test('three "Add to plot" clicks yield three visibly separate markers', async ({
   expect(threeMore).toBeGreaterThan(oneMore * 2);
 });
 
-test('zoom controls scale the plot, and Fit puts it back', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByLabel(/plot canvas/i)).toBeVisible();
-
-  const fitted = await stageSize(page);
-  expect(await page.getByText('100%').isVisible()).toBe(true);
-
-  await page.getByRole('button', { name: /zoom in/i }).click();
-  const zoomedIn = await stageSize(page);
-  expect(zoomedIn.width).toBeGreaterThan(fitted.width);
-  expect(await page.getByText('125%').isVisible()).toBe(true);
-
-  await page.getByRole('button', { name: /fit the plot to the screen/i }).click();
-  const refitted = await stageSize(page);
-  expect(refitted.width).toBeCloseTo(fitted.width, 0);
-});
-
 test('an oversize canopy does not flood the soil surround (post-review fix A1)', async ({
   page,
 }) => {

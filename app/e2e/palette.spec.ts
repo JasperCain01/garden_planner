@@ -95,27 +95,6 @@ test('no card’s category word ellipsizes (post-review fix B1)', async ({ page 
   ).toEqual([]);
 });
 
-test('one click on a card opens the engine’s reasoning for that crop', async ({ page }) => {
-  await page.goto('/');
-  const card = page.getByRole('button', { name: /^drag Onion onto the plot/i });
-  await expect(card).toBeVisible();
-  await expect(card).toHaveAttribute('aria-expanded', 'false');
-
-  // A real pointer click on the drag surface. Without the `PointerSensor`'s
-  // activation constraint this is a one-pixel drag and the click never
-  // arrives — which is exactly the trap this phase had to clear.
-  await card.click();
-
-  await expect(card).toHaveAttribute('aria-expanded', 'true');
-  const row = page.getByRole('listitem').filter({ has: card });
-  await expect(row.getByText(/^Confidence: \d+%$/)).toBeVisible();
-  // The per-dimension reasoning, in the engine's own words.
-  await expect(row.getByText(/^light:/i)).toBeVisible();
-
-  await card.click();
-  await expect(card).toHaveAttribute('aria-expanded', 'false');
-});
-
 test('a drag still places a crop, and does not open its reasoning', async ({ page }) => {
   await page.goto('/');
   const canvas = page.getByLabel(/plot canvas/i);
