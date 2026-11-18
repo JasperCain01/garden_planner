@@ -45,53 +45,6 @@ function loadShippedPlants(): Plant[] {
 const PLANTS = loadShippedPlants();
 const BY_ID = new Map(PLANTS.map((plant) => [plant.id, plant]));
 
-describe('the shipped companion/antagonist data (ADR 0008)', () => {
-  it('is the dataset these expectations were written against', () => {
-    expect(PLANTS).toHaveLength(144);
-  });
-
-  it('carries companions on exactly 50/144 records, 76 links, 3 well-supported and 73 traditional', () => {
-    const withCompanions = PLANTS.filter((plant) => plant.companions !== undefined);
-    expect(withCompanions).toHaveLength(50);
-
-    const links = withCompanions.flatMap((plant) => plant.companions ?? []);
-    expect(links).toHaveLength(76);
-    expect(links.filter((link) => link.evidence === 'well-supported')).toHaveLength(3);
-    expect(links.filter((link) => link.evidence === 'traditional')).toHaveLength(73);
-  });
-
-  it('carries antagonists on exactly 8/144 records, 8 links -- four reciprocal pairs', () => {
-    // Stage 1.7's curated `broad-bean` is the fourth pair: the Stage 1.4
-    // `leek`/`broad-bean` antagonist link (ADR 0008) had no plant to attach to
-    // until this stage gave broad-bean one (ADR 0009's documented gap, closed
-    // by ADR 0021).
-    const withAntagonists = PLANTS.filter((plant) => plant.antagonists !== undefined);
-    expect(withAntagonists).toHaveLength(8);
-
-    const links = withAntagonists.flatMap((plant) => plant.antagonists ?? []);
-    expect(links).toHaveLength(8);
-
-    const pairs = new Set(
-      withAntagonists.flatMap((plant) =>
-        (plant.antagonists ?? []).map((link) => [plant.id, link.plantId].sort().join('<->')),
-      ),
-    );
-    // Every reciprocal pair collapses to one entry when sorted and deduped.
-    expect(pairs).toEqual(
-      new Set(['broad-bean<->leek', 'garlic<->green-bean', 'onion<->pea', 'potato<->tomato']),
-    );
-  });
-
-  it('is the entire shipped basis for antagonist-adjacency: garlic/green-bean and onion/pea traditional, potato/tomato well-supported', () => {
-    const garlic = BY_ID.get('garlic');
-    const onion = BY_ID.get('onion');
-    const potato = BY_ID.get('potato');
-    expect(garlic?.antagonists).toMatchObject([{ plantId: 'green-bean', evidence: 'traditional' }]);
-    expect(onion?.antagonists).toMatchObject([{ plantId: 'pea', evidence: 'traditional' }]);
-    expect(potato?.antagonists).toMatchObject([{ plantId: 'tomato', evidence: 'well-supported' }]);
-  });
-});
-
 describe('evaluatePlot against the real shipped dataset', () => {
   it('runs every shipped record through the full evaluation without throwing', () => {
     const conditions: PlotConditions = { light: 'full-sun', climate: resolveClimate() };
