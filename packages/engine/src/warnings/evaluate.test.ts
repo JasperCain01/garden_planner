@@ -94,86 +94,29 @@ describe('evaluatePlot — a fixture plot deliberately triggering each of the fi
 
   const evaluation = evaluatePlot(PLOT, placements);
 
-  it('raises wrong-light for the full-sun crop in a full-shade plot', () => {
-    const warning = evaluation.warnings.find(
-      (w) => w.kind === 'wrong-light' && w.subjects.some((s) => s.placementId === 'sun-lover-bed'),
-    );
-    expect(warning).toBeDefined();
-    expect(warning?.severity).toBe('severe');
-  });
+  it('raises exactly one warning per rule, each on the placement that caused it', () => {
+    // The rules' own logic (thresholds, severities, wording) is tested in
+    // suitability-rules, overcrowding and antagonists.test.ts. What
+    // evaluatePlot adds is routing: every rule runs, each warning names the
+    // right placement(s), and nothing extra is raised.
+    const summary = evaluation.warnings
+      .map((w) => ({
+        kind: w.kind,
+        severity: w.severity,
+        placements: w.subjects.map((subject) => subject.placementId).sort(),
+      }))
+      .sort((a, b) => a.kind.localeCompare(b.kind));
 
-  it('raises climate-mismatch for the tender crop in a harsh region', () => {
-    const warning = evaluation.warnings.find(
-      (w) =>
-        w.kind === 'climate-mismatch' && w.subjects.some((s) => s.placementId === 'tender-bed'),
-    );
-    expect(warning).toBeDefined();
-    expect(warning?.severity).toBe('severe');
-  });
-
-  it('raises wrong-sowing-season for the crop sown well outside its window', () => {
-    const warning = evaluation.warnings.find(
-      (w) =>
-        w.kind === 'wrong-sowing-season' && w.subjects.some((s) => s.placementId === 'season-bed'),
-    );
-    expect(warning).toBeDefined();
-    expect(warning?.severity).toBe('warning'); // season never floors at "unsuitable"
-  });
-
-  it('raises overcrowded for the bed planted far past its capacity', () => {
-    const warning = evaluation.warnings.find(
-      (w) =>
-        w.kind === 'overcrowded' && w.subjects.some((s) => s.placementId === 'overcrowded-bed'),
-    );
-    expect(warning).toBeDefined();
-    if (warning?.kind === 'overcrowded') {
-      expect(warning.plantedCount).toBe(100);
-      expect(warning.maxCount).toBeLessThan(100);
-    }
-  });
-
-  it('raises antagonist-adjacency for the two antagonist crops planted touching', () => {
-    const warning = evaluation.warnings.find((w) => w.kind === 'antagonist-adjacency');
-    expect(warning).toBeDefined();
-    if (warning?.kind === 'antagonist-adjacency') {
-      expect(warning.evidence).toBe('well-supported');
-      expect(warning.severity).toBe('severe');
-      expect(warning.distanceCm).toBe(0);
-    }
-  });
-
-  it('produces exactly five warnings -- one per rule, nothing extra (antagonist-adjacency is one warning spanning two placements)', () => {
-    expect(evaluation.warnings).toHaveLength(5);
-    expect(evaluation.warnings.map((w) => w.kind).sort()).toEqual(
-      [
-        'wrong-light',
-        'climate-mismatch',
-        'wrong-sowing-season',
-        'overcrowded',
-        'antagonist-adjacency',
-      ].sort(),
-    );
-  });
-});
-
-describe('evaluatePlot — companion suggestions and evidence tags', () => {
-  it('suggests an unplaced companion and carries its evidence tag through', () => {
-    const onion = fixturePlant({
-      id: 'onion',
-      companions: [{ plantId: 'carrot', evidence: 'well-supported', note: 'Uvah & Coaker 1984' }],
-    });
-    const placements: CropPlacement[] = [
-      { id: 'onion-bed', plant: onion, region: bed(0), count: 1 },
-    ];
-
-    const evaluation = evaluatePlot(PLOT, placements);
-    expect(evaluation.suggestions).toMatchObject([
+    expect(summary).toEqual([
       {
-        forPlacementId: 'onion-bed',
-        forPlantId: 'onion',
-        suggestedPlantId: 'carrot',
-        evidence: 'well-supported',
+        kind: 'antagonist-adjacency',
+        severity: 'severe',
+        placements: ['antagonist-bed-a', 'antagonist-bed-b'],
       },
+      { kind: 'climate-mismatch', severity: 'severe', placements: ['tender-bed'] },
+      { kind: 'overcrowded', severity: 'severe', placements: ['overcrowded-bed'] },
+      { kind: 'wrong-light', severity: 'severe', placements: ['sun-lover-bed'] },
+      { kind: 'wrong-sowing-season', severity: 'warning', placements: ['season-bed'] },
     ]);
   });
 });

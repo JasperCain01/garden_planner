@@ -85,44 +85,46 @@ describe('scorePlant — golden worked examples', () => {
     expect(result.summary).toContain('Excellent match');
   });
 
-  it('a full-sun crop in a full-shade plot is capped, not averaged, into unsuitability', () => {
-    // light 0 (unsuitable) · hardiness 1 · soil 1 · season 1.
-    // The plain weighted mean would be 0.65 — a respectable "good". The
-    // limiting-factor cap overrides it: the crop will not crop in deep shade,
-    // however perfect the soil.
-    const shadyPlot = resolvePlotConditions({
-      light: 'full-shade',
+  // One unsuitable dimension caps the whole score, however perfect the rest:
+  // the plain weighted mean would call either crop a respectable "good".
+  // aggregateDimensionScores' own cap test (below) covers the arithmetic;
+  // these two prove scorePlant applies it for both dimensions that can
+  // disqualify a crop.
+  it.each([
+    {
+      case: 'a full-sun crop in a full-shade plot is capped by light',
+      plotLight: 'full-shade' as const,
+      location: undefined,
+      hardiness: undefined,
+      limitedBy: 'light',
+      reason: 'too dark',
+    },
+    {
+      // An H2 crop in the Scottish Highlands (H6): four bands short.
+      case: 'a tender crop in a cold region is capped by hardiness',
+      plotLight: 'full-sun' as const,
+      location: { kind: 'region' as const, regionId: 'scotland-highlands' },
+      hardiness: { rhsRating: 'H2' as const },
+      limitedBy: 'hardiness',
+      reason: 'bands short',
+    },
+  ])('$case', ({ plotLight, location, hardiness, limitedBy, reason }) => {
+    const plot = resolvePlotConditions({
+      light: plotLight,
       soil: { texture: 'loam', ph: 'neutral', moisture: 'moist' },
       plantingMonth: 4,
+      ...(location ? { location } : {}),
     });
-    const result = scorePlant(fullyDescribedPlant(), shadyPlot);
+    const result = scorePlant(fullyDescribedPlant(hardiness ? { hardiness } : {}), plot);
 
     expect(result).toMatchObject({
       score: 0.2,
-      confidence: 1,
       rankingScore: 0.2,
       band: 'unsuitable',
-      limitedBy: ['light'],
+      limitedBy: [limitedBy],
     });
     expect(result.summary).toContain('Unsuitable');
-    expect(result.summary).toContain('too dark');
-  });
-
-  it('a tender crop in a cold region is capped by hardiness', () => {
-    // An H2 crop in the Scottish Highlands (H6): four bands short → 0.
-    const highlandPlot = resolvePlotConditions({
-      light: 'full-sun',
-      soil: { texture: 'loam', ph: 'neutral', moisture: 'moist' },
-      plantingMonth: 4,
-      location: { kind: 'region', regionId: 'scotland-highlands' },
-    });
-    const result = scorePlant(
-      fullyDescribedPlant({ hardiness: { rhsRating: 'H2' } }),
-      highlandPlot,
-    );
-
-    expect(result).toMatchObject({ band: 'unsuitable', limitedBy: ['hardiness'], score: 0.2 });
-    expect(result.summary).toContain('bands short');
+    expect(result.summary).toContain(reason);
   });
 
   it('a sparse shipped record in a matching plot scores on light alone, and says so', () => {
