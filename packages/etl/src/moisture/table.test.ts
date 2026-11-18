@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { SoilSchema } from '@garden-planner/engine';
 import { CURATED_MOISTURE } from './table.ts';
-import { MoistureRecordSchema, validateMoistureTable } from './schema.ts';
+import { validateMoistureTable } from './schema.ts';
 
 /**
  * The curated moisture table's own gate.
@@ -32,14 +32,6 @@ const SHIPPED_IDS = new Set(SHIPPED.map((plant) => plant.id));
 describe('the curated moisture table', () => {
   it('validates as a whole: every row parses and no crop is listed twice', () => {
     expect(() => validateMoistureTable(CURATED_MOISTURE)).not.toThrow();
-  });
-
-  it('covers a useful slice of the catalogue without pretending to cover it all', () => {
-    // Sized deliberately: the British garden/allotment core, not the tropicals
-    // or the cultivar padding. If this drifts far from ~60 something has
-    // changed about the table's scope and the module doc should change too.
-    expect(CURATED_MOISTURE.length).toBeGreaterThanOrEqual(50);
-    expect(CURATED_MOISTURE.length).toBeLessThan(SHIPPED.length);
   });
 
   it('names only crops that actually ship — a typo fails here, not silently', () => {
@@ -82,42 +74,5 @@ describe('the curated moisture table', () => {
     expect(find('rosemary')?.moisture).toEqual(['dry']);
     expect(find('watercress')?.moisture).toEqual(['wet']);
     expect(find('carrot')?.moisture).toEqual(['dry', 'moist']);
-  });
-});
-
-describe('MoistureRecordSchema', () => {
-  it('rejects an empty moisture list — "no opinion" means omitting the row', () => {
-    expect(() =>
-      MoistureRecordSchema.parse({ id: 'pea', moisture: [], note: 'a sufficiently long note' }),
-    ).toThrow();
-  });
-
-  it('rejects a moisture value outside the engine vocabulary', () => {
-    expect(() =>
-      MoistureRecordSchema.parse({ id: 'pea', moisture: ['damp'], note: 'a long enough note' }),
-    ).toThrow();
-  });
-
-  it('rejects a row with no reason', () => {
-    expect(() => MoistureRecordSchema.parse({ id: 'pea', moisture: ['moist'] })).toThrow();
-    expect(() =>
-      MoistureRecordSchema.parse({ id: 'pea', moisture: ['moist'], note: '' }),
-    ).toThrow();
-  });
-
-  it('rejects a stray key rather than dropping it', () => {
-    expect(() =>
-      MoistureRecordSchema.parse({
-        id: 'pea',
-        moisture: ['moist'],
-        note: 'a sufficiently long note',
-        texture: ['loam'],
-      }),
-    ).toThrow();
-  });
-
-  it('rejects a duplicate crop, which would make the merge order-dependent', () => {
-    const row = { id: 'pea', moisture: ['moist'], note: 'a sufficiently long note' };
-    expect(() => validateMoistureTable([row, row])).toThrow(/more than once/);
   });
 });

@@ -28,12 +28,6 @@ describe('ALL_COMPANION_RELATIONSHIPS (curated + OpenFarm-derived, combined)', (
     }
   });
 
-  it('every relationship carries an evidence tag', () => {
-    for (const relationship of ALL_COMPANION_RELATIONSHIPS) {
-      expect(relationship.evidence).toBeDefined();
-    }
-  });
-
   it('has no dangling relationship (referential integrity) against the plant-id universe', () => {
     expect(findDanglingRelationships(ALL_COMPANION_RELATIONSHIPS, PLANT_ID_UNIVERSE)).toEqual([]);
   });

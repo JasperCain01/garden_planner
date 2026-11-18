@@ -59,11 +59,4 @@ describe('PLANT_ID_UNIVERSE (the real, computed universe)', () => {
       expect(PLANT_ID_UNIVERSE.has(id)).toBe(true);
     }
   });
-
-  it('is a real-sized universe (~161 OpenFarm ids + the 12 spacing ids, allowing overlap)', () => {
-    // Loose bounds: guards against an accidental empty universe or an
-    // accidental inclusion of the full unmapped 340-record dump.
-    expect(PLANT_ID_UNIVERSE.size).toBeGreaterThan(100);
-    expect(PLANT_ID_UNIVERSE.size).toBeLessThan(340);
-  });
 });

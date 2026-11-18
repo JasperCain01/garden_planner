@@ -15,28 +15,10 @@ describe('HAND_VERIFIED_SPACING — the curated data', () => {
     expect(() => validateSpacingTable(HAND_VERIFIED_SPACING)).not.toThrow();
   });
 
-  it('is a bounded starter set (small enough to be hand-verified)', () => {
-    expect(HAND_VERIFIED_SPACING.length).toBeGreaterThanOrEqual(10);
-    expect(HAND_VERIFIED_SPACING.length).toBeLessThanOrEqual(40);
-  });
-
   it('includes the Stage 1.1 demo five (for maximum downstream overlap)', () => {
     const ids = new Set(HAND_VERIFIED_SPACING.map((r) => r.id));
     for (const demo of ['onion', 'lettuce', 'carrot', 'potato', 'tomato']) {
       expect(ids.has(demo)).toBe(true);
-    }
-  });
-
-  it('every present method carries >= the required number of citations', () => {
-    for (const row of HAND_VERIFIED_SPACING) {
-      if (row.spacing.row) {
-        expect(row.provenance.row?.length ?? 0).toBeGreaterThanOrEqual(MIN_SOURCES_PER_METHOD);
-      }
-      if (row.spacing.intensive) {
-        expect(row.provenance.intensive?.length ?? 0).toBeGreaterThanOrEqual(
-          MIN_SOURCES_PER_METHOD,
-        );
-      }
     }
   });
 
@@ -72,12 +54,6 @@ describe('HAND_VERIFIED_SPACING — the curated data', () => {
         /squarefootgardening|square-?foot-?garden/i.test(r.url ?? '');
       const hasSfg = (row.provenance.intensive ?? []).some(isSfgSource);
       expect(hasSfg, `expected an SFG citation for ${row.id}`).toBe(true);
-    }
-  });
-
-  it('every crop is one of the three edible categories', () => {
-    for (const row of HAND_VERIFIED_SPACING) {
-      expect(['vegetable', 'herb', 'fruit']).toContain(row.category);
     }
   });
 

@@ -27,6 +27,10 @@ describe('validateMoistureRecord', () => {
     expect(() => validateMoistureRecord({ ...row(), moisture: [] })).toThrow();
   });
 
+  it('throws on a stray key rather than silently dropping it', () => {
+    expect(() => validateMoistureRecord({ ...row(), texture: ['loam'] })).toThrow();
+  });
+
   it('throws on a row missing its required note', () => {
     expect(() => validateMoistureRecord({ ...row(), note: '' })).toThrow();
   });
