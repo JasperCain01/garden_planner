@@ -18,16 +18,6 @@ describe('ALL_CLIMATE_PROFILES', () => {
       expect(ClimateProfileSchema.safeParse(profile).success, profile.id).toBe(true);
     }
   });
-
-  it('every profile cites at least one source for hardiness and frost', () => {
-    for (const profile of ALL_CLIMATE_PROFILES) {
-      expect(
-        profile.provenance.hardiness.length,
-        `${profile.id} hardiness citations`,
-      ).toBeGreaterThan(0);
-      expect(profile.provenance.frost.length, `${profile.id} frost citations`).toBeGreaterThan(0);
-    }
-  });
 });
 
 describe('UK_DEFAULT_CLIMATE_PROFILE', () => {

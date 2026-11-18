@@ -150,110 +150,88 @@ describe('validatePlant — valid records', () => {
 });
 
 describe('validatePlant — rejected records', () => {
-  // Each case pairs a mutation of a valid record with the reason it must fail, so
-  // the table reads as a spec of the schema's guarantees.
-  it('rejects a sow month outside 1..12', () => {
-    const bad = { ...onion, seasons: { sow: [{ start: 3, end: 13 }] } };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects a month of 0', () => {
-    const bad = { ...onion, seasons: { harvest: [{ start: 0, end: 5 }] } };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects a non-integer month', () => {
-    const bad = { ...onion, seasons: { sow: [{ start: 3.5, end: 4 }] } };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects negative in-row spacing', () => {
-    const bad = { ...onion, spacing: { row: { inRowCm: -10, betweenRowCm: 30 } } };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects zero spacing (must be strictly positive)', () => {
-    const bad = { ...onion, spacing: { intensive: { perSquareMetre: 0 } } };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects spacing with no growing method at all', () => {
-    const bad = { ...onion, spacing: {} };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects an intensive block with no density figure', () => {
-    const bad = { ...onion, spacing: { intensive: {} } };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects a row block missing between-row spacing', () => {
-    const bad = { ...onion, spacing: { row: { inRowCm: 10 } } };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects an unknown light enum value', () => {
-    const bad = { ...onion, light: 'shade' };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects an unknown edible category', () => {
-    const bad = { ...onion, category: 'mushroom' };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects a missing required field (scientificName)', () => {
-    const bad: Record<string, unknown> = { ...onion };
-    delete bad.scientificName;
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects an id that is not a slug', () => {
-    const bad = { ...onion, id: 'Onion Bulb' };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects a companion link missing its evidence tag', () => {
-    const bad = { ...onion, companions: [{ plantId: 'carrot' }] };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects a companion link pointing at a non-slug id', () => {
-    const bad = { ...onion, companions: [{ plantId: 'Carrot!', evidence: 'traditional' }] };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects provenance with no sources', () => {
-    const bad = { ...onion, provenance: { sources: [] } };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects a missing provenance block entirely', () => {
-    const bad: Record<string, unknown> = { ...onion };
-    delete bad.provenance;
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects a fractional GBIF id', () => {
-    const bad = { ...onion, gbifId: 2.5 };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects an empty hardiness block', () => {
-    const bad = { ...onion, hardiness: {} };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects an unknown/misspelled top-level key (strict mode)', () => {
-    // The hard-fail gate must catch a typo'd field name rather than silently drop
-    // it — otherwise a record ships with that fact missing. See ADR-0004.
-    const bad = { ...onion, hardyness: { minTempC: -5 } };
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('rejects an unknown key inside a nested object (strict mode)', () => {
-    const bad = { ...onion, spacing: { row: { inRowCm: 10, betweenRowCm: 30, depthCm: 2 } } };
-    expect(() => validatePlant(bad)).toThrow();
+  // Each case mutates one field of a valid record and names where the schema
+  // must report the problem. Checking the path, not just that parsing threw,
+  // proves each record fails for the reason in its description.
+  const without = (key: string): Record<string, unknown> => {
+    const copy: Record<string, unknown> = { ...onion };
+    delete copy[key];
+    return copy;
+  };
+  it.each<[string, unknown, (string | number)[]]>([
+    [
+      'a sow month above 12',
+      { ...onion, seasons: { sow: [{ start: 3, end: 13 }] } },
+      ['seasons', 'sow', 0, 'end'],
+    ],
+    [
+      'a month of 0',
+      { ...onion, seasons: { harvest: [{ start: 0, end: 5 }] } },
+      ['seasons', 'harvest', 0, 'start'],
+    ],
+    [
+      'a non-integer month',
+      { ...onion, seasons: { sow: [{ start: 3.5, end: 4 }] } },
+      ['seasons', 'sow', 0, 'start'],
+    ],
+    [
+      'negative in-row spacing',
+      { ...onion, spacing: { row: { inRowCm: -10, betweenRowCm: 30 } } },
+      ['spacing', 'row', 'inRowCm'],
+    ],
+    [
+      'zero spacing (must be strictly positive)',
+      { ...onion, spacing: { intensive: { perSquareMetre: 0 } } },
+      ['spacing', 'intensive', 'perSquareMetre'],
+    ],
+    ['spacing with no growing method at all', { ...onion, spacing: {} }, ['spacing']],
+    [
+      'an intensive block with no density figure',
+      { ...onion, spacing: { intensive: {} } },
+      ['spacing', 'intensive'],
+    ],
+    [
+      'a row block missing between-row spacing',
+      { ...onion, spacing: { row: { inRowCm: 10 } } },
+      ['spacing', 'row', 'betweenRowCm'],
+    ],
+    ['an unknown light value', { ...onion, light: 'shade' }, ['light']],
+    ['an unknown edible category', { ...onion, category: 'mushroom' }, ['category']],
+    ['a missing scientificName', without('scientificName'), ['scientificName']],
+    ['an id that is not a slug', { ...onion, id: 'Onion Bulb' }, ['id']],
+    [
+      'a companion link missing its evidence tag',
+      { ...onion, companions: [{ plantId: 'carrot' }] },
+      ['companions', 0, 'evidence'],
+    ],
+    [
+      'a companion link to a non-slug id',
+      { ...onion, companions: [{ plantId: 'Carrot!', evidence: 'traditional' }] },
+      ['companions', 0, 'plantId'],
+    ],
+    [
+      'provenance with no sources',
+      { ...onion, provenance: { sources: [] } },
+      ['provenance', 'sources'],
+    ],
+    ['a missing provenance block', without('provenance'), ['provenance']],
+    ['a fractional GBIF id', { ...onion, gbifId: 2.5 }, ['gbifId']],
+    ['an empty hardiness block', { ...onion, hardiness: {} }, ['hardiness']],
+    // Strict mode: a typo'd field name must fail rather than be silently
+    // dropped, or a record ships with that fact missing (ADR-0004).
+    ['an unknown top-level key', { ...onion, hardyness: { minTempC: -5 } }, []],
+    [
+      'an unknown key inside a nested object',
+      { ...onion, spacing: { row: { inRowCm: 10, betweenRowCm: 30, depthCm: 2 } } },
+      ['spacing', 'row'],
+    ],
+  ])('rejects %s, reporting it at the offending field', (_case, record, path) => {
+    expect(() => validatePlant(record)).toThrow();
+    const result = safeValidatePlant(record);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((issue) => issue.path)).toContainEqual(path);
+    }
   });
 });
 
@@ -261,16 +239,6 @@ describe('safeValidatePlant', () => {
   it('returns success for a valid record', () => {
     const result = safeValidatePlant(onion);
     expect(result.success).toBe(true);
-  });
-
-  it('returns failure (without throwing) for an invalid record, with error detail', () => {
-    const result = safeValidatePlant({ ...onion, light: 'shade' });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      // The error should point at the offending field so a validation report can
-      // name it (Stage 1.5 collects these across the whole dataset).
-      expect(result.error.issues.some((issue) => issue.path.includes('light'))).toBe(true);
-    }
   });
 });
 

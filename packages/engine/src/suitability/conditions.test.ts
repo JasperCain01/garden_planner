@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { UK_DEFAULT_CLIMATE_PROFILE } from '../climate/regions.ts';
 import { resolveClimate } from '../climate/resolve.ts';
 import {
-  PlotConditionsSchema,
   resolvePlotConditions,
   safeValidatePlotConditions,
   validatePlotConditions,
@@ -88,17 +87,5 @@ describe('plot conditions schema', () => {
       false,
     );
     expect(() => validatePlotConditions({ light: 'full-sun' })).toThrow();
-  });
-
-  it('is the single source of truth for its type (z.infer, not a hand-written interface)', () => {
-    // If the schema and the type could drift, this assignment would still
-    // compile; it is here as documentation of the intent, and the shape below is
-    // type-checked against `PlotConditions` at author time.
-    const parsed = PlotConditionsSchema.parse({
-      light: 'partial-shade',
-      climate: UK_DEFAULT_CLIMATE_PROFILE,
-    });
-    const typed: PlotConditions = parsed;
-    expect(typed.light).toBe('partial-shade');
   });
 });

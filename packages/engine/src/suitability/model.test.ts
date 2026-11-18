@@ -10,28 +10,22 @@ import { bandForScore, BAND_THRESHOLDS } from './model';
  * just below it, plus the one band those tests never reach.
  */
 describe('bandForScore', () => {
-  it('bands exactly at each threshold as the higher band (inclusive lower bound)', () => {
-    expect(bandForScore(BAND_THRESHOLDS.excellent)).toBe('excellent');
-    expect(bandForScore(BAND_THRESHOLDS.good)).toBe('good');
-    expect(bandForScore(BAND_THRESHOLDS.fair)).toBe('fair');
-    expect(bandForScore(BAND_THRESHOLDS.poor)).toBe('poor');
-  });
-
-  it('bands just below each threshold as the next band down', () => {
-    expect(bandForScore(BAND_THRESHOLDS.excellent - 0.001)).toBe('good');
-    expect(bandForScore(BAND_THRESHOLDS.good - 0.001)).toBe('fair');
-    expect(bandForScore(BAND_THRESHOLDS.fair - 0.001)).toBe('poor');
-    expect(bandForScore(BAND_THRESHOLDS.poor - 0.001)).toBe('unsuitable');
-  });
-
-  it('bands the middle of the poor range as poor', () => {
-    // BAND_THRESHOLDS.poor is 0.25, fair is 0.4 — 0.3 sits strictly between,
-    // the one band no golden case in score.test.ts ever lands on.
-    expect(bandForScore(0.3)).toBe('poor');
-  });
-
-  it('bands 0 and 1 at the extremes', () => {
-    expect(bandForScore(0)).toBe('unsuitable');
-    expect(bandForScore(1)).toBe('excellent');
+  it('bands each threshold inclusively, just below it as the next band down, and the extremes', () => {
+    const { excellent, good, fair, poor } = BAND_THRESHOLDS;
+    const cases: [number, string][] = [
+      [excellent, 'excellent'],
+      [excellent - 0.001, 'good'],
+      [good, 'good'],
+      [good - 0.001, 'fair'],
+      [fair, 'fair'],
+      [fair - 0.001, 'poor'],
+      [poor, 'poor'],
+      [poor - 0.001, 'unsuitable'],
+      // 0.3 sits strictly inside poor, the one band no golden case reaches.
+      [0.3, 'poor'],
+      [0, 'unsuitable'],
+      [1, 'excellent'],
+    ];
+    for (const [score, band] of cases) expect(bandForScore(score), String(score)).toBe(band);
   });
 });

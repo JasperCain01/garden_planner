@@ -5,7 +5,7 @@ import {
   FrostWindowSchema,
   LocationInputSchema,
 } from './schema';
-import { UK_DEFAULT_CLIMATE_PROFILE, CLIMATE_REGIONS } from './regions';
+import { UK_DEFAULT_CLIMATE_PROFILE } from './regions';
 
 describe('CalendarDayOfYearSchema', () => {
   it('accepts a valid month/day pair', () => {
@@ -39,18 +39,6 @@ describe('FrostWindowSchema', () => {
 });
 
 describe('ClimateProfileSchema', () => {
-  it('validates the shipped UK default profile', () => {
-    const result = ClimateProfileSchema.safeParse(UK_DEFAULT_CLIMATE_PROFILE);
-    expect(result.success).toBe(true);
-  });
-
-  it('validates every shipped region profile', () => {
-    for (const region of CLIMATE_REGIONS) {
-      const result = ClimateProfileSchema.safeParse(region);
-      expect(result.success, `${region.id} should validate`).toBe(true);
-    }
-  });
-
   it('rejects a profile missing frost provenance', () => {
     const invalid = {
       ...UK_DEFAULT_CLIMATE_PROFILE,

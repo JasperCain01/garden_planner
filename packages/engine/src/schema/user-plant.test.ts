@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validatePlant, safeValidatePlant, type Plant } from './plant';
+import { validatePlant, type Plant } from './plant';
 import {
   createUserPlant,
   isUserPlant,
@@ -256,28 +256,7 @@ describe('the `user-` id namespace', () => {
   });
 });
 
-describe('the shipped bar is unchanged by this stage', () => {
-  it('still accepts a fully-sourced shipped record, unchanged', () => {
-    expect(validatePlant(shippedRadish)).toEqual(shippedRadish);
-  });
-
-  it('still rejects a shipped record with no provenance', () => {
-    const bad: Record<string, unknown> = { ...shippedRadish };
-    delete bad.provenance;
-    expect(() => validatePlant(bad)).toThrow();
-    expect(safeValidatePlant(bad).success).toBe(false);
-  });
-
-  it('still rejects a shipped record with no scientific name', () => {
-    const bad: Record<string, unknown> = { ...shippedRadish };
-    delete bad.scientificName;
-    expect(() => validatePlant(bad)).toThrow();
-  });
-
-  it('still rejects empty provenance sources', () => {
-    expect(() => validatePlant({ ...shippedRadish, provenance: { sources: [] } })).toThrow();
-  });
-
+describe('the shipped bar is not loosened by user crops', () => {
   it('does not accept a user *input* as a Plant — the boundary is the upcast', () => {
     // If this ever passed, the relaxation would have leaked into the shipped gate.
     expect(() => validatePlant(cherryBelle)).toThrow();
